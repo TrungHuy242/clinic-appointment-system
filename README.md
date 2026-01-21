@@ -7,6 +7,7 @@
 - Từ Nguyễn Huyền Trang (Dev)
 - Nguyễn Ngọc Quyền (Dev)
 - Test
+- Test 2
 
 ## Mục tiêu
 Website hỗ trợ bệnh nhân đặt lịch nhanh theo chi nhánh/khoa/bác sĩ; lễ tân xác nhận & tiếp nhận; bác sĩ xem lịch và cập nhật kết quả khám.
