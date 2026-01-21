@@ -1,4 +1,4 @@
-# Hệ thống quản lý đặt lịch khám đa chi nhánh cho phòng khám
+# Hệ thống quản lý đặt lịch khám bệnh ở phòng khám
 
 ## Thành viên nhóm
 - Trương Minh Trung Huy  (SM)
