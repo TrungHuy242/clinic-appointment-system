@@ -10,51 +10,157 @@
 ---
 
 ## 2. Vấn đề cần giải quyết
-Hiện nay nhiều phòng khám vẫn vận hành đặt lịch thủ công qua điện thoại hoặc ghi chép rời rạc, gây quá tải cho lễ tân, dễ nhầm lịch và khó kiểm soát tỷ lệ bệnh nhân “bùng” lịch. Bệnh nhân cũng gặp bất tiện vì phải mang nhiều giấy tờ, khó theo dõi lịch sử thăm khám và đơn thuốc sau mỗi lần khám. Ngoài ra, phòng khám đa chi nhánh cần một hệ thống có thể mở rộng, quản lý lịch hẹn theo chi nhánh/khoa/bác sĩ và giảm tình trạng trùng lịch của bác sĩ thuộc nhiều khoa.
+Hiện nay nhiều phòng khám quy mô nhỏ và vừa vẫn thực hiện đặt lịch khám thông qua điện thoại hoặc ghi chép thủ công, dẫn đến các vấn đề như: quá tải khâu tiếp nhận, dễ nhầm lẫn lịch khám, khó quản lý trạng thái bệnh nhân đến khám và tỷ lệ bệnh nhân không đến (no-show).
+
+Bệnh nhân cũng gặp bất tiện trong việc theo dõi lịch sử khám bệnh và đơn thuốc, do thông tin thường được lưu trữ rời rạc hoặc dưới dạng giấy tờ. Vì vậy, cần một hệ thống đặt lịch khám trực tuyến đơn giản, dễ sử dụng, phù hợp với mô hình một phòng khám – một chi nhánh, nhưng vẫn đảm bảo đúng nghiệp vụ thực tế.
 
 ---
 
 ## 3. Mục tiêu dự án
-Xây dựng một website đặt lịch khám **không cần tài khoản** cho khách lần đầu (guest booking) nhưng vẫn đảm bảo vận hành thực tế:  
-- Cho phép bệnh nhân đặt lịch nhanh, nhận **mã lịch hẹn/QR** và **tự xác nhận sẽ đến** để giảm lịch ảo.  
-- Hỗ trợ lễ tân **check-in theo khung giờ**, quản lý trạng thái lịch hẹn, dời/hủy/no-show.  
-- Hỗ trợ bác sĩ xem lịch của mình, nhập kết quả khám và đơn thuốc.  
-- Cung cấp **“Sổ khám điện tử”** cho bệnh nhân có tài khoản (SĐT + mật khẩu) sau khi “claim” hồ sơ, giúp xem lại lịch sử khám và đơn thuốc ngay trên web.
+Xây dựng một website đặt lịch khám bệnh cho một chi nhánh phòng khám, đáp ứng các mục tiêu sau:
+
+- Cho phép bệnh nhân đặt lịch khám không cần tài khoản (guest booking).
+
+- Cung cấp mã lịch hẹn và QR để tra cứu nhanh.
+
+- Yêu cầu bệnh nhân tự xác nhận sẽ đến nhằm giảm lịch hẹn ảo.
+
+- Hỗ trợ Admin quản lý lịch hẹn, check-in, dời/hủy/no-show.
+
+- Hỗ trợ Bác sĩ xem lịch khám, nhập kết quả khám và đơn thuốc.
+
+- Cung cấp “Sổ khám điện tử” cho bệnh nhân có tài khoản để xem lại lịch sử khám và đơn thuốc.
 
 ---
 
 ## 4. Đối tượng sử dụng (User Roles)
-- **Guest (Public):** Đặt lịch không cần đăng nhập, xác nhận sẽ đến, tra cứu lịch bằng SĐT + mã.  
-- **Patient (có tài khoản):** Claim hồ sơ để xem “Sổ khám điện tử” (lịch sử khám, đơn thuốc).  
-- **Receptionist (lễ tân/tiếp nhận):** Quản lý lịch hẹn, check-in, dời/hủy/no-show, chỉnh sửa thông tin hành chính bệnh nhân (có audit log).  
-- **Doctor (bác sĩ):** Xem lịch, chuyển trạng thái khám, nhập kết quả khám + đơn thuốc.  
-- **Admin:** Quản trị danh mục (chi nhánh/khoa/phòng/bác sĩ/loại khám), tài khoản & phân quyền, báo cáo, audit log.
+- Bệnh nhân (Patient)
 
+Đặt lịch khám không cần đăng nhập.
+
+Xác nhận lịch hẹn trong thời gian quy định.
+
+Tra cứu lịch hẹn bằng SĐT + mã lịch hẹn.
+
+Đăng ký tài khoản để:
+
+Claim hồ sơ khám
+
+Xem “Sổ khám điện tử” (lịch sử khám, đơn thuốc).
+
+- Bác sĩ (Doctor)
+
+Đăng nhập hệ thống.
+
+Xem lịch khám của mình theo ngày.
+
+Cập nhật trạng thái khám.
+
+Nhập kết quả khám và đơn thuốc cho bệnh nhân.
+
+- Admin
+
+- Quản trị toàn bộ hệ thống.
+
+- Quản lý:
+
+Khoa
+
+Bác sĩ
+
+Loại khám
+
+Khung giờ khám
+
+- Quản lý lịch hẹn:
+
+Check-in bệnh nhân
+
+Dời lịch, hủy lịch, đánh dấu no-show
+
+- Theo dõi báo cáo và nhật ký hệ thống (audit log).
 ---
 
 ## 5. Phạm vi chức năng (MVP đề xuất)
-### 5.1 Public booking
-- Booking Wizard 5 bước: **Chi nhánh → Khoa → Bác sĩ → Thời gian/Slot → Thông tin**
-- Sinh **mã lịch hẹn + QR**
-- Trạng thái lịch hẹn: Pending / Confirmed / Checked-in / In-progress / Completed / Cancelled / No-show
-- **PA1 – Tự xác nhận sẽ đến:** trong **15 phút** để giữ chỗ (Pending → Confirmed), quá hạn tự Cancelled
-- Tra cứu lịch hẹn bằng **SĐT + mã**
+### 5.1 Đặt lịch khám (Public Booking)
 
-### 5.2 Lễ tân
-- Danh sách lịch hẹn + lọc theo ngày/chi nhánh/khoa/bác sĩ/trạng thái
-- **PA4 – Check-in theo khung giờ:** cho phép check-in trong khoảng **(giờ hẹn - 15 phút) → (giờ hẹn + 10 phút)**
-- Dời lịch / hủy / no-show
-- Quản lý bệnh nhân (hành chính) + audit log
+- Booking Wizard 4 bước:
+Khoa → Bác sĩ → Thời gian/Slot → Thông tin bệnh nhân
+
+- Sinh mã lịch hẹn + QR
+
+- Trạng thái lịch hẹn:
+
+Pending
+
+Confirmed
+
+Checked-in
+
+In-progress
+
+Completed
+
+Cancelled
+
+No-show
+
+- PA1 – Tự xác nhận sẽ đến:
+
+Bệnh nhân phải xác nhận trong 15 phút
+
+Quá hạn → lịch hẹn tự động Cancelled
+
+- Tra cứu lịch hẹn bằng SĐT + mã lịch hẹn
+
+### 5.2 Quản lý lịch hẹn (Admin)
+
+- Danh sách lịch hẹn theo ngày / bác sĩ / trạng thái
+
+- Check-in theo khung giờ (PA4):
+
+Cho phép check-in trong khoảng:
+(Giờ hẹn - 15 phút) → (Giờ hẹn + 10 phút)
+
+- Dời lịch / hủy lịch / no-show
+
+- Chỉnh sửa thông tin hành chính bệnh nhân (có audit log)
 
 ### 5.3 Bác sĩ
-- Lịch của tôi (tabs Checked-in / In-progress / Completed)
-- Nhập kết quả khám (chẩn đoán, điều trị)
-- Đơn thuốc dạng dòng: **Tên thuốc – liều – số ngày**
 
-### 5.4 Patient Portal (“Sổ khám điện tử”)
-- Đăng ký/đăng nhập bằng **SĐT + mật khẩu** (không OTP)
-- Claim hồ sơ bằng **(Mã lịch hẹn + Họ tên)**
-- Xem lịch sử khám + chi tiết lượt khám + đơn thuốc
+- Xem Lịch khám 
+
+- Các trạng thái:
+
+Checked-in
+
+In-progress
+
+Completed
+
+- Nhập kết quả khám:
+
+Chẩn đoán
+
+Hướng điều trị
+
+- Nhập đơn thuốc:
+
+Tên thuốc – liều dùng – số ngày
+
+### 5.4 Patient Portal – “Sổ khám điện tử”
+
+- Đăng ký / đăng nhập bằng SĐT + mật khẩu
+
+- Claim hồ sơ bằng Mã lịch hẹn + Họ tên
+
+- Xem:
+
+Lịch sử khám bệnh
+
+Chi tiết từng lượt khám
+
+Đơn thuốc đã kê
 
 ---
 
@@ -66,10 +172,13 @@ Xây dựng một website đặt lịch khám **không cần tài khoản** cho 
 ---
 
 ## 7. Kế hoạch triển khai (tóm tắt)
-- Tuần 1–2: Setup repo, cấu trúc FE/BE, seed data, UI skeleton + routes  
-- Tuần 2–4: Catalog + Booking MVP + PA1 (confirm 15’)  
-- Tuần 4–6: Lễ tân (list + check-in PA4) + bác sĩ (visit + đơn thuốc)  
-- Tuần 6+: Patient Portal (claim + sổ khám) + audit log + reports
+- Tuần 1–2: Setup repository, cấu trúc FE/BE, seed data, UI cơ bản
+
+- Tuần 2–4: Chức năng đặt lịch + xác nhận lịch hẹn (PA1)
+
+- Tuần 4–6: Quản lý lịch hẹn (Admin) + chức năng bác sĩ
+
+- Tuần 6+: Patient Portal, audit log, báo cáo
 
 ---
 
