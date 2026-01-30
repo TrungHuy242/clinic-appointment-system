@@ -3,7 +3,8 @@
 ## 1. Thông tin chung
 - **Môn học:** Công nghệ phần mềm  
 - **Nhóm:** Người Nùng  
-- **Vai trò chịu trách nhiệm (Product Owner):** (Trương Minh Trung Huy)  
+- **Vai trò chịu trách nhiệm (Scrum Master (Nhóm trưởng)):** (Trương Minh Trung Huy)  
+- **(Product Owner):** (Trương Đình Bắc)
 - **Repository:** https://github.com/TrungHuy242/clinic-appointment-system  
 - **Stack dự kiến:** React (JS/HTML/CSS) + Django + PostgreSQL
 
