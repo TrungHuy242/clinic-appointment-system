@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="vi"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Màn hình Check-in PA4</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#13c8ec",
+                        "primary-content": "#ffffff",
+                        "background-light": "#f6f8f8",
+                        "background-dark": "#101f22",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#1a2c30",
+                        "border-light": "#e2e8f0",
+                        "border-dark": "#2d3748",
+                        "text-main": "#0f172a",
+                        "text-muted": "#64748b",
+                        "text-main-dark": "#f1f5f9",
+                        "text-muted-dark": "#94a3b8"
+                    },
+                    fontFamily: {
+                        display: ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #334155;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-text-main dark:text-text-main-dark antialiased transition-colors duration-200">
+<div class="relative flex min-h-screen w-full flex-row overflow-hidden">
+<aside class="w-64 flex-shrink-0 flex-col justify-between border-r border-border-light bg-surface-light dark:bg-surface-dark dark:border-border-dark hidden lg:flex">
+<div class="flex flex-col gap-6 p-4">
+<div class="flex items-center gap-3 px-2">
+<div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+<span class="material-symbols-outlined text-3xl">local_hospital</span>
+</div>
+<div class="flex flex-col">
+<h1 class="text-base font-bold leading-tight text-text-main dark:text-text-main-dark">Phòng Khám MediCare</h1>
+<p class="text-xs font-medium text-text-muted dark:text-text-muted-dark">Cổng Lễ Tân</p>
+</div>
+</div>
+<nav class="flex flex-col gap-1">
+<a class="flex items-center gap-3 rounded-lg px-3 py-2 text-text-muted hover:bg-slate-50 hover:text-primary dark:text-text-muted-dark dark:hover:bg-slate-800/50 dark:hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-sm font-medium">Tổng quan</span>
+</a>
+<a class="flex items-center gap-3 rounded-lg px-3 py-2 text-text-muted hover:bg-slate-50 hover:text-primary dark:text-text-muted-dark dark:hover:bg-slate-800/50 dark:hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">calendar_month</span>
+<span class="text-sm font-medium">Lịch hẹn</span>
+</a>
+<a class="flex items-center gap-3 rounded-lg bg-primary/10 px-3 py-2 text-primary dark:bg-primary/20" href="#">
+<span class="material-symbols-outlined fill-current">check_circle</span>
+<span class="text-sm font-bold">Check-in</span>
+</a>
+<a class="flex items-center gap-3 rounded-lg px-3 py-2 text-text-muted hover:bg-slate-50 hover:text-primary dark:text-text-muted-dark dark:hover:bg-slate-800/50 dark:hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="text-sm font-medium">Bệnh nhân</span>
+</a>
+<a class="flex items-center gap-3 rounded-lg px-3 py-2 text-text-muted hover:bg-slate-50 hover:text-primary dark:text-text-muted-dark dark:hover:bg-slate-800/50 dark:hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-sm font-medium">Cài đặt</span>
+</a>
+</nav>
+</div>
+<div class="p-4 border-t border-border-light dark:border-border-dark">
+<div class="flex items-center gap-3 rounded-lg p-2 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer">
+<div class="h-10 w-10 overflow-hidden rounded-full bg-slate-200">
+<img alt="Hồ sơ lễ tân" class="h-full w-full object-cover" data-alt="Chân dung lễ tân đang cười" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDlWVIGG5ALfodrJPx1mxt29kGH3U8O1yPGH3ULYoMuOhoXTK0PPC7jBHzHkgqPMdj2SrvVVnOF2ZRMTN-nY8M3-izVhSvl27fzgNKihZBAzB1_B7X7kvG8Y2DGH7R90TS3t0y-fg-7e48zl3BRMms0m89Srsz7NZ9mpknnEzgRX-tcNAQOVhzQfrXyKb31HeQJqmAtvDVnzTCDVGwQdGHZlCCPPVaRgZMvOiNmGSg2oMBSspnO58uL_nAyf0eM7sETkr68I5ZjnPAn"/>
+</div>
+<div class="flex flex-col">
+<p class="text-sm font-medium text-text-main dark:text-text-main-dark">Nguyễn Thị Hoa</p>
+<p class="text-xs text-text-muted dark:text-text-muted-dark">Quầy lễ tân</p>
+</div>
+</div>
+</div>
+</aside>
+<main class="flex flex-1 flex-col overflow-y-auto bg-background-light dark:bg-background-dark">
+<header class="flex h-16 items-center justify-between border-b border-border-light bg-surface-light px-6 dark:bg-surface-dark dark:border-border-dark lg:hidden">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">local_hospital</span>
+<span class="font-bold text-text-main dark:text-text-main-dark">MediCare</span>
+</div>
+<button class="text-text-main dark:text-text-main-dark">
+<span class="material-symbols-outlined">menu</span>
+</button>
+</header>
+<div class="container mx-auto max-w-7xl p-6 lg:p-10">
+<div class="mb-8 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+<div>
+<h1 class="text-3xl font-extrabold tracking-tight text-text-main dark:text-text-main-dark">Check-in Bệnh nhân</h1>
+<p class="mt-1 text-text-muted dark:text-text-muted-dark">Xác minh lịch hẹn và quản lý hàng đợi bệnh nhân.</p>
+</div>
+<div class="flex gap-3 mt-4 md:mt-0">
+<button class="flex items-center justify-center gap-2 rounded-lg border border-border-light bg-surface-light px-4 py-2.5 text-sm font-medium text-text-main shadow-sm transition-colors hover:bg-slate-50 dark:border-border-dark dark:bg-surface-dark dark:text-text-main-dark dark:hover:bg-slate-800">
+<span class="material-symbols-outlined text-lg">print</span>
+<span>In danh sách hôm nay</span>
+</button>
+</div>
+</div>
+<div class="mb-8 grid gap-6 lg:grid-cols-3">
+<div class="lg:col-span-2 space-y-6">
+<div class="rounded-2xl bg-surface-light p-6 shadow-sm border border-border-light dark:bg-surface-dark dark:border-border-dark">
+<h2 class="mb-4 text-lg font-bold text-text-main dark:text-text-main-dark">Tìm kiếm lịch hẹn bệnh nhân</h2>
+<div class="relative mb-6">
+<div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
+<span class="material-symbols-outlined text-text-muted dark:text-text-muted-dark">search</span>
+</div>
+<input class="block w-full rounded-xl border-border-light bg-slate-50 py-4 pl-12 pr-4 text-text-main placeholder-text-muted focus:border-primary focus:ring-primary dark:border-border-dark dark:bg-slate-900 dark:text-text-main-dark dark:placeholder-text-muted-dark" placeholder="Nhập Mã lịch hẹn hoặc Số điện thoại..." type="text"/>
+<button class="absolute inset-y-2 right-2 rounded-lg bg-primary px-4 text-sm font-medium text-white hover:bg-primary/90 transition-colors">Tìm kiếm</button>
+</div>
+<div class="rounded-xl border border-green-200 bg-green-50/50 p-5 dark:border-green-900/50 dark:bg-green-900/10 mb-4">
+<div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+<div class="flex gap-4">
+<div class="h-16 w-16 flex-shrink-0 overflow-hidden rounded-full bg-slate-200">
+<img alt="Bệnh nhân Sarah Jenkins" class="h-full w-full object-cover" data-alt="Chân dung bệnh nhân Sarah Jenkins" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCIRecCYdUbEK-D-u8BR0xhZsDfV0IozvTDqGyCCW7UzVVRPDmj72WeXuYwHuqBSsytAl2JtThAPYmhArkhk0S1SMGptD0auAoaIhtqcbXascrVBV8wpk8mT267QhWaziBmOJP88fIiUdpLDEENrJDWM-oWbwNuC0NARC-raDBmASC_qXG2JFNpoFUmYhAMV056nfTVL9nhMLuvPXWFtgIKWTgmNOvh_PjC9hII6BDE3ohdNg3S23eNCKQ30TF0ozZBWJft0OXtNean"/>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<h3 class="text-lg font-bold text-text-main dark:text-text-main-dark">Hoàng Thu Thảo</h3>
+<span class="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-700 dark:bg-slate-700 dark:text-slate-300">ID: P-90210</span>
+</div>
+<p class="text-sm text-text-muted dark:text-text-muted-dark">Hẹn lúc: <span class="font-medium text-text-main dark:text-text-main-dark">10:30 Sáng</span> với <span class="font-medium text-text-main dark:text-text-main-dark">BS. Minh</span></p>
+<p class="text-xs text-text-muted dark:text-text-muted-dark mt-1">Khám tổng quát</p>
+</div>
+</div>
+<div class="flex flex-col items-end gap-2">
+<span class="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-sm font-bold text-green-700 dark:bg-green-900/30 dark:text-green-400">
+<span class="mr-1.5 h-2 w-2 rounded-full bg-green-500"></span>
+                                        Hợp lệ
+                                    </span>
+<span class="text-xs text-green-700 dark:text-green-400 font-medium">Đúng giờ hẹn (±15p)</span>
+</div>
+</div>
+<div class="mt-4 p-3 bg-white dark:bg-surface-dark rounded-lg border border-green-100 dark:border-green-900/30">
+<div class="flex items-start gap-2">
+<span class="material-symbols-outlined text-green-600 text-sm mt-0.5">info</span>
+<p class="text-sm text-text-muted dark:text-text-muted-dark"><span class="font-bold text-green-700 dark:text-green-400">Hướng dẫn:</span> Bệnh nhân đã đến đúng giờ. Vui lòng xác nhận check-in và in số thứ tự để bệnh nhân vào phòng chờ.</p>
+</div>
+</div>
+<div class="mt-6 flex flex-wrap gap-3 pt-4 border-t border-green-200 dark:border-green-900/30">
+<button class="flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary/90 transition-all active:scale-[0.98]">
+<span class="material-symbols-outlined">check_circle</span>
+                                    Xác nhận Check-in
+                                </button>
+<button class="flex flex-1 items-center justify-center gap-2 rounded-lg border border-border-light bg-white px-4 py-2.5 text-sm font-semibold text-text-main shadow-sm hover:bg-slate-50 dark:border-border-dark dark:bg-surface-dark dark:text-text-main-dark dark:hover:bg-slate-800 transition-all active:scale-[0.98]">
+<span class="material-symbols-outlined">print</span>
+                                    In số thứ tự
+                                </button>
+</div>
+</div>
+<div class="rounded-xl border border-yellow-200 bg-yellow-50/50 p-5 dark:border-yellow-900/50 dark:bg-yellow-900/10 mb-4 hidden">
+<div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+<div class="flex gap-4">
+<div class="h-16 w-16 flex-shrink-0 overflow-hidden rounded-full bg-slate-200">
+<div class="h-full w-full flex items-center justify-center bg-primary/10 text-primary font-bold text-xl">LM</div>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<h3 class="text-lg font-bold text-text-main dark:text-text-main-dark">Lê Minh</h3>
+<span class="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-700 dark:bg-slate-700 dark:text-slate-300">ID: P-90222</span>
+</div>
+<p class="text-sm text-text-muted dark:text-text-muted-dark">Hẹn lúc: <span class="font-medium text-text-main dark:text-text-main-dark">11:30 Sáng</span></p>
+<p class="text-xs text-text-muted dark:text-text-muted-dark mt-1">Tư vấn dinh dưỡng</p>
+</div>
+</div>
+<div class="flex flex-col items-end gap-2">
+<span class="inline-flex items-center rounded-full bg-yellow-100 px-3 py-1 text-sm font-bold text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">
+<span class="mr-1.5 h-2 w-2 rounded-full bg-yellow-500"></span>
+                                        Đến sớm
+                                    </span>
+<span class="text-xs text-yellow-700 dark:text-yellow-400 font-medium">Sớm hơn 15p</span>
+</div>
+</div>
+<div class="mt-4 p-3 bg-white dark:bg-surface-dark rounded-lg border border-yellow-100 dark:border-yellow-900/30">
+<div class="flex items-start gap-2">
+<span class="material-symbols-outlined text-yellow-600 text-sm mt-0.5">info</span>
+<p class="text-sm text-text-muted dark:text-text-muted-dark"><span class="font-bold text-yellow-700 dark:text-yellow-400">Hướng dẫn:</span> Bệnh nhân đến quá sớm. Mời bệnh nhân ngồi chờ hoặc kiểm tra xem bác sĩ có thể tiếp nhận sớm không.</p>
+</div>
+</div>
+<div class="mt-6 flex flex-wrap gap-3 pt-4 border-t border-yellow-200 dark:border-yellow-900/30">
+<button class="flex flex-1 items-center justify-center gap-2 rounded-lg bg-yellow-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-yellow-700 transition-all active:scale-[0.98]">
+<span class="material-symbols-outlined">hourglass_empty</span>
+                                    Xếp vào hàng chờ
+                                </button>
+</div>
+</div>
+<div class="rounded-xl border border-red-200 bg-red-50/50 p-5 dark:border-red-900/50 dark:bg-red-900/10 hidden">
+<div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+<div class="flex gap-4">
+<div class="h-16 w-16 flex-shrink-0 overflow-hidden rounded-full bg-slate-200">
+<div class="h-full w-full flex items-center justify-center bg-slate-300 text-slate-600 font-bold text-xl">QT</div>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<h3 class="text-lg font-bold text-text-main dark:text-text-main-dark">Quốc Tuấn</h3>
+<span class="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-700 dark:bg-slate-700 dark:text-slate-300">ID: P-88210</span>
+</div>
+<p class="text-sm text-text-muted dark:text-text-muted-dark">Hẹn lúc: <span class="font-medium text-text-main dark:text-text-main-dark">09:00 Sáng</span></p>
+<p class="text-xs text-text-muted dark:text-text-muted-dark mt-1">Tái khám</p>
+</div>
+</div>
+<div class="flex flex-col items-end gap-2">
+<span class="inline-flex items-center rounded-full bg-red-100 px-3 py-1 text-sm font-bold text-red-700 dark:bg-red-900/30 dark:text-red-400">
+<span class="mr-1.5 h-2 w-2 rounded-full bg-red-500"></span>
+                                        Đến muộn/No-show
+                                    </span>
+<span class="text-xs text-red-700 dark:text-red-400 font-medium">Trễ quá 10p</span>
+</div>
+</div>
+<div class="mt-4 p-3 bg-white dark:bg-surface-dark rounded-lg border border-red-100 dark:border-red-900/30">
+<div class="flex items-start gap-2">
+<span class="material-symbols-outlined text-red-600 text-sm mt-0.5">warning</span>
+<p class="text-sm text-text-muted dark:text-text-muted-dark"><span class="font-bold text-red-700 dark:text-red-400">Hướng dẫn:</span> Lịch hẹn đã bị hủy do quá giờ. Vui lòng sắp xếp lịch hẹn mới hoặc liên hệ bác sĩ nếu có ngoại lệ.</p>
+</div>
+</div>
+<div class="mt-6 flex flex-wrap gap-3 pt-4 border-t border-red-200 dark:border-red-900/30">
+<button class="flex flex-1 items-center justify-center gap-2 rounded-lg bg-white border border-red-200 text-red-600 px-4 py-2.5 text-sm font-semibold shadow-sm hover:bg-red-50 transition-all active:scale-[0.98]">
+<span class="material-symbols-outlined">event_repeat</span>
+                                    Đặt lại lịch hẹn
+                                </button>
+</div>
+</div>
+</div>
+</div>
+<div class="lg:col-span-1 rounded-2xl bg-surface-light p-6 shadow-sm border border-border-light dark:bg-surface-dark dark:border-border-dark flex flex-col h-full">
+<div class="mb-4 flex items-center justify-between">
+<h2 class="text-lg font-bold text-text-main dark:text-text-main-dark">Trạng thái hàng đợi</h2>
+<span class="material-symbols-outlined text-text-muted dark:text-text-muted-dark">bar_chart</span>
+</div>
+<div class="grid grid-cols-2 gap-3 mb-6">
+<div class="rounded-xl bg-primary/5 p-4 text-center dark:bg-primary/10">
+<p class="text-3xl font-extrabold text-primary">12</p>
+<p class="text-xs font-medium text-text-muted dark:text-text-muted-dark">Đang đợi</p>
+</div>
+<div class="rounded-xl bg-green-50 p-4 text-center dark:bg-green-900/10">
+<p class="text-3xl font-extrabold text-green-600 dark:text-green-400">04</p>
+<p class="text-xs font-medium text-text-muted dark:text-text-muted-dark">Đang khám</p>
+</div>
+</div>
+<div class="mt-auto rounded-xl bg-slate-50 p-4 border border-slate-100 dark:bg-slate-900/50 dark:border-slate-800">
+<div class="flex items-center gap-3">
+<div class="flex h-10 w-10 items-center justify-center rounded-full bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400">
+<span class="material-symbols-outlined">warning</span>
+</div>
+<div class="flex-1">
+<p class="text-sm font-medium text-text-main dark:text-text-main-dark">Khung giờ cao điểm</p>
+<p class="text-xs text-text-muted dark:text-text-muted-dark">11:00 Sáng - 12:00 Chiều</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="rounded-2xl bg-surface-light shadow-sm border border-border-light dark:bg-surface-dark dark:border-border-dark overflow-hidden">
+<div class="flex items-center justify-between border-b border-border-light px-6 py-4 dark:border-border-dark">
+<h2 class="text-lg font-bold text-text-main dark:text-text-main-dark">Bệnh nhân vừa check-in</h2>
+<div class="flex gap-2">
+<span class="rounded-lg bg-slate-100 px-3 py-1 text-xs font-medium text-text-muted dark:bg-slate-800 dark:text-text-muted-dark">Sắp xếp: Giờ đến</span>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left text-sm">
+<thead class="bg-slate-50 text-text-muted dark:bg-slate-800/50 dark:text-text-muted-dark">
+<tr>
+<th class="px-6 py-4 font-semibold">Tên bệnh nhân</th>
+<th class="px-6 py-4 font-semibold">Bác sĩ</th>
+<th class="px-6 py-4 font-semibold">Giờ hẹn</th>
+<th class="px-6 py-4 font-semibold">Trạng thái Check-in</th>
+<th class="px-6 py-4 font-semibold">STT</th>
+<th class="px-6 py-4 font-semibold text-right">Thao tác</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-light dark:divide-border-dark">
+<tr class="group hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="h-9 w-9 rounded-full bg-slate-200">
+<img alt="Bệnh nhân Trần Văn Bảo" class="h-full w-full rounded-full object-cover" data-alt="Chân dung bệnh nhân Trần Văn Bảo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD-WBFWHrQHwcI0Scpmwv7vnBxQwQkuZLCw-J1bbTMkkLHPpzrOpqcO07sAbIF2xyjo2FyxomMdnLCSSRwoVKEqSWLNSgyZim4mJ5rbwGVi0BIAbpKUOmsv1MuZg1t8PZkHY6ZIS3R28Oo1kqVPdF42sEmfWVx4jAn75TpABoD9e8AyqQrYRqfw7CIIt2kcXqstP4cWkA1Xe-hoNWNlapREbGZ1SnfqfbNMOcWWDj8dmXesPo_K750TSDRtZtMT0WCyLqoS39YiZ0xf"/>
+</div>
+<div class="font-medium text-text-main dark:text-text-main-dark">Trần Văn Bảo</div>
+</div>
+</td>
+<td class="px-6 py-4 text-text-muted dark:text-text-muted-dark">BS. Lê Thị Mai</td>
+<td class="px-6 py-4 text-text-main dark:text-text-main-dark">10:00 Sáng</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-400">
+<span class="mr-1.5 h-1.5 w-1.5 rounded-full bg-green-500"></span>
+                                    Hợp lệ
+                                </span>
+</td>
+<td class="px-6 py-4 font-mono text-text-main dark:text-text-main-dark">A-012</td>
+<td class="px-6 py-4 text-right">
+<button class="text-text-muted hover:text-primary dark:text-text-muted-dark dark:hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+<tr class="group hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                                        AL
+                                    </div>
+<div class="font-medium text-text-main dark:text-text-main-dark">Phạm Thị Lan</div>
+</div>
+</td>
+<td class="px-6 py-4 text-text-muted dark:text-text-muted-dark">BS. Minh</td>
+<td class="px-6 py-4 text-text-main dark:text-text-main-dark">11:30 Sáng</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
+<span class="mr-1.5 h-1.5 w-1.5 rounded-full bg-yellow-500"></span>
+                                    Đến sớm
+                                </span>
+</td>
+<td class="px-6 py-4 font-mono text-text-main dark:text-text-main-dark">B-005</td>
+<td class="px-6 py-4 text-right">
+<button class="text-text-muted hover:text-primary dark:text-text-muted-dark dark:hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+<tr class="group hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="h-9 w-9 rounded-full bg-slate-200">
+<img alt="Bệnh nhân Nguyễn Quốc Tuấn" class="h-full w-full rounded-full object-cover" data-alt="Chân dung bệnh nhân Nguyễn Quốc Tuấn" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA3-KWF6l0-5SXmwOj_7mHgeRioux-wZB9qteb6LNnClua48SPFKL07dejaVSgxdYnyV_-4y2i8X_T_RQwmU1UiuI4r_8ZTjqFdrWD7koZ2g4cKBcRcBc9p2DeBDP1RPc5-SWgQxuk42jx2B69bDSiKWQYVmaS80WWzflsV6CVlLiim2lJkOrouTLRTsmD8ezmL-Pf3tJcYtUjbpw_sDIJHWAr8CLa0cXXvGYYDBZxW-IktaBpTSKEmDEO0pViUaCfilnKUlvLg81nR"/>
+</div>
+<div class="font-medium text-text-main dark:text-text-main-dark">Nguyễn Quốc Tuấn</div>
+</div>
+</td>
+<td class="px-6 py-4 text-text-muted dark:text-text-muted-dark">BS. Lê Thị Mai</td>
+<td class="px-6 py-4 text-text-main dark:text-text-main-dark">09:45 Sáng</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800 dark:bg-red-900/30 dark:text-red-400">
+<span class="mr-1.5 h-1.5 w-1.5 rounded-full bg-red-500"></span>
+                                    Đến muộn/No-show
+                                </span>
+</td>
+<td class="px-6 py-4 font-mono text-text-main dark:text-text-main-dark">A-010</td>
+<td class="px-6 py-4 text-right">
+<button class="text-text-muted hover:text-primary dark:text-text-muted-dark dark:hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+<tr class="group hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="h-9 w-9 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-bold">
+                                        KM
+                                    </div>
+<div class="font-medium text-text-main dark:text-text-main-dark">Vũ Thị Kiều</div>
+</div>
+</td>
+<td class="px-6 py-4 text-text-muted dark:text-text-muted-dark">BS. Phạm</td>
+<td class="px-6 py-4 text-text-main dark:text-text-main-dark">10:15 Sáng</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-400">
+<span class="mr-1.5 h-1.5 w-1.5 rounded-full bg-green-500"></span>
+                                    Hợp lệ
+                                </span>
+</td>
+<td class="px-6 py-4 font-mono text-text-main dark:text-text-main-dark">C-022</td>
+<td class="px-6 py-4 text-right">
+<button class="text-text-muted hover:text-primary dark:text-text-muted-dark dark:hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="flex items-center justify-between border-t border-border-light px-6 py-4 dark:border-border-dark">
+<p class="text-sm text-text-muted dark:text-text-muted-dark">Hiển thị <span class="font-medium text-text-main dark:text-text-main-dark">4</span> trên <span class="font-medium text-text-main dark:text-text-main-dark">12</span> bệnh nhân đang đợi</p>
+<div class="flex gap-2">
+<button class="flex items-center justify-center rounded-lg border border-border-light px-3 py-1.5 text-sm text-text-muted hover:bg-slate-50 dark:border-border-dark dark:text-text-muted-dark dark:hover:bg-slate-800 disabled:opacity-50" disabled="">
+                            Trước
+                        </button>
+<button class="flex items-center justify-center rounded-lg border border-border-light px-3 py-1.5 text-sm text-text-muted hover:bg-slate-50 dark:border-border-dark dark:text-text-muted-dark dark:hover:bg-slate-800">
+                            Tiếp
+                        </button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+
+</body></html>

@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="vi"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MediCare Admin - Quản lý Bác sĩ &amp; Lịch làm việc</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+            extend: {
+                colors: {
+                "primary": "#13c8ec",
+                "background-light": "#f6f8f8",
+                "background-dark": "#101f22",
+                "success": "#22c55e",
+                },
+                fontFamily: {
+                "display": ["Manrope", "sans-serif"]
+                },
+                borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+            },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings:
+            'FILL' 0,
+            'wght' 400,
+            'GRAD' 0,
+            'opsz' 24
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display min-h-screen flex flex-col">
+<div class="fixed bottom-5 right-5 z-[60] flex items-center gap-3 px-4 py-3 bg-white dark:bg-[#1a2c30] border-l-4 border-success rounded shadow-lg animate-bounce-in">
+<span class="material-symbols-outlined text-success">check_circle</span>
+<div>
+<h4 class="text-sm font-bold text-slate-900 dark:text-white">Thành công</h4>
+<p class="text-xs text-slate-500 dark:text-slate-400">Cập nhật dữ liệu hệ thống thành công.</p>
+</div>
+<button class="ml-4 text-slate-400 hover:text-slate-600">
+<span class="material-symbols-outlined text-sm">close</span>
+</button>
+</div>
+<div class="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden">
+<header class="sticky top-0 z-50 flex items-center justify-between whitespace-nowrap border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#15272b] px-6 py-3 shadow-sm">
+<div class="flex items-center gap-4 text-slate-900 dark:text-slate-100">
+<div class="size-8 text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-3xl">admin_panel_settings</span>
+</div>
+<div>
+<h2 class="text-slate-900 dark:text-white text-lg font-bold leading-tight">MediCare Admin</h2>
+<p class="text-slate-500 dark:text-slate-400 text-xs">Quản trị hệ thống</p>
+</div>
+</div>
+<div class="flex flex-1 justify-end gap-6 items-center">
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-slate-700 dark:text-slate-300 hover:text-primary font-medium text-sm transition-colors" href="#">Tổng quan</a>
+<a class="text-primary font-bold text-sm transition-colors" href="#">Bác sĩ &amp; Lịch</a>
+<a class="text-slate-700 dark:text-slate-300 hover:text-primary font-medium text-sm transition-colors" href="#">Bệnh nhân</a>
+<a class="text-slate-700 dark:text-slate-300 hover:text-primary font-medium text-sm transition-colors" href="#">Báo cáo</a>
+</nav>
+<div class="h-8 w-px bg-slate-200 dark:bg-slate-700 mx-2"></div>
+<div class="flex items-center gap-3">
+<button class="relative p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-1.5 right-1.5 size-2 bg-red-500 rounded-full border border-white dark:border-[#15272b]"></span>
+</button>
+<div class="size-9 rounded-full bg-slate-200 overflow-hidden border border-slate-300">
+<img alt="Admin Avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB3s_wiQeEtWg69g-ka6t3djvxpYx0RA4q4fpSfqW0CfAbqxR0G2Yx0Gpsjiv8eEE8mB21Vgd5j3GWd0dW3XXV1d80YAeqfuEFFkN_GHGt2KVRSi_dFpQTcz-sV1emoKRRv7r3r2ghYJOjluU5Vsju5rCzPUTDmR6_ZAPU8ie__xiHNSwRznzvVeeot3wJreJjhe7I_6SqYLQBGgk089YwN08GkMB_xymHNaf2FNXf2pKR5oVhyCdRoD2tdopcMCD_v-A-xRWblDmkV"/>
+</div>
+</div>
+</div>
+</header>
+<main class="flex-1 w-full bg-slate-50 dark:bg-[#0f1d20] p-4 md:p-8">
+<div class="max-w-7xl mx-auto flex flex-col gap-8">
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div>
+<h1 class="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">Quản lý Bác sĩ &amp; Lịch làm việc</h1>
+<p class="text-slate-500 dark:text-slate-400 mt-1">Quản lý danh sách bác sĩ, chuyên khoa và cấu hình khung giờ khám (Slot 25 phút).</p>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-[#1a2c30] border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm">
+<span class="material-symbols-outlined text-sm">filter_list</span>
+                            Lọc danh sách
+                        </button>
+<button class="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-cyan-400 text-slate-900 rounded-lg font-bold shadow-md shadow-primary/20 transition-all">
+<span class="material-symbols-outlined text-sm">add</span>
+                            Thêm bác sĩ mới
+                        </button>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+<div class="lg:col-span-4 flex flex-col gap-4">
+<div class="bg-white dark:bg-[#1a2c30] rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col h-[calc(100vh-240px)] sticky top-24">
+<div class="p-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-[#15272b]/50">
+<div class="relative">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 material-symbols-outlined text-[20px]">search</span>
+<input class="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-[#101f22] border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent text-slate-900 dark:text-white shadow-sm" placeholder="Tìm tên bác sĩ, chuyên khoa..." type="text"/>
+</div>
+<div class="flex gap-2 mt-3 overflow-x-auto scrollbar-hide pb-1">
+<button class="px-3 py-1 bg-primary text-slate-900 rounded-full text-xs font-bold whitespace-nowrap">Tất cả</button>
+<button class="px-3 py-1 bg-white dark:bg-[#101f22] border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 rounded-full text-xs font-medium hover:border-primary whitespace-nowrap">Nhi khoa</button>
+<button class="px-3 py-1 bg-white dark:bg-[#101f22] border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 rounded-full text-xs font-medium hover:border-primary whitespace-nowrap">Da liễu</button>
+<button class="px-3 py-1 bg-white dark:bg-[#101f22] border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 rounded-full text-xs font-medium hover:border-primary whitespace-nowrap">Tai Mũi Họng</button>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto p-2 space-y-2">
+<div class="p-3 rounded-lg bg-primary/10 border border-primary/30 cursor-pointer flex gap-3 items-center">
+<div class="relative">
+<div class="size-12 rounded-full bg-cover bg-center border-2 border-primary" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBBu457gxLd4hOagPCcYZ9epSpVFQ3Dnm2TAlXH-4Q6qNXaT6IdRjYPWpoBPIFjefe12EQmIILcg1zXicD_OLwJfQDshCjxBWa3HoAeUZJjp074vF4vuA5yWNNmzyvUKTT5MKW-8fweLl91qKHa8Askqrorw3IzyU446-6iRdAD5a04myaETaYQ-k6_6eDrp7DaYm60tnf8dhR1sw1EX8Urfpbk1hVUwaR6a8fdhu3IkN9zGZClIiXKMWcHDAt_DuTLzi9Pce_f4M64");'></div>
+<div class="absolute bottom-0 right-0 size-3 bg-green-500 rounded-full border-2 border-white"></div>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="text-sm font-bold text-slate-900 dark:text-white truncate">BS. Nguyễn Thị Sarah</h3>
+<p class="text-xs text-primary font-medium">Nhi khoa • Chi nhánh Hải Châu</p>
+</div>
+<span class="material-symbols-outlined text-primary text-lg">chevron_right</span>
+</div>
+<div class="p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 cursor-pointer flex gap-3 items-center transition-colors">
+<div class="relative">
+<div class="size-12 rounded-full bg-cover bg-center border border-slate-200 dark:border-slate-600" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCaEirNUoZvRTdYIgs27qHbShuKFEqFvh5X8dm2VDPETgZnHgMnwgHb-zmGq5i-yoQa7iCc-9FGqgTHlcIYIgdDSm0_PZGXJ68aGbmUdTkSrmwicKyRbc4dGdMFId6qq-BBxjtzbotrXBdrEusTpeebmMynl_U8fmlz3JYJR8q4HlKZ2Ny92Zf8A12mHPnonQ-vF2y76MiGVkrF-nk-A1txnNqiEfYlgHh0HGQJxdmLNeCPqCiHdpoPoJH3SV7fTjzamum6UUucuf6K");'></div>
+<div class="absolute bottom-0 right-0 size-3 bg-slate-300 rounded-full border-2 border-white"></div>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="text-sm font-bold text-slate-900 dark:text-white truncate">BS. Nguyễn Văn A</h3>
+<p class="text-xs text-slate-500 dark:text-slate-400">Da liễu • Chi nhánh Thanh Khê</p>
+</div>
+</div>
+<div class="p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 cursor-pointer flex gap-3 items-center transition-colors">
+<div class="relative">
+<div class="size-12 rounded-full bg-cover bg-center border border-slate-200 dark:border-slate-600" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBEOgb69GeuxInTLZM5J6_rEQp0VY9j93AZSiEqnvEXO0Cbyi3aENOhfeBFiKS1tTPtGrNi0Rnl_ZkgMkKTJ3aYj5MnrStOFYKTcjQekEUCvUj55prkOhRsKZfGpzZe_9gdZwfqIqORBdvPXGcSl9PC7Y9bOcpGYnoByFwOWStmuqJBgoMD9t_vctrCvQR8g9WEFVxtElLJZ3pSD9XAO38O9Wf9sdO0CvQD-sF8pQEzsl7ol4aTc4-OzAsc-YueUkqbyg5vu9Byxbfx");'></div>
+<div class="absolute bottom-0 right-0 size-3 bg-green-500 rounded-full border-2 border-white"></div>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="text-sm font-bold text-slate-900 dark:text-white truncate">BS. Trần Ngọc Emily</h3>
+<p class="text-xs text-slate-500 dark:text-slate-400">Nhi khoa • Chi nhánh Hải Châu</p>
+</div>
+</div>
+<div class="p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 cursor-pointer flex gap-3 items-center transition-colors">
+<div class="relative">
+<div class="size-12 rounded-full bg-slate-200 flex items-center justify-center text-slate-400 font-bold border border-slate-300 dark:border-slate-600">LP</div>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="text-sm font-bold text-slate-900 dark:text-white truncate">BS. Lê Phương</h3>
+<p class="text-xs text-slate-500 dark:text-slate-400">Tai Mũi Họng • Chi nhánh Hải Châu</p>
+</div>
+</div>
+</div>
+<div class="p-3 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#15272b] text-center">
+<span class="text-xs text-slate-400 font-medium">Hiển thị 4 / 28 bác sĩ</span>
+</div>
+</div>
+</div>
+<div class="lg:col-span-8 flex flex-col gap-6">
+<div class="bg-white dark:bg-[#1a2c30] rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 relative overflow-hidden">
+<div class="absolute top-0 right-0 p-4">
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">edit_square</span>
+</button>
+</div>
+<div class="flex flex-col md:flex-row gap-6 items-start">
+<div class="size-24 md:size-32 rounded-xl bg-cover bg-center border-4 border-slate-50 dark:border-slate-700 shadow-md" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBBu457gxLd4hOagPCcYZ9epSpVFQ3Dnm2TAlXH-4Q6qNXaT6IdRjYPWpoBPIFjefe12EQmIILcg1zXicD_OLwJfQDshCjxBWa3HoAeUZJjp074vF4vuA5yWNNmzyvUKTT5MKW-8fweLl91qKHa8Askqrorw3IzyU446-6iRdAD5a04myaETaYQ-k6_6eDrp7DaYm60tnf8dhR1sw1EX8Urfpbk1hVUwaR6a8fdhu3IkN9zGZClIiXKMWcHDAt_DuTLzi9Pce_f4M64");'></div>
+<div class="flex-1">
+<div class="flex items-center gap-3 mb-1">
+<h2 class="text-2xl font-bold text-slate-900 dark:text-white">BS. Nguyễn Thị Sarah</h2>
+<span class="px-2 py-0.5 bg-green-100 text-green-700 border border-green-200 rounded text-xs font-bold uppercase">Đang hoạt động</span>
+</div>
+<div class="flex flex-wrap gap-y-2 gap-x-6 text-sm text-slate-500 dark:text-slate-400 mb-4">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[18px]">stethoscope</span> Nhi khoa</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[18px]">apartment</span> CN Hải Châu</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[18px]">schedule</span> Slot: 25 phút</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[18px]">star</span> 4.9/5.0</span>
+</div>
+<div class="h-px bg-slate-100 dark:bg-slate-700 my-3"></div>
+<div class="grid grid-cols-3 gap-4 text-center">
+<div>
+<p class="text-xs text-slate-400 uppercase font-bold tracking-wider">Lịch hẹn hôm nay</p>
+<p class="text-xl font-black text-slate-900 dark:text-white">12</p>
+</div>
+<div>
+<p class="text-xs text-slate-400 uppercase font-bold tracking-wider">Tổng lượt khám</p>
+<p class="text-xl font-black text-slate-900 dark:text-white">1,240</p>
+</div>
+<div>
+<p class="text-xs text-slate-400 uppercase font-bold tracking-wider">Đánh giá</p>
+<p class="text-xl font-black text-slate-900 dark:text-white">98%</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-white dark:bg-[#1a2c30] rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col flex-1">
+<div class="p-5 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+<div class="flex items-center gap-2">
+<h3 class="text-lg font-bold text-slate-900 dark:text-white">Quản lý Khung giờ (Slot Management)</h3>
+<span class="material-symbols-outlined text-slate-400 text-sm" title="Mỗi slot mặc định 25 phút">info</span>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex items-center bg-slate-100 dark:bg-[#101f22] rounded-lg p-1">
+<button class="p-1 hover:bg-white dark:hover:bg-slate-700 rounded shadow-sm text-slate-500 hover:text-primary transition-all">
+<span class="material-symbols-outlined text-[20px]">chevron_left</span>
+</button>
+<span class="px-3 text-sm font-bold text-slate-900 dark:text-white">Thứ Hai, 24/06/2024</span>
+<button class="p-1 hover:bg-white dark:hover:bg-slate-700 rounded shadow-sm text-slate-500 hover:text-primary transition-all">
+<span class="material-symbols-outlined text-[20px]">chevron_right</span>
+</button>
+</div>
+<button class="text-sm font-bold text-primary hover:underline">Đặt lại</button>
+</div>
+</div>
+<div class="p-6">
+<div class="flex gap-4 mb-6">
+<div class="flex items-center gap-2">
+<span class="size-3 rounded-full bg-white border border-slate-300"></span>
+<span class="text-xs text-slate-500">Trống</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="size-3 rounded-full bg-blue-100 border border-blue-300"></span>
+<span class="text-xs text-slate-500">Đã đặt</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="size-3 rounded-full bg-slate-100 border border-slate-300 pattern-diagonal-lines"></span>
+<span class="text-xs text-slate-500">Nghỉ</span>
+</div>
+</div>
+<div class="mb-6">
+<h4 class="text-sm font-bold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+<span class="material-symbols-outlined text-amber-500 text-[18px]">wb_sunny</span>
+                                        Buổi Sáng (08:00 - 12:00)
+                                    </h4>
+<div class="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
+<button class="group relative px-2 py-2 rounded border border-slate-200 bg-white hover:border-primary hover:text-primary text-slate-600 text-sm font-medium transition-all text-center">
+                                            08:00
+                                            <div class="absolute -top-1.5 -right-1.5 hidden group-hover:flex size-4 bg-red-500 text-white rounded-full items-center justify-center cursor-pointer shadow-sm z-10">
+<span class="material-symbols-outlined text-[10px]">close</span>
+</div>
+</button>
+<button class="group relative px-2 py-2 rounded border border-blue-200 bg-blue-50 text-blue-700 text-sm font-medium transition-all text-center">
+                                            08:25
+                                            <span class="absolute top-0 right-0 size-2 bg-blue-500 rounded-full -translate-y-1/2 translate-x-1/2"></span>
+</button>
+<button class="group relative px-2 py-2 rounded border border-slate-200 bg-white hover:border-primary hover:text-primary text-slate-600 text-sm font-medium transition-all text-center">
+                                            08:50
+                                        </button>
+<button class="group relative px-2 py-2 rounded border border-slate-200 bg-white hover:border-primary hover:text-primary text-slate-600 text-sm font-medium transition-all text-center">
+                                            09:15
+                                        </button>
+<button class="group relative px-2 py-2 rounded border border-slate-200 bg-slate-100 text-slate-400 text-sm font-medium transition-all text-center cursor-not-allowed opacity-60">
+                                            09:40
+                                        </button>
+<button class="group relative px-2 py-2 rounded border border-slate-200 bg-white hover:border-primary hover:text-primary text-slate-600 text-sm font-medium transition-all text-center">
+                                            10:05
+                                        </button>
+<button class="group relative px-2 py-2 rounded border border-slate-200 bg-white hover:border-primary hover:text-primary text-slate-600 text-sm font-medium transition-all text-center">
+                                            10:30
+                                        </button>
+<button class="group relative px-2 py-2 rounded border border-dashed border-slate-300 text-slate-400 hover:border-primary hover:text-primary text-sm font-medium transition-all text-center flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">add</span>
+</button>
+</div>
+</div>
+<div>
+<h4 class="text-sm font-bold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+<span class="material-symbols-outlined text-orange-400 text-[18px]">partly_cloudy_day</span>
+                                        Buổi Chiều (13:30 - 17:30)
+                                    </h4>
+<div class="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
+<button class="group relative px-2 py-2 rounded border border-blue-200 bg-blue-50 text-blue-700 text-sm font-medium transition-all text-center">
+                                            13:30
+                                            <span class="absolute top-0 right-0 size-2 bg-blue-500 rounded-full -translate-y-1/2 translate-x-1/2"></span>
+</button>
+<button class="group relative px-2 py-2 rounded border border-blue-200 bg-blue-50 text-blue-700 text-sm font-medium transition-all text-center">
+                                            13:55
+                                            <span class="absolute top-0 right-0 size-2 bg-blue-500 rounded-full -translate-y-1/2 translate-x-1/2"></span>
+</button>
+<button class="group relative px-2 py-2 rounded border border-slate-200 bg-white hover:border-primary hover:text-primary text-slate-600 text-sm font-medium transition-all text-center">
+                                            14:20
+                                        </button>
+<button class="group relative px-2 py-2 rounded border border-slate-200 bg-white hover:border-primary hover:text-primary text-slate-600 text-sm font-medium transition-all text-center">
+                                            14:45
+                                        </button>
+<button class="group relative px-2 py-2 rounded border border-slate-200 bg-white hover:border-primary hover:text-primary text-slate-600 text-sm font-medium transition-all text-center">
+                                            15:10
+                                        </button>
+<button class="group relative px-2 py-2 rounded border border-slate-200 bg-white hover:border-primary hover:text-primary text-slate-600 text-sm font-medium transition-all text-center">
+                                            15:35
+                                        </button>
+<button class="group relative px-2 py-2 rounded border border-dashed border-slate-300 text-slate-400 hover:border-primary hover:text-primary text-sm font-medium transition-all text-center flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">add</span>
+</button>
+</div>
+</div>
+<div class="mt-8 flex justify-end gap-3 pt-6 border-t border-slate-200 dark:border-slate-700">
+<button class="px-6 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">Hủy bỏ</button>
+<button class="px-6 py-2.5 rounded-lg bg-primary hover:bg-cyan-400 text-slate-900 font-bold shadow-lg shadow-primary/25 transition-all">Lưu thay đổi</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<div aria-labelledby="modal-title" aria-modal="true" class="fixed inset-0 z-[100] hidden overflow-y-auto" role="dialog">
+<div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+<div aria-hidden="true" class="fixed inset-0 bg-slate-900 bg-opacity-75 transition-opacity"></div>
+<span aria-hidden="true" class="hidden sm:inline-block sm:align-middle sm:h-screen">​</span>
+<div class="inline-block align-bottom bg-white dark:bg-[#1a2c30] rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
+<div class="bg-white dark:bg-[#1a2c30] px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+<div class="sm:flex sm:items-start">
+<div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-primary/10 sm:mx-0 sm:h-10 sm:w-10">
+<span class="material-symbols-outlined text-primary">person_add</span>
+</div>
+<div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+<h3 class="text-lg leading-6 font-bold text-slate-900 dark:text-white" id="modal-title">Thêm Bác sĩ Mới</h3>
+<div class="mt-4 flex flex-col gap-4">
+<div class="flex items-center gap-4">
+<div class="h-16 w-16 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-400 border border-dashed border-slate-300 dark:border-slate-500 cursor-pointer hover:border-primary hover:text-primary transition-all">
+<span class="material-symbols-outlined">add_a_photo</span>
+</div>
+<div class="text-sm text-slate-500">
+<p class="font-bold text-slate-700 dark:text-slate-300">Ảnh đại diện</p>
+<p>JPG, PNG tối đa 2MB</p>
+</div>
+</div>
+<div>
+<label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Họ và tên bác sĩ</label>
+<input class="w-full rounded-lg border-slate-300 dark:border-slate-600 bg-white dark:bg-[#101f22] text-slate-900 dark:text-white focus:ring-primary focus:border-primary sm:text-sm" placeholder="VD: Nguyễn Văn A" type="text"/>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div>
+<label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Chuyên khoa</label>
+<select class="w-full rounded-lg border-slate-300 dark:border-slate-600 bg-white dark:bg-[#101f22] text-slate-900 dark:text-white focus:ring-primary focus:border-primary sm:text-sm">
+<option>Nhi khoa</option>
+<option>Da liễu</option>
+<option>Tai Mũi Họng</option>
+<option>Nha khoa</option>
+</select>
+</div>
+<div>
+<label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Chi nhánh</label>
+<select class="w-full rounded-lg border-slate-300 dark:border-slate-600 bg-white dark:bg-[#101f22] text-slate-900 dark:text-white focus:ring-primary focus:border-primary sm:text-sm">
+<option>Hải Châu</option>
+<option>Thanh Khê</option>
+</select>
+</div>
+</div>
+<div class="bg-slate-50 dark:bg-[#101f22] p-3 rounded-lg border border-slate-200 dark:border-slate-700">
+<div class="flex items-center justify-between">
+<label class="text-sm font-bold text-slate-700 dark:text-slate-300">Thời lượng Slot mặc định</label>
+<div class="flex items-center gap-2">
+<input class="w-16 rounded border-slate-300 dark:border-slate-600 text-center text-sm font-bold focus:ring-primary focus:border-primary" disabled="" type="number" value="25"/>
+<span class="text-sm text-slate-500">phút</span>
+</div>
+</div>
+<p class="text-xs text-slate-500 mt-2">Hệ thống sẽ tự động chia khung giờ làm việc dựa trên thời lượng này.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-slate-50 dark:bg-[#15272b] px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-2">
+<button class="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-primary text-base font-bold text-slate-900 hover:bg-cyan-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary sm:ml-3 sm:w-auto sm:text-sm" type="button">
+                        Thêm mới
+                    </button>
+<button class="mt-3 w-full inline-flex justify-center rounded-lg border border-slate-300 dark:border-slate-600 shadow-sm px-4 py-2 bg-white dark:bg-[#1a2c30] text-base font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm" type="button">
+                        Hủy
+                    </button>
+</div>
+</div>
+</div>
+</div>
+
+</body></html>

@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+
+<html lang="vi"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Hồ sơ chi tiết Bác sĩ - MediCare Clinic</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13c8ec",
+                        "primary-content": "#085767",
+                        "background-light": "#f6f8f8",
+                        "background-dark": "#101f22",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#182d32",
+                        "text-main": "#0d191b",
+                        "text-secondary": "#4c8d9a",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display min-h-screen flex flex-col">
+<!-- Top Navigation Bar -->
+<div class="w-full bg-surface-light dark:bg-surface-dark border-b border-slate-200 dark:border-slate-800 sticky top-0 z-50">
+<div class="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
+<header class="flex items-center justify-between h-20">
+<!-- Logo & Brand -->
+<div class="flex items-center gap-8">
+<a class="flex items-center gap-3 text-text-main dark:text-white group" href="#">
+<div class="size-8 bg-primary/20 rounded-lg flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors duration-300">
+<span class="material-symbols-outlined">local_hospital</span>
+</div>
+<h2 class="text-xl font-extrabold tracking-tight">MediCare Clinic</h2>
+</a>
+<!-- Desktop Menu -->
+<nav class="hidden md:flex items-center gap-8 ml-4">
+<a class="text-slate-600 dark:text-slate-300 hover:text-primary font-semibold text-sm transition-colors" href="#">Trang chủ</a>
+<a class="text-slate-600 dark:text-slate-300 hover:text-primary font-semibold text-sm transition-colors" href="#">Chuyên khoa</a>
+<a class="text-slate-600 dark:text-slate-300 hover:text-primary font-semibold text-sm transition-colors" href="#">Bác sĩ</a>
+<a class="text-slate-600 dark:text-slate-300 hover:text-primary font-semibold text-sm transition-colors" href="#">Giới thiệu</a>
+</nav>
+</div>
+<!-- Right Actions -->
+<div class="flex items-center gap-4">
+<!-- Search Bar -->
+<div class="hidden lg:flex items-center bg-background-light dark:bg-background-dark rounded-full px-4 py-2 w-64 border border-transparent focus-within:border-primary/50 transition-all">
+<span class="material-symbols-outlined text-slate-400">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-full text-slate-700 dark:text-slate-200 placeholder-slate-400" placeholder="Tìm kiếm..." type="text"/>
+</div>
+<button class="bg-primary hover:bg-primary/90 text-white font-bold py-2.5 px-5 rounded-full text-sm shadow-lg shadow-primary/30 transition-all transform hover:scale-105 active:scale-95 flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px]">calendar_month</span>
+<span>Đặt lịch khám</span>
+</button>
+</div>
+</header>
+</div>
+</div>
+<!-- Main Content -->
+<main class="flex-grow">
+<!-- Breadcrumb -->
+<div class="bg-surface-light dark:bg-surface-dark border-b border-slate-100 dark:border-slate-800/50">
+<div class="max-w-[960px] mx-auto px-4 py-3">
+<div class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+<a class="hover:text-primary" href="#">Trang chủ</a>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<a class="hover:text-primary" href="#">Đội ngũ bác sĩ</a>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<span class="text-primary font-medium">Ths. Bs. Nguyễn Văn A</span>
+</div>
+</div>
+</div>
+<div class="max-w-[960px] mx-auto px-4 py-8 flex flex-col gap-8">
+<!-- Doctor Header Card -->
+<div class="bg-surface-light dark:bg-surface-dark rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800">
+<div class="flex flex-col md:flex-row gap-6 md:gap-8 items-start">
+<!-- Avatar -->
+<div class="relative shrink-0 mx-auto md:mx-0">
+<div class="w-40 h-40 md:w-48 md:h-48 rounded-2xl overflow-hidden shadow-md bg-slate-100 dark:bg-slate-700 relative">
+<img alt="Chân dung bác sĩ nam mặc áo blouse trắng" class="w-full h-full object-cover" data-alt="Male doctor portrait in white coat" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDnfwUUEIpsqzdApmFrsJffEocbBv2tXNuo2c6EEJmYyQjJ6zTQuHGNmUK2nx9bWxD1g4SUy7bF-CoQPVLl0TpxeSY9P12dRnUzg6WM2JqmV5f5iuzGaoDKGudCds7ImMsj7hKAMoJKhYmj2vlDKJn9lHARR1NpNiYSlserJdMST2E_XyuFIdvGDMCxkjjbchHuCY2eXyGrgxW5YPuHDWcO8SK-QXagkGDQWSAJ55kV7eVHO4Oo1DU5h--3Cv3Fd4uW90JleTID7K00"/>
+</div>
+<div class="absolute -bottom-3 -right-3 bg-white dark:bg-surface-dark p-1.5 rounded-full shadow-sm">
+<div class="bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 p-1.5 rounded-full">
+<span class="material-symbols-outlined text-[20px]">verified</span>
+</div>
+</div>
+</div>
+<!-- Info -->
+<div class="flex-1 w-full text-center md:text-left">
+<div class="flex flex-col md:flex-row justify-between items-start gap-4">
+<div>
+<h1 class="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white mb-2">Ths. Bs. Nguyễn Văn A</h1>
+<p class="text-primary font-semibold text-lg mb-3">Chuyên khoa Nội Tim mạch</p>
+<div class="flex flex-wrap justify-center md:justify-start gap-3 mb-6">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full text-sm font-medium text-slate-600 dark:text-slate-300">
+<span class="material-symbols-outlined text-[18px]">school</span>
+                                        Thạc sĩ Y khoa
+                                    </span>
+<span class="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full text-sm font-medium text-slate-600 dark:text-slate-300">
+<span class="material-symbols-outlined text-[18px]">work_history</span>
+                                        15 năm kinh nghiệm
+                                    </span>
+<span class="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full text-sm font-medium text-slate-600 dark:text-slate-300">
+<span class="material-symbols-outlined text-[18px]">location_on</span>
+                                        Cơ sở Hải Châu
+                                    </span>
+</div>
+</div>
+<div class="flex flex-col gap-2 w-full md:w-auto">
+<div class="text-right hidden md:block">
+<div class="text-yellow-500 flex justify-end text-sm mb-1">
+<span class="material-symbols-outlined fill-1 text-[18px]">star</span>
+<span class="material-symbols-outlined fill-1 text-[18px]">star</span>
+<span class="material-symbols-outlined fill-1 text-[18px]">star</span>
+<span class="material-symbols-outlined fill-1 text-[18px]">star</span>
+<span class="material-symbols-outlined fill-1 text-[18px]">star_half</span>
+</div>
+<span class="text-xs text-slate-500 dark:text-slate-400 font-medium">4.8 (120 đánh giá)</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col sm:flex-row gap-3 mt-2">
+<button class="flex-1 sm:flex-none justify-center bg-primary hover:bg-primary/90 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-primary/25 transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2">
+<span class="material-symbols-outlined">calendar_add_on</span>
+                                Đặt lịch ngay
+                            </button>
+<button class="flex-1 sm:flex-none justify-center bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold py-3 px-6 rounded-xl transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined">chat</span>
+                                Tư vấn trực tuyến
+                            </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Content Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<!-- Left Column: Biography & Specialties -->
+<div class="lg:col-span-2 flex flex-col gap-8">
+<!-- Biography Section -->
+<section>
+<h2 class="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+<span class="w-1.5 h-6 bg-primary rounded-full"></span>
+                            Thông tin bác sĩ
+                        </h2>
+<div class="bg-surface-light dark:bg-surface-dark p-6 rounded-2xl border border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-300 leading-relaxed">
+<p class="mb-4">
+                                Bác sĩ Nguyễn Văn A là một trong những chuyên gia hàng đầu trong lĩnh vực Nội Tim mạch tại Việt Nam với hơn 15 năm cống hiến. Ông từng tu nghiệp chuyên sâu tại Pháp và Nhật Bản về Can thiệp tim mạch.
+                            </p>
+<p class="mb-4">
+                                Hiện tại, Bác sĩ A đang giữ vai trò Trưởng khoa Tim mạch tại cơ sở Hải Châu. Ông chuyên sâu về chẩn đoán và điều trị các bệnh lý phức tạp như tăng huyết áp kháng trị, suy tim sung huyết và các rối loạn nhịp tim hiếm gặp. Bác sĩ luôn nổi tiếng với phong cách làm việc tận tâm, lắng nghe và giải thích cặn kẽ cho người bệnh.
+                            </p>
+<h3 class="font-bold text-slate-900 dark:text-white mt-6 mb-3">Quá trình đào tạo &amp; Công tác</h3>
+<ul class="space-y-3">
+<li class="flex gap-3">
+<div class="mt-1.5 size-2 rounded-full bg-primary shrink-0"></div>
+<span>Tốt nghiệp Bác sĩ Đa khoa - Đại học Y Dược TP.HCM (2008)</span>
+</li>
+<li class="flex gap-3">
+<div class="mt-1.5 size-2 rounded-full bg-primary shrink-0"></div>
+<span>Thạc sĩ Nội khoa - Đại học Y Hà Nội (2012)</span>
+</li>
+<li class="flex gap-3">
+<div class="mt-1.5 size-2 rounded-full bg-primary shrink-0"></div>
+<span>Trưởng khoa Tim mạch - Bệnh viện Đa khoa Quốc tế (2018 - nay)</span>
+</li>
+</ul>
+</div>
+</section>
+<!-- Specialties Tags -->
+<section>
+<h2 class="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+<span class="w-1.5 h-6 bg-primary rounded-full"></span>
+                            Thế mạnh chuyên môn
+                        </h2>
+<div class="flex flex-wrap gap-3">
+<div class="bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-xl px-4 py-3 flex items-center gap-3 transition-colors cursor-default">
+<span class="bg-white dark:bg-background-dark p-1.5 rounded-full text-primary shadow-sm">
+<span class="material-symbols-outlined text-[20px]">cardiology</span>
+</span>
+<span class="font-medium text-slate-700 dark:text-slate-200">Điều trị tăng huyết áp</span>
+</div>
+<div class="bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-xl px-4 py-3 flex items-center gap-3 transition-colors cursor-default">
+<span class="bg-white dark:bg-background-dark p-1.5 rounded-full text-primary shadow-sm">
+<span class="material-symbols-outlined text-[20px]">ecg_heart</span>
+</span>
+<span class="font-medium text-slate-700 dark:text-slate-200">Rối loạn nhịp tim</span>
+</div>
+<div class="bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-xl px-4 py-3 flex items-center gap-3 transition-colors cursor-default">
+<span class="bg-white dark:bg-background-dark p-1.5 rounded-full text-primary shadow-sm">
+<span class="material-symbols-outlined text-[20px]">monitor_heart</span>
+</span>
+<span class="font-medium text-slate-700 dark:text-slate-200">Suy tim mãn tính</span>
+</div>
+<div class="bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-xl px-4 py-3 flex items-center gap-3 transition-colors cursor-default">
+<span class="bg-white dark:bg-background-dark p-1.5 rounded-full text-primary shadow-sm">
+<span class="material-symbols-outlined text-[20px]">medical_services</span>
+</span>
+<span class="font-medium text-slate-700 dark:text-slate-200">Tư vấn dự phòng đột quỵ</span>
+</div>
+</div>
+</section>
+</div>
+<!-- Right Column: Schedule & Booking -->
+<div class="lg:col-span-1">
+<div class="bg-surface-light dark:bg-surface-dark rounded-2xl p-5 border border-slate-100 dark:border-slate-800 sticky top-24 shadow-lg shadow-slate-200/50 dark:shadow-none">
+<div class="flex items-center justify-between mb-4 border-b border-slate-100 dark:border-slate-700 pb-3">
+<h3 class="font-bold text-lg text-slate-900 dark:text-white flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">calendar_clock</span>
+                                Lịch khám tuần này
+                            </h3>
+<button class="text-xs text-primary font-bold hover:underline">Xem thêm</button>
+</div>
+<!-- Date Selector -->
+<div class="flex gap-2 overflow-x-auto pb-4 no-scrollbar mb-2 snap-x">
+<button class="snap-start flex-none flex flex-col items-center justify-center min-w-[60px] h-[70px] rounded-lg border-2 border-primary bg-primary/5 text-primary">
+<span class="text-xs font-semibold">T2</span>
+<span class="text-lg font-bold">14</span>
+</button>
+<button class="snap-start flex-none flex flex-col items-center justify-center min-w-[60px] h-[70px] rounded-lg border border-slate-200 dark:border-slate-700 hover:border-primary/50 text-slate-500 hover:text-primary transition-all bg-white dark:bg-slate-800">
+<span class="text-xs font-medium">T3</span>
+<span class="text-lg font-bold">15</span>
+</button>
+<button class="snap-start flex-none flex flex-col items-center justify-center min-w-[60px] h-[70px] rounded-lg border border-slate-200 dark:border-slate-700 hover:border-primary/50 text-slate-500 hover:text-primary transition-all bg-white dark:bg-slate-800">
+<span class="text-xs font-medium">T4</span>
+<span class="text-lg font-bold">16</span>
+</button>
+<button class="snap-start flex-none flex flex-col items-center justify-center min-w-[60px] h-[70px] rounded-lg border border-slate-200 dark:border-slate-700 hover:border-primary/50 text-slate-500 hover:text-primary transition-all bg-white dark:bg-slate-800">
+<span class="text-xs font-medium">T5</span>
+<span class="text-lg font-bold">17</span>
+</button>
+<button class="snap-start flex-none flex flex-col items-center justify-center min-w-[60px] h-[70px] rounded-lg border border-slate-200 dark:border-slate-700 text-slate-300 bg-slate-50 dark:bg-slate-900 cursor-not-allowed">
+<span class="text-xs font-medium">T6</span>
+<span class="text-lg font-bold">18</span>
+</button>
+</div>
+<!-- Time Slots -->
+<div class="mb-6">
+<p class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">wb_sunny</span>
+                                Buổi sáng
+                            </p>
+<div class="grid grid-cols-3 gap-2 mb-4">
+<button class="py-2 px-1 text-sm font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-primary hover:text-white rounded-lg transition-colors border border-transparent hover:border-primary">08:00 - 08:30</button>
+<button class="py-2 px-1 text-sm font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-primary hover:text-white rounded-lg transition-colors border border-transparent hover:border-primary">08:30 - 09:00</button>
+<button class="py-2 px-1 text-sm font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-primary hover:text-white rounded-lg transition-colors border border-transparent hover:border-primary">09:00 - 09:30</button>
+<button class="py-2 px-1 text-sm font-medium text-slate-400 bg-slate-50 dark:bg-slate-900 rounded-lg cursor-not-allowed line-through">09:30 - 10:00</button>
+<button class="py-2 px-1 text-sm font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-primary hover:text-white rounded-lg transition-colors border border-transparent hover:border-primary">10:00 - 10:30</button>
+<button class="py-2 px-1 text-sm font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-primary hover:text-white rounded-lg transition-colors border border-transparent hover:border-primary">10:30 - 11:00</button>
+</div>
+<p class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">bedtime</span>
+                                Buổi chiều
+                            </p>
+<div class="grid grid-cols-3 gap-2">
+<button class="py-2 px-1 text-sm font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-primary hover:text-white rounded-lg transition-colors border border-transparent hover:border-primary">13:30 - 14:00</button>
+<button class="py-2 px-1 text-sm font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-primary hover:text-white rounded-lg transition-colors border border-transparent hover:border-primary">14:00 - 14:30</button>
+<button class="py-2 px-1 text-sm font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-primary hover:text-white rounded-lg transition-colors border border-transparent hover:border-primary">14:30 - 15:00</button>
+</div>
+</div>
+<!-- Location & Fee -->
+<div class="bg-primary/5 rounded-xl p-4 border border-primary/10 space-y-3">
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary mt-0.5">location_on</span>
+<div>
+<p class="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-0.5">ĐỊA CHỈ KHÁM</p>
+<p class="text-sm font-semibold text-slate-900 dark:text-white">MediCare Clinic - Cơ sở Hải Châu</p>
+<p class="text-xs text-slate-600 dark:text-slate-400">123 Đường Hải Phòng, Thạch Thang, Hải Châu, Đà Nẵng</p>
+</div>
+</div>
+<div class="h-px bg-slate-200 dark:bg-slate-700 w-full"></div>
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary mt-0.5">payments</span>
+<div>
+<p class="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-0.5">GIÁ KHÁM</p>
+<p class="text-sm font-semibold text-primary">500.000đ <span class="text-slate-500 font-normal text-xs">/ lượt</span></p>
+</div>
+</div>
+</div>
+<div class="mt-4">
+<button class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-primary/20 transition-all flex justify-center items-center gap-2">
+                                Đặt hẹn ngay
+                                <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+<p class="text-center text-xs text-slate-400 mt-2">Phí đặt lịch: Miễn phí</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Reviews Section (Optional but good for detail page) -->
+<section class="mt-4">
+<div class="flex items-center justify-between mb-6">
+<h2 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+<span class="w-1.5 h-6 bg-primary rounded-full"></span>
+                        Đánh giá từ bệnh nhân
+                    </h2>
+<a class="text-primary font-semibold text-sm hover:underline" href="#">Xem tất cả</a>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Review Card 1 -->
+<div class="bg-surface-light dark:bg-surface-dark p-5 rounded-2xl border border-slate-100 dark:border-slate-800">
+<div class="flex items-center gap-3 mb-3">
+<div class="size-10 rounded-full bg-slate-200 overflow-hidden">
+<img alt="Avatar bệnh nhân nữ" class="w-full h-full object-cover" data-alt="Avatar of female patient" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLJN3QwaMuXZPBJCgNt1ANiKRv4w8slAd5zwisCfEa_uk_-vSqP6YNEqnvsCS6T_G94mbmSFSPEFvGjAgMr0XO3zKUDIF3NsYmJnTtsgnAHZ4QlIMwg1ICLbDctAHBP06gQfVkTkCjJl-VHWtM1mJ9TK-Wu7BrGx22WBaa9S49mPWVQpdYNqmopUYLD-Wnuyjd19mJX4_Z9eNGq5Qr_-mlVD8NYGyXsbCZ8XskE9aeH08RRSMpufTtuqAK5p8tz1dXx3elJlqJLwaD"/>
+</div>
+<div>
+<p class="font-bold text-sm text-slate-900 dark:text-white">Trần Thị B.</p>
+<div class="flex text-yellow-500 text-[12px]">
+<span class="material-symbols-outlined fill-1 text-[14px]">star</span>
+<span class="material-symbols-outlined fill-1 text-[14px]">star</span>
+<span class="material-symbols-outlined fill-1 text-[14px]">star</span>
+<span class="material-symbols-outlined fill-1 text-[14px]">star</span>
+<span class="material-symbols-outlined fill-1 text-[14px]">star</span>
+</div>
+</div>
+<span class="ml-auto text-xs text-slate-400">2 ngày trước</span>
+</div>
+<p class="text-sm text-slate-600 dark:text-slate-300">Bác sĩ A rất tận tình, khám kỹ và giải thích dễ hiểu. Phòng khám sạch sẽ, tôi rất hài lòng.</p>
+</div>
+<!-- Review Card 2 -->
+<div class="bg-surface-light dark:bg-surface-dark p-5 rounded-2xl border border-slate-100 dark:border-slate-800">
+<div class="flex items-center gap-3 mb-3">
+<div class="size-10 rounded-full bg-slate-200 overflow-hidden">
+<img alt="Avatar bệnh nhân nam" class="w-full h-full object-cover" data-alt="Avatar of male patient" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBncTO_P2jZ3arAs1Pmvgdg2-TVSZSNlRv6AW3gUBlRQp75_Yg9IGmHWveziVDA6NS69op-EgnpHE2HDlu4ytoJi9xKXuGYznRNT6v_45XUlfg3-fMbYenOrwjCdLczNC41_MA9cP638fe6sPLjOisJVwaq0vAdNM9FkkdoxL_ozDqiSsYP3UyKoz9eYHALvCH3D0XzdgQRGS7dPmveQbB66Zfw8lePBG3tWgMFqq90v45pKhe3kIqqEuHKZRUPliStNCQt8r93yWI1"/>
+</div>
+<div>
+<p class="font-bold text-sm text-slate-900 dark:text-white">Lê Văn C.</p>
+<div class="flex text-yellow-500 text-[12px]">
+<span class="material-symbols-outlined fill-1 text-[14px]">star</span>
+<span class="material-symbols-outlined fill-1 text-[14px]">star</span>
+<span class="material-symbols-outlined fill-1 text-[14px]">star</span>
+<span class="material-symbols-outlined fill-1 text-[14px]">star</span>
+<span class="material-symbols-outlined text-[14px]">star</span>
+</div>
+</div>
+<span class="ml-auto text-xs text-slate-400">1 tuần trước</span>
+</div>
+<p class="text-sm text-slate-600 dark:text-slate-300">Quy trình đặt lịch nhanh chóng, không phải chờ đợi lâu. Bác sĩ chuyên môn cao.</p>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-light dark:bg-surface-dark border-t border-slate-200 dark:border-slate-800 mt-12 py-12">
+<div class="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
+<div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+<div class="space-y-4">
+<div class="flex items-center gap-2 text-primary">
+<div class="size-6 bg-primary/20 rounded-md flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">local_hospital</span>
+</div>
+<span class="font-bold text-lg text-slate-900 dark:text-white">MediCare Clinic</span>
+</div>
+<p class="text-slate-500 dark:text-slate-400 text-sm">Hệ thống phòng khám đa khoa hiện đại, tận tâm vì sức khỏe cộng đồng.</p>
+</div>
+<div>
+<h3 class="font-bold text-slate-900 dark:text-white mb-4">Về chúng tôi</h3>
+<ul class="space-y-2 text-sm text-slate-600 dark:text-slate-400">
+<li><a class="hover:text-primary" href="#">Giới thiệu</a></li>
+<li><a class="hover:text-primary" href="#">Đội ngũ bác sĩ</a></li>
+<li><a class="hover:text-primary" href="#">Tin tức y khoa</a></li>
+</ul>
+</div>
+<div>
+<h3 class="font-bold text-slate-900 dark:text-white mb-4">Dịch vụ</h3>
+<ul class="space-y-2 text-sm text-slate-600 dark:text-slate-400">
+<li><a class="hover:text-primary" href="#">Khám tổng quát</a></li>
+<li><a class="hover:text-primary" href="#">Xét nghiệm</a></li>
+<li><a class="hover:text-primary" href="#">Chẩn đoán hình ảnh</a></li>
+</ul>
+</div>
+<div>
+<h3 class="font-bold text-slate-900 dark:text-white mb-4">Liên hệ</h3>
+<ul class="space-y-3 text-sm text-slate-600 dark:text-slate-400">
+<li class="flex gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]">call</span>
+                            1900 1234
+                        </li>
+<li class="flex gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]">mail</span>
+                            contact@medicare.com
+                        </li>
+<li class="flex gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]">location_on</span>
+                            Đà Nẵng, Việt Nam
+                        </li>
+</ul>
+</div>
+</div>
+<div class="mt-12 pt-8 border-t border-slate-200 dark:border-slate-800 text-center text-sm text-slate-500">
+                © 2024 MediCare Clinic. All rights reserved.
+            </div>
+</div>
+</footer>
+</body></html>
