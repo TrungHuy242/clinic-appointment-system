@@ -1,0 +1,24 @@
+.notifications-count {
+  font-size: 1.25rem;
+}
+
+.notification-card {
+  border-radius: 20px;
+  box-shadow: var(--shadow-sm);
+}
+
+.notification-card.unread {
+  background: linear-gradient(135deg, rgba(240, 249, 255, 0.92), rgba(236, 253, 245, 0.92));
+}
+
+.empty-icon {
+  color: var(--color-text-muted);
+}
+
+.notification-btn {
+  border: 1px solid transparent;
+}
+
+.notification-btn:hover {
+  border-color: rgba(15, 23, 42, 0.08);
+}

@@ -1,0 +1,39 @@
+.mc-toast {
+  position: fixed;
+  inset-inline: 0;
+  top: 16px;
+  z-index: 50;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.mc-toast__content {
+  pointer-events: auto;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: var(--shadow-sm);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.mc-toast__content--info {
+  background: var(--color-info-soft);
+  color: var(--color-info);
+}
+
+.mc-toast__content--success {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.mc-toast__content--warning {
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+
+.mc-toast__content--danger {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}

@@ -1,0 +1,143 @@
+.catalog-page__tabs {
+  margin-bottom: 20px;
+}
+
+.catalog-page__doctor-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.catalog-page__doctor-main {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.catalog-page__doctor-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--color-primary-light);
+  font-size: 24px;
+}
+
+.catalog-page__doctor-copy {
+  flex: 1;
+}
+
+.catalog-page__doctor-name {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.catalog-page__doctor-meta {
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.catalog-page__doctor-count {
+  margin-top: 2px;
+  color: var(--color-primary);
+  font-size: 12px;
+}
+
+.catalog-page__doctor-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.catalog-page__facility-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.catalog-page__facility-icon {
+  font-size: 36px;
+}
+
+.catalog-page__facility-copy {
+  flex: 1;
+}
+
+.catalog-page__facility-title {
+  margin: 0;
+  font-weight: 800;
+}
+
+.catalog-page__facility-subtitle {
+  margin: 4px 0 0;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.catalog-page__facility-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.catalog-page__facility-stat {
+  border-radius: 12px;
+  background: var(--color-bg-soft);
+  padding: 16px 20px;
+  text-align: center;
+}
+
+.catalog-page__facility-stat-icon {
+  margin-bottom: 4px;
+  font-size: 24px;
+}
+
+.catalog-page__facility-stat-value {
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.catalog-page__facility-stat-label {
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.catalog-page__facility-meta {
+  display: flex;
+  gap: 16px;
+  margin-top: 20px;
+  padding: 16px 0;
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.catalog-page__facility-meta-section {
+  flex: 1;
+}
+
+.catalog-page__facility-meta-title {
+  margin-bottom: 6px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.catalog-page__facility-meta-copy {
+  font-size: 14px;
+}
+
+@media (max-width: 900px) {
+  .catalog-page__doctor-main,
+  .catalog-page__facility-header,
+  .catalog-page__facility-meta {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .catalog-page__facility-stats {
+    grid-template-columns: 1fr;
+  }
+}

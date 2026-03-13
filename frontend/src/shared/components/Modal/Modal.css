@@ -1,0 +1,74 @@
+.mc-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.35);
+}
+
+.mc-modal-overlay {
+  position: absolute;
+  inset: 0;
+}
+
+.mc-modal {
+  position: relative;
+  z-index: 50;
+  width: 100%;
+  max-width: 420px;
+  padding: 18px 18px 16px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 20px;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-md);
+}
+
+.mc-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.mc-modal-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text-main);
+}
+
+.mc-modal-description {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.mc-modal-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.mc-modal-close:hover {
+  background: var(--color-bg-soft);
+}
+
+.mc-modal-body {
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+
+.mc-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
