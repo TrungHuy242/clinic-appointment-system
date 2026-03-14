@@ -1,0 +1,62 @@
+﻿import secrets
+
+from django.db import models
+from django.utils import timezone
+
+from catalog.models import Doctor, Specialty
+
+
+class AppointmentStatus(models.TextChoices):
+    PENDING = 'PENDING', 'Pending'
+    CONFIRMED = 'CONFIRMED', 'Confirmed'
+    CHECKED_IN = 'CHECKED_IN', 'Checked in'
+    IN_PROGRESS = 'IN_PROGRESS', 'In progress'
+    COMPLETED = 'COMPLETED', 'Completed'
+    CANCELLED = 'CANCELLED', 'Cancelled'
+    NO_SHOW = 'NO_SHOW', 'No show'
+
+
+class Appointment(models.Model):
+    code = models.CharField(max_length=13, unique=True, editable=False)
+    patient_full_name = models.CharField(max_length=150)
+    patient_phone = models.CharField(max_length=20)
+    specialty = models.ForeignKey(
+        Specialty,
+        on_delete=models.PROTECT,
+        related_name='appointments',
+    )
+    doctor = models.ForeignKey(
+        Doctor,
+        on_delete=models.PROTECT,
+        related_name='appointments',
+    )
+    scheduled_start = models.DateTimeField()
+    scheduled_end = models.DateTimeField()
+    status = models.CharField(
+        max_length=20,
+        choices=AppointmentStatus.choices,
+        default=AppointmentStatus.PENDING,
+    )
+    is_deleted = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-scheduled_start', '-created_at']
+
+    def save(self, *args, **kwargs):
+        if not self.code:
+            self.code = generate_appointment_code()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f'{self.code} - {self.patient_full_name}'
+
+
+def generate_appointment_code():
+    year = timezone.now().year
+    while True:
+        suffix = f'{secrets.randbelow(10000):04d}'
+        code = f'APT-{year}-{suffix}'
+        if not Appointment.objects.filter(code=code).exists():
+            return code
