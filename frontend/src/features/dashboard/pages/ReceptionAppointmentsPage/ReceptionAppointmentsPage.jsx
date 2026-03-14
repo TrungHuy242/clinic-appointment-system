@@ -9,19 +9,19 @@ import { listTodayAppointments } from "../../services/appointmentsApi";
 import "./ReceptionAppointmentsPage.css";
 
 const STATUS_CONFIG = {
-  CONFIRMED: { label: "�� x�c nh?n", variant: "success" },
-  PENDING: { label: "Ch? x�c nh?n", variant: "warning" },
-  PENDING_PA1: { label: "Ch? x�c nh?n", variant: "warning" },
-  CHECKED_IN: { label: "�� check-in", variant: "info" },
-  CANCELLED: { label: "�� h?y", variant: "danger" },
-  COMPLETED: { label: "Ho�n t?t", variant: "neutral" },
+  CONFIRMED: { label: "Đã xác nhận", variant: "success" },
+  PENDING: { label: "Chờ xác nhận", variant: "warning" },
+  PENDING_PA1: { label: "Chờ xác nhận", variant: "warning" },
+  CHECKED_IN: { label: "Đã check-in", variant: "info" },
+  CANCELLED: { label: "Đã hủy", variant: "danger" },
+  COMPLETED: { label: "Hoàn tất", variant: "neutral" },
 };
 
 const STAT_CARDS = [
-  { key: "total", label: "T?ng l?ch h?n", icon: CalendarDays, tone: "sky" },
-  { key: "confirmed", label: "�� x�c nh?n", icon: CheckCircle2, tone: "green" },
-  { key: "checkedIn", label: "�� check-in", icon: ScanLine, tone: "blue" },
-  { key: "cancelled", label: "�� h?y", icon: CircleX, tone: "red" },
+  { key: "total", label: "Tổng lịch hẹn", icon: CalendarDays, tone: "sky" },
+  { key: "confirmed", label: "Đã xác nhận", icon: CheckCircle2, tone: "green" },
+  { key: "checkedIn", label: "Đã check-in", icon: ScanLine, tone: "blue" },
+  { key: "cancelled", label: "Đã hủy", icon: CircleX, tone: "red" },
 ];
 
 export default function ReceptionAppointmentsPage() {
@@ -58,19 +58,19 @@ export default function ReceptionAppointmentsPage() {
   const columns = [
     {
       key: "code",
-      title: "M� l?ch h?n",
+      title: "Mã lịch hẹn",
       render: (row) => <span className="reception-appointments__code">{row.code}</span>,
     },
-    { key: "patientName", title: "B?nh nh�n", dataIndex: "patientName" },
-    { key: "specialty", title: "Chuy�n khoa", dataIndex: "specialty" },
+    { key: "patientName", title: "Bệnh nhân", dataIndex: "patientName" },
+    { key: "specialty", title: "Chuyên khoa", dataIndex: "specialty" },
     {
       key: "slot",
-      title: "Gi? h?n",
+      title: "Giờ hẹn",
       render: (row) => <span className="reception-appointments__slot">{row.slot}</span>,
     },
     {
       key: "status",
-      title: "Tr?ng th�i",
+      title: "Trạng thái",
       render: (row) => {
         const cfg = STATUS_CONFIG[row.status] ?? { label: row.status, variant: "neutral" };
         return <Badge variant={cfg.variant}>{cfg.label}</Badge>;
@@ -83,7 +83,7 @@ export default function ReceptionAppointmentsPage() {
         <div className="reception-appointments__actions">
           <button
             className="dash-action-btn dash-action-btn--sm"
-            title="Chi ti?t"
+            title="Chi tiết"
             type="button"
             onClick={() => navigate(`/booking-success/${row.code}`)}
           >
@@ -108,8 +108,8 @@ export default function ReceptionAppointmentsPage() {
     <div className="dash-page reception-appointments">
       <div className="dash-page-header">
         <div>
-          <h1 className="dash-page-title">Qu?n l� l?ch h?n</h1>
-          <p className="dash-page-sub">Theo d�i v� c?p nh?t tr?ng th�i l?ch h?n trong ng�y</p>
+          <h1 className="dash-page-title">{"Quản lý lịch hẹn"}</h1>
+          <p className="dash-page-sub">{"Theo dõi, lọc và cập nhật trạng thái lịch hẹn trong ngày theo thời gian thực."}</p>
         </div>
         <div className="reception-appointments__header-actions">
           <input
@@ -120,7 +120,7 @@ export default function ReceptionAppointmentsPage() {
           />
           <Button size="sm" onClick={() => navigate("/book")}>
             <Plus className="mc-icon mc-icon--sm" />
-            T?o l?ch h?n
+            {"Tạo lịch hẹn"}
           </Button>
         </div>
       </div>
@@ -143,7 +143,7 @@ export default function ReceptionAppointmentsPage() {
       <div className="dash-filter-bar">
         <input
           className="dash-search-input"
-          placeholder="T�m b?nh nh�n, m� l?ch h?n..."
+          placeholder="Tìm bệnh nhân, mã lịch hẹn..."
           value={search}
           onChange={(event) => setSearch(event.target.value)}
         />
@@ -152,7 +152,7 @@ export default function ReceptionAppointmentsPage() {
           value={filterStatus}
           onChange={(event) => setFilterStatus(event.target.value)}
         >
-          <option value="all">T?t c? tr?ng th�i</option>
+          <option value="all">{"Tất cả trạng thái"}</option>
           {Object.entries(STATUS_CONFIG).map(([key, value]) => (
             <option key={key} value={key}>
               {value.label}
@@ -166,7 +166,7 @@ export default function ReceptionAppointmentsPage() {
           <LoadingSpinner />
         </div>
       ) : (
-        <Table columns={columns} data={filtered} emptyMessage="Kh�ng c� l?ch h?n n�o ph� h?p." />
+        <Table columns={columns} data={filtered} emptyMessage="Không có lịch hẹn nào phù hợp." />
       )}
     </div>
   );

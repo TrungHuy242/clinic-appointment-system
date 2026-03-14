@@ -26,9 +26,9 @@ import "./CatalogPage.css";
 
 const SPECIALTY_ICONS = {
   "Nhi khoa": Baby,
-  "Da li?u": Sparkles,
-  "Tai Mui H?ng": Stethoscope,
-  "Kh�m t?ng qu�t": HeartPulse,
+  "Da liểu": Sparkles,
+  "Tai Mui Họng": Stethoscope,
+  "Khám tổng quát": HeartPulse,
 };
 
 export default function CatalogPage() {
@@ -58,7 +58,7 @@ export default function CatalogPage() {
         specialtyId: current.specialtyId || String(nextSpecialties[0]?.id || ""),
       }));
     } catch (nextError) {
-      setError(nextError.message || "Kh�ng t?i du?c danh m?c.");
+      setError(nextError.message || "Không tải được danh mục.");
     } finally {
       setLoading(false);
     }
@@ -81,10 +81,10 @@ export default function CatalogPage() {
     return accumulator;
   }, {});
   const facilityStats = [
-    { label: "T?ng b�c si", value: doctors.length, icon: Users },
-    { label: "Chuy�n khoa", value: specialties.length, icon: Building2 },
+    { label: "Tổng bác sĩ", value: doctors.length, icon: Users },
+    { label: "Chuyên khoa", value: specialties.length, icon: Building2 },
     {
-      label: "�ang ho?t d?ng",
+      label: "Đang hoạt động",
       value: doctors.filter((doctor) => doctor.is_active).length,
       icon: CalendarDays,
     },
@@ -92,7 +92,7 @@ export default function CatalogPage() {
 
   async function handleCreateSpecialty() {
     if (!specialtyForm.name.trim()) {
-      setError("T�n chuy�n khoa l� b?t bu?c.");
+      setError("Tên chuyên khoa là bắt buộc.");
       return;
     }
 
@@ -107,7 +107,7 @@ export default function CatalogPage() {
       setSpecialtyForm({ name: "", description: "" });
       await loadCatalog();
     } catch (nextError) {
-      setError(nextError.message || "Kh�ng t?o du?c chuy�n khoa.");
+      setError(nextError.message || "Không tạo được chuyên khoa.");
     } finally {
       setSaving(false);
     }
@@ -120,17 +120,17 @@ export default function CatalogPage() {
       await updateSpecialty(specialty.id, { is_active: !specialty.is_active });
       await loadCatalog();
     } catch (nextError) {
-      setError(nextError.message || "Kh�ng c?p nh?t du?c chuy�n khoa.");
+      setError(nextError.message || "Không cập nhật được chuyên khoa.");
     } finally {
       setSaving(false);
     }
   }
 
   async function handleEditSpecialty(specialty) {
-    const nextName = window.prompt("T�n chuy�n khoa", specialty.name);
+    const nextName = window.prompt("Tên chuyên khoa", specialty.name);
     if (!nextName || !nextName.trim()) return;
     const nextDescription = window.prompt(
-      "M� t? chuy�n khoa",
+      "Mô tả chuyên khoa",
       specialty.description || ""
     );
 
@@ -143,7 +143,7 @@ export default function CatalogPage() {
       });
       await loadCatalog();
     } catch (nextError) {
-      setError(nextError.message || "Kh�ng s?a du?c chuy�n khoa.");
+      setError(nextError.message || "Không sửa được chuyên khoa.");
     } finally {
       setSaving(false);
     }
@@ -151,7 +151,7 @@ export default function CatalogPage() {
 
   async function handleCreateDoctor() {
     if (!doctorForm.fullName.trim() || !doctorForm.specialtyId) {
-      setError("H? t�n b�c si v� chuy�n khoa l� b?t bu?c.");
+      setError("Họ tên bác sĩ và chuyên khoa là bắt buộc.");
       return;
     }
 
@@ -172,7 +172,7 @@ export default function CatalogPage() {
       }));
       await loadCatalog();
     } catch (nextError) {
-      setError(nextError.message || "Kh�ng t?o du?c b�c si.");
+      setError(nextError.message || "Không tạo được bác sĩ.");
     } finally {
       setSaving(false);
     }
@@ -185,16 +185,16 @@ export default function CatalogPage() {
       await updateDoctor(doctor.id, { is_active: !doctor.is_active });
       await loadCatalog();
     } catch (nextError) {
-      setError(nextError.message || "Kh�ng c?p nh?t du?c b�c si.");
+      setError(nextError.message || "Không cập nhật được bác sĩ.");
     } finally {
       setSaving(false);
     }
   }
 
   async function handleEditDoctor(doctor) {
-    const nextName = window.prompt("H? t�n b�c si", doctor.full_name);
+    const nextName = window.prompt("Họ tên bác sĩ", doctor.full_name);
     if (!nextName || !nextName.trim()) return;
-    const nextPhone = window.prompt("S? di?n tho?i", doctor.phone || "");
+    const nextPhone = window.prompt("Số điện thoại", doctor.phone || "");
 
     setSaving(true);
     setError("");
@@ -205,7 +205,7 @@ export default function CatalogPage() {
       });
       await loadCatalog();
     } catch (nextError) {
-      setError(nextError.message || "Kh�ng s?a du?c b�c si.");
+      setError(nextError.message || "Không sửa được bác sĩ.");
     } finally {
       setSaving(false);
     }
@@ -223,9 +223,9 @@ export default function CatalogPage() {
     <div className="dash-page catalog-page">
       <div className="dash-page-header">
         <div>
-          <h1 className="dash-page-title">Danh m?c & Co s? H?i Ch�u</h1>
+          <h1 className="dash-page-title">Danh mục & Cơ sở Hải Châu</h1>
           <p className="dash-page-sub">
-            Qu?n l� chuy�n khoa, b�c si v� th�ng tin v?n h�nh c?a Co s? H?i Ch�u
+            Quản lý chuyên khoa, bác sĩ và thông tin vận hành của Cơ sở Hải Châu
           </p>
         </div>
       </div>
@@ -238,21 +238,21 @@ export default function CatalogPage() {
           onClick={() => setActiveTab("specialties")}
           type="button"
         >
-          Chuy�n khoa
+          Chuyên khoa
         </button>
         <button
           className={`dash-filter-tab ${activeTab === "doctors" ? "active" : ""}`}
           onClick={() => setActiveTab("doctors")}
           type="button"
         >
-          B�c si
+          Bác sĩ
         </button>
         <button
           className={`dash-filter-tab ${activeTab === "facility" ? "active" : ""}`}
           onClick={() => setActiveTab("facility")}
           type="button"
         >
-          Co s? H?i Ch�u
+          Cơ sở Hải Châu
         </button>
       </div>
 
@@ -261,7 +261,7 @@ export default function CatalogPage() {
           <div className="dash-filter-bar">
             <input
               className="dash-search-input"
-              placeholder="T�m chuy�n khoa..."
+              placeholder="Tìm chuyên khoa..."
               value={specialtySearch}
               onChange={(event) => setSpecialtySearch(event.target.value)}
             />
@@ -269,21 +269,21 @@ export default function CatalogPage() {
 
           <div className="mc-surface catalog-page__form-grid">
             <Input
-              label="T�n chuy�n khoa"
+              label="Tên chuyên khoa"
               value={specialtyForm.name}
               onChange={(event) =>
                 setSpecialtyForm((current) => ({ ...current, name: event.target.value }))
               }
             />
             <Input
-              label="M� t?"
+              label="Mô tả"
               value={specialtyForm.description}
               onChange={(event) =>
                 setSpecialtyForm((current) => ({ ...current, description: event.target.value }))
               }
             />
             <Button onClick={handleCreateSpecialty} disabled={saving}>
-              Th�m chuy�n khoa
+              {"Thêm chuyên khoa"}
             </Button>
           </div>
 
@@ -300,10 +300,10 @@ export default function CatalogPage() {
                   </div>
                   <div className="catalog-card__name">{specialty.name}</div>
                   <div className="catalog-card__meta">
-                    {doctorCountBySpecialty[specialty.id] || 0} b�c si
+                    {doctorCountBySpecialty[specialty.id] || 0} {"bác sĩ"}
                   </div>
                   <Badge variant={specialty.is_active ? "success" : "neutral"}>
-                    {specialty.is_active ? "Ho?t d?ng" : "T?m ngung"}
+                    {specialty.is_active ? "Hoạt động" : "Tạm ngưng"}
                   </Badge>
                   <div className="catalog-card__actions">
                     <button
@@ -311,14 +311,14 @@ export default function CatalogPage() {
                       type="button"
                       onClick={() => handleEditSpecialty(specialty)}
                     >
-                      S?a
+                      {"Sửa"}
                     </button>
                     <button
                       className="dash-action-btn dash-action-btn--sm"
                       type="button"
                       onClick={() => handleToggleSpecialty(specialty)}
                     >
-                      {specialty.is_active ? "T?t" : "B?t"}
+                      {specialty.is_active ? "Tắt" : "Bật"}
                     </button>
                   </div>
                 </div>
@@ -333,7 +333,7 @@ export default function CatalogPage() {
           <div className="dash-filter-bar">
             <input
               className="dash-search-input"
-              placeholder="T�m b�c si, chuy�n khoa..."
+              placeholder="Tìm bác sĩ, chuyên khoa..."
               value={doctorSearch}
               onChange={(event) => setDoctorSearch(event.target.value)}
             />
@@ -341,21 +341,21 @@ export default function CatalogPage() {
 
           <div className="mc-surface catalog-page__form-grid catalog-page__form-grid--doctor">
             <Input
-              label="H? t�n b�c si"
+              label="Họ tên bác sĩ"
               value={doctorForm.fullName}
               onChange={(event) =>
                 setDoctorForm((current) => ({ ...current, fullName: event.target.value }))
               }
             />
             <Input
-              label="S? di?n tho?i"
+              label="Số điện thoại"
               value={doctorForm.phone}
               onChange={(event) =>
                 setDoctorForm((current) => ({ ...current, phone: event.target.value }))
               }
             />
             <label className="catalog-page__select-wrap">
-              <span>Chuy�n khoa</span>
+              <span>Chuyên khoa</span>
               <select
                 className="dash-filter-select"
                 value={doctorForm.specialtyId}
@@ -371,7 +371,7 @@ export default function CatalogPage() {
               </select>
             </label>
             <Button onClick={handleCreateDoctor} disabled={saving}>
-              Th�m b�c si
+              {"Thêm bác sĩ"}
             </Button>
           </div>
 
@@ -385,14 +385,14 @@ export default function CatalogPage() {
                   <div className="catalog-page__doctor-copy">
                     <div className="catalog-page__doctor-name">{doctor.full_name}</div>
                     <div className="catalog-page__doctor-meta">
-                      {doctor.specialty_name} � {doctor.phone || "Chua c?p nh?t S�T"}
+                      {doctor.specialty_name} · {doctor.phone || "Chưa cập nhật SĐT"}
                     </div>
                     <div className="catalog-page__doctor-count">
-                      {doctor.is_active ? "�ang nh?n l?ch" : "T?m d?ng nh?n l?ch"}
+                      {doctor.is_active ? "Đang nhận lịch" : "Tạm dừng nhận lịch"}
                     </div>
                   </div>
                   <Badge variant={doctor.is_active ? "success" : "neutral"}>
-                    {doctor.is_active ? "Ho?t d?ng" : "T?m ngung"}
+                    {doctor.is_active ? "Hoạt động" : "Tạm ngưng"}
                   </Badge>
                   <div className="catalog-page__doctor-actions">
                     <button
@@ -400,14 +400,14 @@ export default function CatalogPage() {
                       type="button"
                       onClick={() => handleEditDoctor(doctor)}
                     >
-                      S?a
+                      Sửa
                     </button>
                     <button
                       className="dash-action-btn dash-action-btn--sm"
                       type="button"
                       onClick={() => handleToggleDoctor(doctor)}
                     >
-                      {doctor.is_active ? "T?t" : "B?t"}
+                      {doctor.is_active ? "Tắt" : "Bật"}
                     </button>
                   </div>
                 </div>
@@ -424,12 +424,12 @@ export default function CatalogPage() {
               <Building2 className="mc-icon mc-icon--lg" />
             </div>
             <div className="catalog-page__facility-copy">
-              <h3 className="catalog-page__facility-title">MediCare Clinic - Co s? H?i Ch�u</h3>
+              <h3 className="catalog-page__facility-title">MediCare Clinic - Cơ sở Hải Châu</h3>
               <p className="catalog-page__facility-subtitle">
-                123 Nguy?n Van Linh, H?i Ch�u, �� N?ng
+                123 Nguyễn Văn Linh, Hải Châu, Đà Nẵng
               </p>
             </div>
-            <Badge variant="success">�ang ho?t d?ng</Badge>
+            <Badge variant="success">Đang hoạt động</Badge>
           </div>
 
           <div className="catalog-page__facility-stats">
@@ -446,12 +446,12 @@ export default function CatalogPage() {
 
           <div className="catalog-page__facility-meta">
             <div className="catalog-page__facility-meta-section">
-              <div className="catalog-page__facility-meta-title">Gi? l�m vi?c</div>
-              <div className="catalog-page__facility-meta-copy">Th? 2-6: 08:00 - 11:30 � 13:30 - 17:00</div>
-              <div className="catalog-page__facility-meta-copy">Th? 7: 08:00 - 11:30</div>
+              <div className="catalog-page__facility-meta-title">Giờ làm việc</div>
+              <div className="catalog-page__facility-meta-copy">Thứ 2-6: 08:00 - 11:30 & 13:30 - 17:00</div>
+              <div className="catalog-page__facility-meta-copy">Thứ 7: 08:00 - 11:30</div>
             </div>
             <div className="catalog-page__facility-meta-section">
-              <div className="catalog-page__facility-meta-title">Li�n h?</div>
+              <div className="catalog-page__facility-meta-title">Liên hệ</div>
               <div className="catalog-page__facility-meta-copy">Hotline: 1900 1234</div>
               <div className="catalog-page__facility-meta-copy">Email: haichau@medicare.vn</div>
             </div>

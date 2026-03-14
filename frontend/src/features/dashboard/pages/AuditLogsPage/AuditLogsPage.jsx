@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Download, FileText, Settings2, ShieldCheck, Trash2 } from "lucide-react";
 import Badge from "../../../../shared/components/Badge/Badge";
 import Table from "../../../../shared/components/Table/Table";
+import { getAuditLogs } from "../../services/portalApi";
 import "./AuditLogsPage.css";
 
 const ACTION_CONFIG = {
@@ -12,17 +13,6 @@ const ACTION_CONFIG = {
   CHECKIN: { label: "Check-in", variant: "warning" },
   COMPLETE: { label: "Hoàn tất khám", variant: "success" },
 };
-
-const MOCK_LOGS = [
-  { id: 1, actor: "Lễ tân Nguyễn A", role: "receptionist", action: "CHECKIN", resource: "APT-2026-0011", time: "09/03/2026 08:52", ip: "192.168.1.10", detail: "Check-in PA4 thành công - Nguyễn Văn An" },
-  { id: 2, actor: "BS. Nguyễn Thị Sarah", role: "doctor", action: "COMPLETE", resource: "APT-2026-0012", time: "09/03/2026 08:45", ip: "192.168.1.15", detail: "Hoàn tất khám - Chẩn đoán: Viêm da dị ứng" },
-  { id: 3, actor: "Admin Trần B", role: "admin", action: "CREATE", resource: "Specialty:Nội khoa", time: "09/03/2026 07:30", ip: "192.168.1.5", detail: "Thêm chuyên khoa Nội khoa" },
-  { id: 4, actor: "Lễ tân Nguyễn A", role: "receptionist", action: "LOGIN", resource: "System", time: "09/03/2026 07:59", ip: "192.168.1.10", detail: "Đăng nhập thành công" },
-  { id: 5, actor: "Admin Trần B", role: "admin", action: "UPDATE", resource: "Doctor:BS-003", time: "08/03/2026 16:45", ip: "192.168.1.5", detail: "Cập nhật lịch làm việc BS. Trần Thị C" },
-  { id: 6, actor: "BS. Nguyễn Văn A", role: "doctor", action: "COMPLETE", resource: "APT-2026-0009", time: "08/03/2026 15:20", ip: "192.168.1.18", detail: "Hoàn tất khám - Nhi khoa" },
-  { id: 7, actor: "Admin Trần B", role: "admin", action: "DELETE", resource: "Slot:SL-099", time: "08/03/2026 14:00", ip: "192.168.1.5", detail: "Xóa slot trùng lịch" },
-  { id: 8, actor: "Lễ tân Nguyễn A", role: "receptionist", action: "CREATE", resource: "APT-2026-0015", time: "07/03/2026 09:10", ip: "192.168.1.10", detail: "Tạo lịch hẹn mới cho Hoàng Anh Em" },
-];
 
 const ROLE_MAP = { receptionist: "Lễ tân", doctor: "Bác sĩ", admin: "Quản trị" };
 const STAT_CARDS = [
@@ -61,20 +51,52 @@ export default function AuditLogsPage() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [actionFilter, setActionFilter] = useState("all");
+  const [payload, setPayload] = useState({ items: [], stats: {} });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const filtered = MOCK_LOGS.filter((log) => {
-    const matchSearch = !search || log.actor.toLowerCase().includes(search.toLowerCase()) || log.resource.includes(search) || log.detail.toLowerCase().includes(search.toLowerCase());
-    const matchRole = roleFilter === "all" || log.role === roleFilter;
-    const matchAction = actionFilter === "all" || log.action === actionFilter;
-    return matchSearch && matchRole && matchAction;
-  });
+  useEffect(() => {
+    let mounted = true;
 
-  const stats = {
-    total: MOCK_LOGS.length,
-    create: MOCK_LOGS.filter((item) => item.action === "CREATE").length,
-    update: MOCK_LOGS.filter((item) => item.action === "UPDATE").length,
-    delete: MOCK_LOGS.filter((item) => item.action === "DELETE").length,
-  };
+    async function loadAuditLogs() {
+      setLoading(true);
+      setError("");
+      try {
+        const data = await getAuditLogs();
+        if (mounted) {
+          setPayload(data);
+        }
+      } catch (loadError) {
+        if (mounted) {
+          setError(loadError.message || "Không tải được nhật ký thao tác.");
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadAuditLogs();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const filtered = useMemo(
+    () =>
+      (payload.items || []).filter((log) => {
+        const matchSearch =
+          !search ||
+          log.actor.toLowerCase().includes(search.toLowerCase()) ||
+          log.resource.includes(search) ||
+          log.detail.toLowerCase().includes(search.toLowerCase());
+        const matchRole = roleFilter === "all" || log.role === roleFilter;
+        const matchAction = actionFilter === "all" || log.action === actionFilter;
+        return matchSearch && matchRole && matchAction;
+      }),
+    [actionFilter, payload.items, roleFilter, search]
+  );
 
   return (
     <div className="dash-page audit-logs-page">
@@ -90,7 +112,7 @@ export default function AuditLogsPage() {
         {STAT_CARDS.map((card) => (
           <div key={card.key} className={`dash-stat-card audit-logs-page__stat-card audit-logs-page__stat-card--${card.tone}`}>
             <div className="dash-stat-icon">{React.createElement(card.icon, { className: "mc-icon mc-icon--md" })}</div>
-            <div className="dash-stat-val">{stats[card.key]}</div>
+            <div className="dash-stat-val">{payload.stats?.[card.key] || 0}</div>
             <div className="dash-stat-label">{card.label}</div>
           </div>
         ))}
@@ -112,7 +134,9 @@ export default function AuditLogsPage() {
         </select>
       </div>
 
-      <Table columns={COLUMNS} data={filtered} emptyMessage="Không có kết quả." />
+      {loading ? <div className="dash-page-sub">Đang tải nhật ký thao tác...</div> : null}
+      {error ? <div className="dash-page-sub">{error}</div> : null}
+      {!loading && !error && <Table columns={COLUMNS} data={filtered} emptyMessage="Không có kết quả." />}
     </div>
   );
 }

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { ArrowLeft, ArrowRight, ShieldCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Button from "../../../../shared/components/Button/Button";
+import { appointmentApi } from "../../../patients/services/patientApi";
 import "./RegisterPage.css";
 
 export default function RegisterPage() {
@@ -9,6 +10,8 @@ export default function RegisterPage() {
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({ name: "", phone: "", dob: "", gender: "", password: "", confirm: "" });
   const [errors, setErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   const handleChange = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
 
@@ -25,15 +28,31 @@ export default function RegisterPage() {
     return Object.keys(nextErrors).length === 0;
   };
 
-  const handleNext = (event) => {
+  const handleNext = async (event) => {
     event.preventDefault();
     if (!validate()) return;
     if (step === 1) {
       setStep(2);
       return;
     }
-    alert("Äăng ký thành công (mock). Vui lòng đăng nhập.");
-    navigate("/patient/login");
+
+    setSubmitting(true);
+    setSubmitError("");
+    try {
+      await appointmentApi.register({
+        name: form.name,
+        phone: form.phone,
+        dob: form.dob,
+        gender: form.gender,
+        password: form.password,
+        confirmPassword: form.confirm,
+      });
+      navigate("/patient/appointments");
+    } catch (error) {
+      setSubmitError(error.message || "Không thể đăng ký tài khoản.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -50,10 +69,7 @@ export default function RegisterPage() {
 
       <div className="register-progress">
         {[1, 2].map((progressStep) => (
-          <div
-            key={progressStep}
-            className={`register-progress__bar ${progressStep <= step ? "active" : ""}`}
-          />
+          <div key={progressStep} className={`register-progress__bar ${progressStep <= step ? "active" : ""}`} />
         ))}
       </div>
 
@@ -94,11 +110,7 @@ export default function RegisterPage() {
               </div>
               <div className="auth-field-group">
                 <label className="auth-field-label">Giới tính</label>
-                <select
-                  className="auth-field-input"
-                  value={form.gender}
-                  onChange={(event) => handleChange("gender", event.target.value)}
-                >
+                <select className="auth-field-input" value={form.gender} onChange={(event) => handleChange("gender", event.target.value)}>
                   <option value="">-- Chọn --</option>
                   <option value="male">Nam</option>
                   <option value="female">Nữ</option>
@@ -140,29 +152,26 @@ export default function RegisterPage() {
           </>
         )}
 
+        {submitError && <div className="claim-submit-error">{submitError}</div>}
+
         <div className="register-actions">
           {step === 2 && (
-            <Button
-              type="button"
-              variant="secondary"
-              className="register-actions__back"
-              onClick={() => setStep(1)}
-            >
+            <Button type="button" variant="secondary" className="register-actions__back" onClick={() => setStep(1)}>
               <ArrowLeft className="mc-icon mc-icon--sm" />
               Quay lại
             </Button>
           )}
-          <Button type="submit" className="register-actions__next">
-            {step === 1 ? "Tiếp theo" : "Hoàn tất đăng ký"}
+          <Button type="submit" className="register-actions__next" disabled={submitting}>
+            {submitting ? "Đang xử lý" : step === 1 ? "Tiếp theo" : "Hoàn tất đăng ký"}
             <ArrowRight className="mc-icon mc-icon--sm" />
           </Button>
         </div>
       </form>
 
       <p className="auth-switch register-switch">
-        Äã có tài khoản?{" "}
-        <button type="button" className="auth-forgot-link" onClick={() => navigate("/patient/login")}>
-          Äăng nhập ngay
+        Đã có tài khoản?{" "}
+        <button type="button" className="auth-forgot-link" onClick={() => navigate("/patient/login") }>
+          Đăng nhập ngay
         </button>
       </p>
     </div>

@@ -3,17 +3,39 @@ import { ArrowRight, Eye, EyeOff, KeyRound, Smartphone } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Input from "../../../../shared/components/Input/Input";
 import Button from "../../../../shared/components/Button/Button";
+import { appointmentApi } from "../../../patients/services/patientApi";
 import "./LoginPage.css";
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("login");
   const [showPass, setShowPass] = useState(false);
+  const [form, setForm] = useState({ identifier: "", name: "", password: "" });
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (event) => {
+  async function handleSubmit(event) {
     event.preventDefault();
-    navigate("/patient/appointments");
-  };
+    setSubmitting(true);
+    setError("");
+
+    try {
+      if (activeTab === "login") {
+        await appointmentApi.login({ identifier: form.identifier, password: form.password });
+      } else {
+        await appointmentApi.register({
+          name: form.name,
+          phone: form.identifier,
+          password: form.password,
+        });
+      }
+      navigate("/patient/appointments");
+    } catch (submitError) {
+      setError(submitError.message || "Không thể xử lý yêu cầu.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   return (
     <div className="login-page">
@@ -30,14 +52,20 @@ export default function LoginPage() {
       <div className="auth-tabs">
         <button
           className={`auth-tab ${activeTab === "login" ? "active" : ""}`}
-          onClick={() => setActiveTab("login")}
+          onClick={() => {
+            setActiveTab("login");
+            setError("");
+          }}
           type="button"
         >
           Đăng nhập
         </button>
         <button
           className={`auth-tab ${activeTab === "register" ? "active" : ""}`}
-          onClick={() => setActiveTab("register")}
+          onClick={() => {
+            setActiveTab("register");
+            setError("");
+          }}
           type="button"
         >
           Đăng ký nhanh
@@ -46,17 +74,29 @@ export default function LoginPage() {
 
       <form onSubmit={handleSubmit} className="auth-page-form">
         <Input
-          label="Email hoặc số điện thoại"
-          placeholder="VD: 0901 234 567"
+          label={activeTab === "login" ? "Email hoặc số điện thoại" : "Số điện thoại"}
+          placeholder={activeTab === "login" ? "VD: 0901 234 567" : "VD: 0912345678"}
           type="tel"
+          value={form.identifier}
+          onChange={(event) => setForm((prev) => ({ ...prev, identifier: event.target.value }))}
           required
         />
-        {activeTab === "register" && <Input label="Họ và tên" placeholder="Nguyễn Văn An" required />}
+        {activeTab === "register" && (
+          <Input
+            label="Họ và tên"
+            placeholder="Nguyễn Văn An"
+            value={form.name}
+            onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
+            required
+          />
+        )}
         <div className="auth-pass-field">
           <Input
             label="Mật khẩu"
             placeholder="Nhập mật khẩu"
             type={showPass ? "text" : "password"}
+            value={form.password}
+            onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))}
             required
           />
           <button
@@ -81,8 +121,10 @@ export default function LoginPage() {
           </div>
         )}
 
-        <Button type="submit" className="auth-submit-btn">
-          {activeTab === "login" ? "Đăng nhập" : "Tiếp tục"}
+        {error && <div className="claim-submit-error">{error}</div>}
+
+        <Button type="submit" className="auth-submit-btn" disabled={submitting}>
+          {submitting ? "Đang xử lý" : activeTab === "login" ? "Đăng nhập" : "Tiếp tục"}
           <ArrowRight className="mc-icon mc-icon--sm" />
         </Button>
 
@@ -103,22 +145,14 @@ export default function LoginPage() {
         {activeTab === "login" ? (
           <>
             Bạn chưa có tài khoản?{" "}
-            <button
-              type="button"
-              className="auth-forgot-link"
-              onClick={() => setActiveTab("register")}
-            >
+            <button type="button" className="auth-forgot-link" onClick={() => setActiveTab("register")}>
               Đăng ký ngay
             </button>
           </>
         ) : (
           <>
             Đã có tài khoản?{" "}
-            <button
-              type="button"
-              className="auth-forgot-link"
-              onClick={() => setActiveTab("login")}
-            >
+            <button type="button" className="auth-forgot-link" onClick={() => setActiveTab("login")}>
               Đăng nhập
             </button>
           </>

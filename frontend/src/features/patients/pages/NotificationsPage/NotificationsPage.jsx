@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { BellOff, CheckCheck, Trash2 } from "lucide-react";
 import { appointmentApi } from "../../services/patientApi";
 import "./NotificationsPage.css";
@@ -7,29 +7,51 @@ export default function NotificationsPage() {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
+  const [error, setError] = useState("");
 
   useEffect(() => {
     loadNotifications();
   }, []);
 
-  const loadNotifications = async () => {
+  async function loadNotifications() {
     setLoading(true);
-    const data = await appointmentApi.getNotifications();
-    setNotifications(data.map((notification) => ({ ...notification, read: false })));
-    setLoading(false);
-  };
+    setError("");
+    try {
+      const data = await appointmentApi.getNotifications();
+      setNotifications(data);
+    } catch (loadError) {
+      setError(loadError.message || "Không tải được thông báo.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
-  const handleMarkAsRead = (id) => {
-    setNotifications((prev) => prev.map((item) => (item.id === id ? { ...item, read: true } : item)));
-  };
+  async function handleMarkAsRead(id) {
+    try {
+      await appointmentApi.markNotificationRead(id);
+      setNotifications((prev) => prev.map((item) => (item.id === id ? { ...item, read: true } : item)));
+    } catch (markError) {
+      setError(markError.message || "Không thể cập nhật thông báo.");
+    }
+  }
 
-  const handleMarkAllAsRead = () => {
-    setNotifications((prev) => prev.map((item) => ({ ...item, read: true })));
-  };
+  async function handleMarkAllAsRead() {
+    try {
+      await appointmentApi.markAllNotificationsRead();
+      setNotifications((prev) => prev.map((item) => ({ ...item, read: true })));
+    } catch (markError) {
+      setError(markError.message || "Không thể cập nhật thông báo.");
+    }
+  }
 
-  const handleDelete = (id) => {
-    setNotifications((prev) => prev.filter((item) => item.id !== id));
-  };
+  async function handleDelete(id) {
+    try {
+      await appointmentApi.deleteNotification(id);
+      setNotifications((prev) => prev.filter((item) => item.id !== id));
+    } catch (deleteError) {
+      setError(deleteError.message || "Không thể xóa thông báo.");
+    }
+  }
 
   const filteredNotifications = filter === "unread" ? notifications.filter((item) => !item.read) : notifications;
   const unreadCount = notifications.filter((item) => !item.read).length;
@@ -58,22 +80,24 @@ export default function NotificationsPage() {
 
       <main className="ehealth-main">
         <div className="ehealth-container">
+          {error && <div className="claim-submit-error">{error}</div>}
+
           <div className="notifications-header">
             <div>
               <h2 className="notifications-count">Bạn có {unreadCount} thông báo chưa đọc</h2>
             </div>
             {unreadCount > 0 && (
-              <button className="btn-secondary btn-small" onClick={handleMarkAllAsRead}>
+              <button className="btn-secondary btn-small" onClick={handleMarkAllAsRead} type="button">
                 Đánh dấu tất cả là đã đọc
               </button>
             )}
           </div>
 
           <div className="notification-filters">
-            <button className={`filter-btn ${filter === "all" ? "active" : ""}`} onClick={() => setFilter("all")}>
+            <button className={`filter-btn ${filter === "all" ? "active" : ""}`} onClick={() => setFilter("all")} type="button">
               Tất cả ({notifications.length})
             </button>
-            <button className={`filter-btn ${filter === "unread" ? "active" : ""}`} onClick={() => setFilter("unread")}>
+            <button className={`filter-btn ${filter === "unread" ? "active" : ""}`} onClick={() => setFilter("unread")} type="button">
               Chưa đọc ({unreadCount})
             </button>
           </div>
@@ -105,11 +129,11 @@ export default function NotificationsPage() {
 
                   <div className="notification-actions">
                     {!notification.read && (
-                      <button className="notification-btn" onClick={() => handleMarkAsRead(notification.id)} title="Đánh dấu là đã đọc">
+                      <button className="notification-btn" onClick={() => handleMarkAsRead(notification.id)} title="Đánh dấu là đã đọc" type="button">
                         <CheckCheck size={18} />
                       </button>
                     )}
-                    <button className="notification-btn delete" onClick={() => handleDelete(notification.id)} title="Xóa">
+                    <button className="notification-btn delete" onClick={() => handleDelete(notification.id)} title="Xóa" type="button">
                       <Trash2 size={18} />
                     </button>
                   </div>

@@ -1,19 +1,43 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Clock3, CalendarDays, MapPin, Plus } from "lucide-react";
 import { appointmentApi } from "../../services/patientApi";
 import styles from "./MyAppointmentsPage.module.css";
 import "./MyAppointmentsPage.css";
 
+function DoctorAvatar({ name, avatar, stylesRef }) {
+  if (avatar) {
+    return <img src={avatar} alt={name} className={stylesRef["doctor-avatar"]} />;
+  }
+
+  return (
+    <div
+      className={stylesRef["doctor-avatar"]}
+      style={{ display: "grid", placeItems: "center", background: "#e6f7fb", fontSize: "11px", fontWeight: 700 }}
+    >
+      {(name || "BS").slice(0, 2).toUpperCase()}
+    </div>
+  );
+}
+
 export default function MyAppointmentsPage() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("upcoming");
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const loadAppointments = useCallback(async () => {
     setLoading(true);
-    const data = await appointmentApi.getAppointments(activeTab);
-    setAppointments(data);
-    setLoading(false);
+    setError("");
+    try {
+      const data = await appointmentApi.getAppointments(activeTab);
+      setAppointments(data);
+    } catch (loadError) {
+      setError(loadError.message || "Không tải được danh sách lịch hẹn.");
+    } finally {
+      setLoading(false);
+    }
   }, [activeTab]);
 
   useEffect(() => {
@@ -40,22 +64,16 @@ export default function MyAppointmentsPage() {
 
   const formatDate = (dateStr) => {
     const date = new Date(dateStr);
-    const months = [
-      "Th1",
-      "Th2",
-      "Th3",
-      "Th4",
-      "Th5",
-      "Th6",
-      "Th7",
-      "Th8",
-      "Th9",
-      "Th10",
-      "Th11",
-      "Th12",
-    ];
+    const months = ["Th1", "Th2", "Th3", "Th4", "Th5", "Th6", "Th7", "Th8", "Th9", "Th10", "Th11", "Th12"];
     return { month: months[date.getMonth()], day: date.getDate() };
   };
+
+  const recentRows = useMemo(() => appointments.slice(0, 3), [appointments]);
+
+  function openRecord(appointment) {
+    if (!appointment.recordId) return;
+    navigate(`/patient/records/${appointment.recordId}`);
+  }
 
   return (
     <div className={`my-appointments-page-shell ${styles["appointment-page"]}`}>
@@ -67,7 +85,7 @@ export default function MyAppointmentsPage() {
               Quản lý và theo dõi toàn bộ lịch khám của bạn tại MediCare Clinic.
             </p>
           </div>
-          <button className={`${styles["btn-primary"]} ${styles["btn-new-appointment"]}`}>
+          <button className={`${styles["btn-primary"]} ${styles["btn-new-appointment"]}`} onClick={() => navigate("/book")} type="button">
             <Plus size={16} />
             Đặt lịch hẹn mới
           </button>
@@ -81,23 +99,25 @@ export default function MyAppointmentsPage() {
               { key: "upcoming", label: "Sắp tới" },
               { key: "history", label: "Lịch sử" },
               { key: "cancelled", label: "Đã hủy" },
-            ].map((tab) => {
-              const counts = { upcoming: appointments.length || 0, history: 1, cancelled: 1 };
-              return (
-                <button
-                  key={tab.key}
-                  className={`${styles["appointment-tab"]} ${activeTab === tab.key ? styles.active : ""}`}
-                  onClick={() => setActiveTab(tab.key)}
-                >
-                  {tab.label}
-                  {activeTab === tab.key && <span className={styles["tab-count"]}>{counts[tab.key]}</span>}
-                </button>
-              );
-            })}
+            ].map((tab) => (
+              <button
+                key={tab.key}
+                className={`${styles["appointment-tab"]} ${activeTab === tab.key ? styles.active : ""}`}
+                onClick={() => setActiveTab(tab.key)}
+                type="button"
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
 
           {loading ? (
             <div className={styles["appointment-loading"]}>Đang tải...</div>
+          ) : error ? (
+            <div className={styles["appointment-empty"]}>
+              <h3>Không tải được lịch hẹn</h3>
+              <p>{error}</p>
+            </div>
           ) : appointments.length === 0 ? (
             <div className={styles["appointment-empty"]}>
               <div className={styles["empty-icon"]}><CalendarDays size={42} /></div>
@@ -137,7 +157,7 @@ export default function MyAppointmentsPage() {
 
                       <div className={styles["appointment-footer"]}>
                         <div className={styles["appointment-doctor"]}>
-                          <img src={appointment.doctor.avatar} alt={appointment.doctor.name} className={styles["doctor-avatar"]} />
+                          <DoctorAvatar name={appointment.doctor.name} avatar={appointment.doctor.avatar} stylesRef={styles} />
                           <span className={styles["doctor-name"]}>{appointment.doctor.name}</span>
                         </div>
                         <div className={styles["appointment-location"]}>
@@ -150,15 +170,28 @@ export default function MyAppointmentsPage() {
                     <div className={styles["appointment-actions"]}>
                       {activeTab === "upcoming" && (
                         <>
-                          <button className={styles["btn-secondary"]}>Dời lịch</button>
-                          <button className={`${styles["btn-primary"]} ${styles["btn-small"]}`}>Xem chi tiết</button>
+                          <button className={styles["btn-secondary"]} onClick={() => navigate("/lookup")} type="button">
+                            Tra cứu
+                          </button>
+                          <button className={`${styles["btn-primary"]} ${styles["btn-small"]}`} onClick={() => navigate(`/booking-success/${appointment.code}`)} type="button">
+                            Xem mã lịch
+                          </button>
                         </>
                       )}
                       {activeTab === "history" && (
-                        <button className={`${styles["btn-primary"]} ${styles["btn-small"]}`}>Xem chi tiết</button>
+                        <button
+                          className={`${styles["btn-primary"]} ${styles["btn-small"]}`}
+                          onClick={() => openRecord(appointment)}
+                          disabled={!appointment.recordId}
+                          type="button"
+                        >
+                          Xem chi tiết
+                        </button>
                       )}
                       {activeTab === "cancelled" && (
-                        <button className={`${styles["btn-primary"]} ${styles["btn-small"]}`}>Đặt lại</button>
+                        <button className={`${styles["btn-primary"]} ${styles["btn-small"]}`} onClick={() => navigate("/book")} type="button">
+                          Đặt lại
+                        </button>
                       )}
                     </div>
                   </div>
@@ -167,9 +200,9 @@ export default function MyAppointmentsPage() {
             </div>
           )}
 
-          {activeTab === "upcoming" && (
+          {!loading && !error && recentRows.length > 0 && (
             <div className={styles["recent-appointments"]}>
-              <h2 className={styles["section-title"]}>Lịch hẹn gần đây</h2>
+              <h2 className={styles["section-title"]}>Danh sách hiện tại</h2>
               <div className={styles["appointments-table-wrapper"]}>
                 <table className={styles["appointments-table"]}>
                   <thead>
@@ -183,30 +216,25 @@ export default function MyAppointmentsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {[
-                      {
-                        code: "MC-2023-552",
-                        service: "Khám tổng quát",
-                        doctor: "BS. Nguyễn Văn A",
-                        date: "15/12/2023, 10:00",
-                      },
-                      {
-                        code: "MC-2023-451",
-                        service: "Tái khám phổi",
-                        doctor: "BS. Trần Thị C",
-                        date: "10/11/2023, 14:30",
-                      },
-                    ].map((row) => (
+                    {recentRows.map((row) => (
                       <tr key={row.code}>
                         <td className="font-medium">{row.code}</td>
                         <td>{row.service}</td>
-                        <td>{row.doctor}</td>
-                        <td>{row.date}</td>
+                        <td>{row.doctor.name}</td>
+                        <td>{`${row.day}, ${row.date} ${row.timeStart}`}</td>
                         <td>
-                          <span className={`${styles["appointment-status-badge"]} ${styles["status-completed"]}`}>Đã hoàn tất</span>
+                          <span className={getStatusBadgeClass(row.status)}>{row.statusLabel}</span>
                         </td>
                         <td className="text-right">
-                          <button className={styles["action-link"]}>Xem</button>
+                          {row.recordId ? (
+                            <button className={styles["action-link"]} onClick={() => openRecord(row)} type="button">
+                              Xem
+                            </button>
+                          ) : (
+                            <button className={styles["action-link"]} onClick={() => navigate(`/booking-success/${row.code}`)} type="button">
+                              Xem
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))}

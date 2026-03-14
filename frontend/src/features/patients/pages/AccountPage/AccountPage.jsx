@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { KeyRound, LogOut, ShieldCheck, UserRound } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { appointmentApi } from "../../services/patientApi";
@@ -17,31 +17,44 @@ export default function AccountPage() {
     confirmPassword: "",
   });
   const [passwordErrors, setPasswordErrors] = useState({});
+  const [submitError, setSubmitError] = useState("");
 
   useEffect(() => {
     loadAccount();
   }, []);
 
-  const loadAccount = async () => {
+  async function loadAccount() {
     setLoading(true);
-    const data = await appointmentApi.getAccountInfo();
-    setAccount(data);
-    setProfileForm(data || {});
-    setLoading(false);
-  };
+    setSubmitError("");
+    try {
+      const data = await appointmentApi.getAccountInfo();
+      setAccount(data);
+      setProfileForm(data || {});
+    } catch (error) {
+      setSubmitError(error.message || "Không tải được thông tin tài khoản.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
-  const handleProfileChange = (field, value) => {
+  function handleProfileChange(field, value) {
     setProfileForm((formState) => ({ ...formState, [field]: value }));
-  };
+  }
 
-  const handleProfileSave = async () => {
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    setAccount(profileForm);
-    setProfileEditing(false);
-    alert("Cập nhật thông tin thành công");
-  };
+  async function handleProfileSave() {
+    try {
+      const data = await appointmentApi.updateAccountInfo(profileForm);
+      setAccount(data);
+      setProfileForm(data);
+      setProfileEditing(false);
+      setSubmitError("");
+      alert("Cập nhật thông tin thành công");
+    } catch (error) {
+      setSubmitError(error.message || "Không thể cập nhật thông tin.");
+    }
+  }
 
-  const validatePassword = () => {
+  function validatePassword() {
     const nextErrors = {};
     if (!passwordForm.currentPassword.trim()) {
       nextErrors.currentPassword = "Vui lòng nhập mật khẩu hiện tại";
@@ -54,19 +67,35 @@ export default function AccountPage() {
     }
     setPasswordErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
-  };
+  }
 
-  const handlePasswordChange = async () => {
+  async function handlePasswordChange() {
     if (!validatePassword()) return;
-    await appointmentApi.changePassword(passwordForm);
-    alert("Đổi mật khẩu thành công");
-    setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
-  };
 
-  const handleLogout = () => {
+    try {
+      await appointmentApi.changePassword(passwordForm);
+      setSubmitError("");
+      alert("Đổi mật khẩu thành công");
+      setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      setPasswordErrors({});
+    } catch (error) {
+      const nextErrors = { ...passwordErrors };
+      const errorData = error.data;
+      if (errorData && typeof errorData === "object") {
+        Object.entries(errorData).forEach(([key, value]) => {
+          nextErrors[key] = Array.isArray(value) ? value[0] : value;
+        });
+      } else {
+        setSubmitError(error.message || "Không thể đổi mật khẩu.");
+      }
+      setPasswordErrors(nextErrors);
+    }
+  }
+
+  function handleLogout() {
     alert("Đã đăng xuất");
     navigate("/patient/login");
-  };
+  }
 
   if (loading) {
     return (
@@ -105,6 +134,8 @@ export default function AccountPage() {
             </button>
           </div>
 
+          {submitError && <div className="claim-submit-error">{submitError}</div>}
+
           {activeTab === "profile" && (
             <div className="ehealth-card profile-card">
               <h2 className="ehealth-card-title">Thông tin tài khoản</h2>
@@ -136,7 +167,7 @@ export default function AccountPage() {
               <div className="form-actions">
                 {profileEditing ? (
                   <>
-                    <button className="btn-primary btn-small" onClick={handleProfileSave}>
+                    <button className="btn-primary btn-small" onClick={handleProfileSave} type="button">
                       Lưu thay đổi
                     </button>
                     <button
@@ -144,13 +175,15 @@ export default function AccountPage() {
                       onClick={() => {
                         setProfileEditing(false);
                         setProfileForm(account || {});
+                        setSubmitError("");
                       }}
+                      type="button"
                     >
                       Hủy
                     </button>
                   </>
                 ) : (
-                  <button className="btn-primary btn-small" onClick={() => setProfileEditing(true)}>
+                  <button className="btn-primary btn-small" onClick={() => setProfileEditing(true)} type="button">
                     Chỉnh sửa
                   </button>
                 )}
@@ -196,7 +229,7 @@ export default function AccountPage() {
               </div>
 
               <div className="form-actions">
-                <button className="btn-primary btn-small" onClick={handlePasswordChange}>
+                <button className="btn-primary btn-small" onClick={handlePasswordChange} type="button">
                   Đổi mật khẩu
                 </button>
               </div>
@@ -212,7 +245,7 @@ export default function AccountPage() {
                     <h3 className="security-item-title">Xác thực hai lớp</h3>
                     <p className="security-item-desc">Bảo vệ tài khoản bằng mã xác thực qua SMS</p>
                   </div>
-                  <button className="btn-secondary btn-small">Cài đặt</button>
+                  <button className="btn-secondary btn-small" type="button">Cài đặt</button>
                 </div>
 
                 <div className="section-sep"></div>
@@ -222,7 +255,7 @@ export default function AccountPage() {
                     <h3 className="security-item-title">Thiết bị đăng nhập</h3>
                     <p className="security-item-desc">Quản lý các thiết bị có quyền truy cập tài khoản</p>
                   </div>
-                  <button className="btn-secondary btn-small">Quản lý</button>
+                  <button className="btn-secondary btn-small" type="button">Quản lý</button>
                 </div>
 
                 <div className="section-sep"></div>
@@ -232,12 +265,12 @@ export default function AccountPage() {
                     <h3 className="security-item-title">Hoạt động tài khoản</h3>
                     <p className="security-item-desc">Xem lịch sử đăng nhập và hoạt động gần đây</p>
                   </div>
-                  <button className="btn-secondary btn-small">Xem</button>
+                  <button className="btn-secondary btn-small" type="button">Xem</button>
                 </div>
               </div>
 
               <div className="form-actions account-logout">
-                <button className="btn-secondary btn-small account-logout-button" onClick={handleLogout}>
+                <button className="btn-secondary btn-small account-logout-button" onClick={handleLogout} type="button">
                   <LogOut size={16} />
                   Đăng xuất
                 </button>

@@ -87,7 +87,7 @@ export default function ClaimProfilePage() {
         <div className="claim-info-box">
           <div className="claim-info-box__title">Thông tin demo để claim</div>
           <div>
-            Mock để thử: <strong>APT-2026-1001</strong> + <strong>Trần Thị Bình</strong>
+            Demo đã seed: <strong>APT-2026-1001</strong> + <strong>Trần Thị Bình</strong>
           </div>
           <div>
             Hoặc: <strong>APT-2026-1015</strong> + <strong>Nguyễn Văn An</strong>
@@ -133,16 +133,12 @@ export default function ClaimProfilePage() {
             <div className="claim-result__summary">
               {claimResult.alreadyClaimed
                 ? "Hồ sơ này đã được liên kết trước đó. Bạn có thể vào cổng bệnh nhân để xem lại."
-                : `Đã gắn ${claimResult.linkedAppointments} lịch hẹn và ${claimResult.linkedRecords} hồ sơ khám vào portal mock.`}
+                : `Đã gắn ${claimResult.linkedAppointments} lịch hẹn và ${claimResult.linkedRecords} hồ sơ khám vào cổng bệnh nhân.`}
             </div>
           </div>
 
           <div className="claim-result__actions">
-            <button
-              type="button"
-              className="claim-result__primary"
-              onClick={() => navigate("/patient/appointments")}
-            >
+            <button type="button" className="claim-result__primary" onClick={() => navigate("/patient/appointments")}>
               <ShieldCheck className="mc-icon mc-icon--sm" />
               Vào cổng bệnh nhân
             </button>

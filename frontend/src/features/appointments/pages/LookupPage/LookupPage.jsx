@@ -19,27 +19,27 @@ import "./LookupPage.css";
 
 const STATUS_MAP = {
   PENDING: {
-    label: "L?ch h?n dang ch? x�c nh?n PA1",
-    subLabel: "Vui l�ng x�c nh?n trong th?i gian hi?u l?c d? gi? khung gi? n�y.",
-    statusText: "Ch? x�c nh?n",
+    label: "Lịch hẹn đang chờ xác nhận PA1",
+    subLabel: "Vui lòng xác nhận trong thời gian hiệu lực để giữ khung giờ đã chọn.",
+    statusText: "Chờ xác nhận",
     statusClass: "bs-status-pill--warning",
   },
   PENDING_PA1: {
-    label: "L?ch h?n dang ch? x�c nh?n PA1",
-    subLabel: "Vui l�ng x�c nh?n trong th?i gian hi?u l?c d? gi? khung gi? n�y.",
-    statusText: "Ch? x�c nh?n",
+    label: "Lịch hẹn đang chờ xác nhận PA1",
+    subLabel: "Vui lòng xác nhận trong thời gian hiệu lực để giữ khung giờ đã chọn.",
+    statusText: "Chờ xác nhận",
     statusClass: "bs-status-pill--warning",
   },
   CONFIRMED: {
-    label: "L?ch h?n d� du?c x�c nh?n",
-    subLabel: "B?n s? du?c nh?c tru?c gi? kh�m qua SMS.",
-    statusText: "�� x�c nh?n",
+    label: "Lịch hẹn đã được xác nhận",
+    subLabel: "Bạn sẽ nhận nhắc lịch gần giờ khám qua SMS hoặc tại cổng bệnh nhân.",
+    statusText: "Đã xác nhận",
     statusClass: "bs-status-pill--success",
   },
   CANCELLED: {
-    label: "L?ch h?n d� b? h?y",
-    subLabel: "B?n c� th? d?t l?ch m?i b?t k? l�c n�o d? ch?n khung gi? kh�c.",
-    statusText: "�� h?y",
+    label: "Lịch hẹn đã bị hủy",
+    subLabel: "Bạn có thể đặt lại bất kỳ lúc nào để chọn khung giờ phù hợp hơn.",
+    statusText: "Đã hủy",
     statusClass: "bs-status-pill--danger",
   },
 };
@@ -54,9 +54,9 @@ export default function LookupPage() {
 
   function validate() {
     const nextErrors = {};
-    if (!code.trim()) nextErrors.code = "Vui l�ng nh?p m� l?ch h?n.";
+    if (!code.trim()) nextErrors.code = "Vui lòng nhập mã lịch hẹn.";
     if (!/^0\d{9}$/.test(phone.trim())) {
-      nextErrors.phone = "S? di?n tho?i kh�ng h?p l? (10 s?).";
+      nextErrors.phone = "Số điện thoại không hợp lệ (10 số, bắt đầu bằng 0).";
     }
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
@@ -86,16 +86,16 @@ export default function LookupPage() {
   return (
     <div className="lk-v2-wrap mc-stack-lg lookup-page">
       <div className="lookup-page__header">
-        <h1 className="lookup-page__title">Tra c?u l?ch h?n</h1>
+        <h1 className="lookup-page__title">{"Tra cứu lịch hẹn"}</h1>
         <p className="lookup-page__subtitle">
-          Nh?p m� l?ch h?n v� s? di?n tho?i d? ki?m tra tr?ng th�i d?t l?ch c?a b?n.
+          {"Nhập mã lịch hẹn và số điện thoại để xem trạng thái xử lý, thông tin bác sĩ và hướng dẫn bước tiếp theo."}
         </p>
       </div>
 
       <div className="lk-v2-search-card">
         <form onSubmit={handleLookup} className="lk-v2-search-form">
           <div className="lk-v2-field">
-            <label className="lk-v2-label">M� l?ch h?n</label>
+            <label className="lk-v2-label">{"Mã lịch hẹn"}</label>
             <div className="lk-v2-input-wrap">
               <ClipboardList className="mc-icon mc-icon--sm lk-v2-input-icon" />
               <input
@@ -109,7 +109,7 @@ export default function LookupPage() {
           </div>
 
           <div className="lk-v2-field">
-            <label className="lk-v2-label">S? di?n tho?i</label>
+            <label className="lk-v2-label">{"Số điện thoại"}</label>
             <div className="lk-v2-input-wrap">
               <Phone className="mc-icon mc-icon--sm lk-v2-input-icon" />
               <input
@@ -124,7 +124,7 @@ export default function LookupPage() {
 
           <button type="submit" className="lk-v2-search-btn" disabled={loading}>
             <Search className="mc-icon mc-icon--sm" />
-            Tra c?u
+            {"Tra cứu"}
           </button>
         </form>
       </div>
@@ -141,9 +141,9 @@ export default function LookupPage() {
             <CircleX className="mc-icon mc-icon--lg" />
           </div>
           <div>
-            <div className="lk-v2-alert-title">Th�ng tin kh�ng tr�ng kh?p</div>
+            <div className="lk-v2-alert-title">{"Thông tin không trùng khớp"}</div>
             <div className="lk-v2-alert-sub">
-              Vui l�ng ki?m tra l?i m� l?ch h?n v� s? di?n tho?i.
+              {"Vui lòng kiểm tra lại mã lịch hẹn và số điện thoại đã dùng khi đặt."}
             </div>
           </div>
         </div>
@@ -169,7 +169,7 @@ export default function LookupPage() {
             </div>
             {isPending && (
               <div className="lk-v2-timer-badge">
-                <div className="lk-v2-timer-label">TR?NG TH�I</div>
+                <div className="lk-v2-timer-label">{"TRẠNG THÁI"}</div>
                 <div className="lk-v2-timer-val">PA1</div>
               </div>
             )}
@@ -182,7 +182,7 @@ export default function LookupPage() {
                 <div className="lookup-page__qr-label">QR Check-in</div>
               </div>
               <div className="lk-v2-status-section">
-                <div className="lk-v2-status-label">TR?NG TH�I</div>
+                <div className="lk-v2-status-label">{"TRẠNG THÁI"}</div>
                 <span className={`bs-status-pill ${statusInfo.statusClass}`}>
                   {statusInfo.statusText}
                 </span>
@@ -192,7 +192,7 @@ export default function LookupPage() {
             <div className="lk-v2-detail-right">
               <div className="lk-v2-detail-header">
                 <div>
-                  <h3 className="lk-v2-detail-title">Chi ti?t l?ch h?n</h3>
+                  <h3 className="lk-v2-detail-title">{"Chi tiết lịch hẹn"}</h3>
                   <div className="lk-v2-detail-code">#{result.code}</div>
                 </div>
               </div>
@@ -203,7 +203,7 @@ export default function LookupPage() {
                     <CalendarDays className="mc-icon mc-icon--sm" />
                   </div>
                   <div>
-                    <div className="lk-v2-info-label">Ng�y v� gi?</div>
+                    <div className="lk-v2-info-label">{"Ngày và giờ"}</div>
                     <div className="lk-v2-info-val">{result.date}</div>
                     <div className="lk-v2-info-sub">{result.slot}</div>
                   </div>
@@ -213,7 +213,7 @@ export default function LookupPage() {
                     <Stethoscope className="mc-icon mc-icon--sm" />
                   </div>
                   <div>
-                    <div className="lk-v2-info-label">B�c si ph? tr�ch</div>
+                    <div className="lk-v2-info-label">{"Bác sĩ phụ trách"}</div>
                     <div className="lk-v2-info-val">{doctorName}</div>
                     <div className="lk-v2-info-sub">{specialtyName}</div>
                   </div>
@@ -223,9 +223,9 @@ export default function LookupPage() {
                     <MapPin className="mc-icon mc-icon--sm" />
                   </div>
                   <div>
-                    <div className="lk-v2-info-label">�?a di?m</div>
-                    <div className="lk-v2-info-val">Co s? H?i Ch�u</div>
-                    <div className="lk-v2-info-sub">123 Nguy?n Van Linh, �� N?ng</div>
+                    <div className="lk-v2-info-label">{"Địa điểm"}</div>
+                    <div className="lk-v2-info-val">{"Cơ sở Hải Châu"}</div>
+                    <div className="lk-v2-info-sub">{"123 Nguyễn Văn Linh, Đà Nẵng"}</div>
                   </div>
                 </div>
                 <div className="lk-v2-info-item">
@@ -233,9 +233,9 @@ export default function LookupPage() {
                     <ShieldCheck className="mc-icon mc-icon--sm" />
                   </div>
                   <div>
-                    <div className="lk-v2-info-label">D?ch v?</div>
+                    <div className="lk-v2-info-label">{"Dịch vụ"}</div>
                     <div className="lk-v2-info-val">{specialtyName}</div>
-                    <div className="lk-v2-info-sub">Ph� d?ch v? tham kh?o: 300.000d</div>
+                    <div className="lk-v2-info-sub">{"Phí dịch vụ tham khảo: 300.000đ"}</div>
                   </div>
                 </div>
               </div>
@@ -243,7 +243,7 @@ export default function LookupPage() {
               <div className="lk-v2-detail-actions">
                 <button className="lk-v2-action-secondary" type="button">
                   <HelpCircle className="mc-icon mc-icon--sm" />
-                  H? tr?
+                  {"Hỗ trợ"}
                 </button>
                 {isPending && (
                   <button
@@ -252,7 +252,7 @@ export default function LookupPage() {
                     onClick={() => navigate(`/booking-success/${result.code}`)}
                   >
                     <ShieldCheck className="mc-icon mc-icon--sm" />
-                    X�c nh?n PA1
+                    {"Xác nhận PA1"}
                   </button>
                 )}
                 {result.status === "CONFIRMED" && (
@@ -262,7 +262,7 @@ export default function LookupPage() {
                     onClick={() => navigate(`/booking-success/${result.code}`)}
                   >
                     <Search className="mc-icon mc-icon--sm" />
-                    Xem chi ti?t
+                    {"Xem chi tiết"}
                   </button>
                 )}
                 {result.status === "CANCELLED" && (
@@ -272,7 +272,7 @@ export default function LookupPage() {
                     onClick={() => navigate("/book")}
                   >
                     <RefreshCcw className="mc-icon mc-icon--sm" />
-                    �?t l?ch l?i
+                    {"Đặt lại"}
                   </button>
                 )}
               </div>
@@ -283,12 +283,12 @@ export default function LookupPage() {
 
       <div className="lk-v2-footer-info">
         <p>
-          M?i th?c m?c vui l�ng li�n h? hotline <strong>1900 1234</strong> ho?c email
+          {"Mọi thắc mắc vui lòng liên hệ hotline "}<strong>1900 1234</strong>{" hoặc email"}
           <strong> support@medicare.vn</strong>
         </p>
         <p>
-          H? th?ng s? t? d?ng h?y c�c l?ch h?n chua du?c x�c nh?n trong 15 ph�t d? uu ti�n cho
-          b?nh nh�n kh�c.
+          {"Hệ thống sẽ tự động hủy các lịch hẹn chưa được xác nhận trong 15 phút để ưu tiên khung giờ cho"}
+          {" bệnh nhân khác."}
         </p>
       </div>
     </div>

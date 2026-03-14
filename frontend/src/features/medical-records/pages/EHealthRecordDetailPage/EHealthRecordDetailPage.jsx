@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   CalendarDays,
   ClipboardCheck,
@@ -8,6 +8,7 @@ import {
   ShieldCheck,
   Stethoscope,
   TimerReset,
+  UserRound,
 } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { appointmentApi } from "../../../patients/services/patientApi";
@@ -26,17 +27,32 @@ function TimelineIcon({ name }) {
   return <Icon size={16} />;
 }
 
+function DoctorAvatar({ doctor }) {
+  if (doctor?.avatar) {
+    return <img src={doctor.avatar} alt={doctor.name} />;
+  }
+
+  return <UserRound size={36} />;
+}
+
 export default function EHealthRecordDetailPage() {
   const { id } = useParams();
   const [record, setRecord] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("diagnosis");
 
   const loadRecord = useCallback(async () => {
     setLoading(true);
-    const data = await appointmentApi.getRecordDetail(id || "REC-001");
-    setRecord(data);
-    setLoading(false);
+    setError("");
+    try {
+      const data = await appointmentApi.getRecordDetail(id || "REC-001");
+      setRecord(data);
+    } catch (loadError) {
+      setError(loadError.message || "Không tìm thấy bản ghi");
+    } finally {
+      setLoading(false);
+    }
   }, [id]);
 
   useEffect(() => {
@@ -54,7 +70,7 @@ export default function EHealthRecordDetailPage() {
   if (!record) {
     return (
       <div className={`medical-record-page-shell ${styles["ehealth-page"]}`}>
-        <div className={styles["ehealth-error"]}>Không tìm thấy bản ghi</div>
+        <div className={styles["ehealth-error"]}>{error || "Không tìm thấy bản ghi"}</div>
       </div>
     );
   }
@@ -116,12 +132,12 @@ export default function EHealthRecordDetailPage() {
                 <h3 className={styles["ehealth-card-title"]}>Bác sĩ điều trị</h3>
                 <div className={styles["doctor-card"]}>
                   <div className={styles["doctor-avatar-large"]}>
-                    <img src={record.doctor.avatar} alt={record.doctor.name} />
+                    <DoctorAvatar doctor={record.doctor} />
                   </div>
                   <h4 className={styles["doctor-name"]}>{record.doctor.name}</h4>
                   <p className={styles["doctor-department"]}>{record.doctor.department}</p>
                   <p className={styles["doctor-branch"]}>{record.doctor.branch}</p>
-                  <button className={`${styles["btn-primary"]} ${styles["btn-block"]}`}>Đặt tái khám</button>
+                  <button className={`${styles["btn-primary"]} ${styles["btn-block"]}`} type="button">Đặt tái khám</button>
                 </div>
               </div>
             </aside>
@@ -136,7 +152,7 @@ export default function EHealthRecordDetailPage() {
                         <p className={styles["ehealth-card-subtitle"]}>Tại: {record.location}</p>
                       </div>
                       <div className={styles["ehealth-card-actions"]}>
-                        <button className={`${styles["btn-secondary"]} ${styles["btn-small"]}`}>
+                        <button className={`${styles["btn-secondary"]} ${styles["btn-small"]}`} type="button">
                           <Download size={16} />
                           Tải PDF
                         </button>
@@ -165,7 +181,7 @@ export default function EHealthRecordDetailPage() {
                         ))}
                         <div className={styles["notes-signature"]}>
                           <ShieldCheck size={16} />
-                          <span>Ký bởi BS. {record.doctor.name} tại {record.doctor.branch} lúc 09:45</span>
+                          <span>Ký bởi {record.doctor.name} tại {record.doctor.branch}</span>
                         </div>
                       </div>
                     </div>
@@ -190,7 +206,7 @@ function MedicinesTable({ medicines, styles }) {
           <div>
             <h2 className={`${styles["ehealth-card-title"]} ${styles.large}`}>Đơn thuốc</h2>
           </div>
-          <button className={`${styles["btn-secondary"]} ${styles["btn-small"]}`}>
+          <button className={`${styles["btn-secondary"]} ${styles["btn-small"]}`} type="button">
             <Download size={16} />
             Tải PDF
           </button>

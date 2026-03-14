@@ -21,7 +21,7 @@ function extractErrorMessage(payload) {
   }
 
   if (!payload || typeof payload !== "object") {
-    return "Y�u c?u th?t b?i.";
+    return "Yêu cầu thất bại.";
   }
 
   const [firstValue] = Object.values(payload);
@@ -33,7 +33,7 @@ function extractErrorMessage(payload) {
     return repairMojibakeText(firstValue);
   }
 
-  return "Y�u c?u th?t b?i.";
+  return "Yêu cầu thất bại.";
 }
 
 async function parseResponse(response) {
@@ -84,7 +84,7 @@ export function mockRequest({
   data,
   delayMs = 400,
   shouldFail = false,
-  errorMsg = "L?i m�y ch? (mock)",
+  errorMsg = "Lỗi máy chủ (mock)",
 }) {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
