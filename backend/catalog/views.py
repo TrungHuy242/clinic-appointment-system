@@ -1,4 +1,4 @@
-﻿from rest_framework import filters, viewsets
+from rest_framework import filters, viewsets
 
 from .models import Doctor, Specialty
 from .serializers import DoctorSerializer, SpecialtySerializer
@@ -6,9 +6,17 @@ from .serializers import DoctorSerializer, SpecialtySerializer
 
 class SpecialtyViewSet(viewsets.ModelViewSet):
     serializer_class = SpecialtySerializer
-    queryset = Specialty.objects.all().order_by('name')
     filter_backends = [filters.SearchFilter]
     search_fields = ['name']
+
+    def get_queryset(self):
+        queryset = Specialty.objects.all().order_by('name')
+
+        is_active = self.request.query_params.get('is_active')
+        if is_active in {'true', 'false'}:
+            queryset = queryset.filter(is_active=is_active == 'true')
+
+        return queryset
 
 
 class DoctorViewSet(viewsets.ModelViewSet):

@@ -1,79 +1,329 @@
-import React, { useState } from "react";
-import { Baby, Building2, CalendarDays, HeartPulse, ShieldCheck, Smile, Sparkles, Stethoscope, UserRound, Users } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import {
+  Baby,
+  Building2,
+  CalendarDays,
+  HeartPulse,
+  ShieldCheck,
+  Sparkles,
+  Stethoscope,
+  UserRound,
+  Users,
+} from "lucide-react";
 import Badge from "../../../../shared/components/Badge/Badge";
+import Button from "../../../../shared/components/Button/Button";
+import Input from "../../../../shared/components/Input/Input";
+import LoadingSpinner from "../../../../shared/components/LoadingSpinner/LoadingSpinner";
+import {
+  createDoctor,
+  createSpecialty,
+  listDoctors,
+  listSpecialties,
+  updateDoctor,
+  updateSpecialty,
+} from "../../services/catalogApi";
 import "./CatalogPage.css";
 
-const MOCK_SPECIALTIES = [
-  { id: 1, name: "Nhi khoa", icon: Baby, doctors: 3, active: true },
-  { id: 2, name: "Da li·ªÖu", icon: Sparkles, doctors: 4, active: true },
-  { id: 3, name: "Tai M≈©i H·ªçng", icon: Stethoscope, doctors: 2, active: true },
-  { id: 4, name: "Nha khoa", icon: Smile, doctors: 2, active: true },
-  { id: 5, name: "Tim m·∫°ch", icon: HeartPulse, doctors: 1, active: false },
-  { id: 6, name: "Kh√°m t·ªïng qu√°t", icon: ShieldCheck, doctors: 5, active: true },
-];
-
-const MOCK_DOCTORS = [
-  { id: 1, name: "BS. Nguy·ªÖn Th·ªã Sarah", specialty: "Da li·ªÖu", phone: "0901234567", active: true, appointments: 120 },
-  { id: 2, name: "BS. Nguy·ªÖn VƒÉn A", specialty: "Nhi khoa", phone: "0912345678", active: true, appointments: 95 },
-  { id: 3, name: "BS. Tr·∫ßn Th·ªã C", specialty: "Kh√°m t·ªïng qu√°t", phone: "0934567890", active: false, appointments: 44 },
-];
-
-const FACILITY_STATS = [
-  { label: "T·ªïng b√°c sƒ©", value: "11", icon: Users },
-  { label: "Chuy√™n khoa", value: "6", icon: Building2 },
-  { label: "Ph√≤ng kh√°m", value: "8", icon: CalendarDays },
-];
+const SPECIALTY_ICONS = {
+  "Nhi khoa": Baby,
+  "Da li?u": Sparkles,
+  "Tai Mui H?ng": Stethoscope,
+  "Kh·m t?ng qu·t": HeartPulse,
+};
 
 export default function CatalogPage() {
   const [activeTab, setActiveTab] = useState("specialties");
   const [specialtySearch, setSpecialtySearch] = useState("");
   const [doctorSearch, setDoctorSearch] = useState("");
+  const [specialties, setSpecialties] = useState([]);
+  const [doctors, setDoctors] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [specialtyForm, setSpecialtyForm] = useState({ name: "", description: "" });
+  const [doctorForm, setDoctorForm] = useState({ fullName: "", phone: "", specialtyId: "" });
 
-  const filteredSpecialties = MOCK_SPECIALTIES.filter((item) =>
+  async function loadCatalog() {
+    setLoading(true);
+    setError("");
+    try {
+      const [nextSpecialties, nextDoctors] = await Promise.all([
+        listSpecialties(),
+        listDoctors(),
+      ]);
+      setSpecialties(nextSpecialties);
+      setDoctors(nextDoctors);
+      setDoctorForm((current) => ({
+        ...current,
+        specialtyId: current.specialtyId || String(nextSpecialties[0]?.id || ""),
+      }));
+    } catch (nextError) {
+      setError(nextError.message || "KhÙng t?i du?c danh m?c.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadCatalog();
+  }, []);
+
+  const filteredSpecialties = specialties.filter((item) =>
     item.name.toLowerCase().includes(specialtySearch.toLowerCase())
   );
-  const filteredDoctors = MOCK_DOCTORS.filter(
+  const filteredDoctors = doctors.filter(
     (item) =>
-      item.name.toLowerCase().includes(doctorSearch.toLowerCase()) ||
-      item.specialty.toLowerCase().includes(doctorSearch.toLowerCase())
+      item.full_name.toLowerCase().includes(doctorSearch.toLowerCase()) ||
+      item.specialty_name.toLowerCase().includes(doctorSearch.toLowerCase())
   );
+  const doctorCountBySpecialty = doctors.reduce((accumulator, doctor) => {
+    accumulator[doctor.specialty] = (accumulator[doctor.specialty] || 0) + 1;
+    return accumulator;
+  }, {});
+  const facilityStats = [
+    { label: "T?ng b·c si", value: doctors.length, icon: Users },
+    { label: "ChuyÍn khoa", value: specialties.length, icon: Building2 },
+    {
+      label: "–ang ho?t d?ng",
+      value: doctors.filter((doctor) => doctor.is_active).length,
+      icon: CalendarDays,
+    },
+  ];
+
+  async function handleCreateSpecialty() {
+    if (!specialtyForm.name.trim()) {
+      setError("TÍn chuyÍn khoa l‡ b?t bu?c.");
+      return;
+    }
+
+    setSaving(true);
+    setError("");
+    try {
+      await createSpecialty({
+        name: specialtyForm.name.trim(),
+        description: specialtyForm.description.trim(),
+        is_active: true,
+      });
+      setSpecialtyForm({ name: "", description: "" });
+      await loadCatalog();
+    } catch (nextError) {
+      setError(nextError.message || "KhÙng t?o du?c chuyÍn khoa.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleToggleSpecialty(specialty) {
+    setSaving(true);
+    setError("");
+    try {
+      await updateSpecialty(specialty.id, { is_active: !specialty.is_active });
+      await loadCatalog();
+    } catch (nextError) {
+      setError(nextError.message || "KhÙng c?p nh?t du?c chuyÍn khoa.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleEditSpecialty(specialty) {
+    const nextName = window.prompt("TÍn chuyÍn khoa", specialty.name);
+    if (!nextName || !nextName.trim()) return;
+    const nextDescription = window.prompt(
+      "MÙ t? chuyÍn khoa",
+      specialty.description || ""
+    );
+
+    setSaving(true);
+    setError("");
+    try {
+      await updateSpecialty(specialty.id, {
+        name: nextName.trim(),
+        description: (nextDescription || "").trim(),
+      });
+      await loadCatalog();
+    } catch (nextError) {
+      setError(nextError.message || "KhÙng s?a du?c chuyÍn khoa.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleCreateDoctor() {
+    if (!doctorForm.fullName.trim() || !doctorForm.specialtyId) {
+      setError("H? tÍn b·c si v‡ chuyÍn khoa l‡ b?t bu?c.");
+      return;
+    }
+
+    setSaving(true);
+    setError("");
+    try {
+      await createDoctor({
+        full_name: doctorForm.fullName.trim(),
+        phone: doctorForm.phone.trim(),
+        specialty: Number(doctorForm.specialtyId),
+        bio: "",
+        is_active: true,
+      });
+      setDoctorForm((current) => ({
+        ...current,
+        fullName: "",
+        phone: "",
+      }));
+      await loadCatalog();
+    } catch (nextError) {
+      setError(nextError.message || "KhÙng t?o du?c b·c si.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleToggleDoctor(doctor) {
+    setSaving(true);
+    setError("");
+    try {
+      await updateDoctor(doctor.id, { is_active: !doctor.is_active });
+      await loadCatalog();
+    } catch (nextError) {
+      setError(nextError.message || "KhÙng c?p nh?t du?c b·c si.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleEditDoctor(doctor) {
+    const nextName = window.prompt("H? tÍn b·c si", doctor.full_name);
+    if (!nextName || !nextName.trim()) return;
+    const nextPhone = window.prompt("S? di?n tho?i", doctor.phone || "");
+
+    setSaving(true);
+    setError("");
+    try {
+      await updateDoctor(doctor.id, {
+        full_name: nextName.trim(),
+        phone: (nextPhone || "").trim(),
+      });
+      await loadCatalog();
+    } catch (nextError) {
+      setError(nextError.message || "KhÙng s?a du?c b·c si.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="dash-page catalog-page">
+        <LoadingSpinner />
+      </div>
+    );
+  }
 
   return (
     <div className="dash-page catalog-page">
       <div className="dash-page-header">
         <div>
-          <h1 className="dash-page-title">Danh m·ª•c & C∆° s·ªü H·∫£i Ch√¢u</h1>
+          <h1 className="dash-page-title">Danh m?c & Co s? H?i Ch‚u</h1>
           <p className="dash-page-sub">
-            Qu·∫£n l√Ω chuy√™n khoa, b√°c sƒ© v√† th√¥ng tin v·∫≠n h√†nh c·ªßa C∆° s·ªü H·∫£i Ch√¢u
+            Qu?n l˝ chuyÍn khoa, b·c si v‡ thÙng tin v?n h‡nh c?a Co s? H?i Ch‚u
           </p>
         </div>
       </div>
 
+      {error && <div className="mc-surface catalog-page__error">{error}</div>}
+
       <div className="dash-filter-tabs catalog-page__tabs">
-        <button className={`dash-filter-tab ${activeTab === "specialties" ? "active" : ""}`} onClick={() => setActiveTab("specialties")} type="button">Chuy√™n khoa</button>
-        <button className={`dash-filter-tab ${activeTab === "doctors" ? "active" : ""}`} onClick={() => setActiveTab("doctors")} type="button">B√°c sƒ©</button>
-        <button className={`dash-filter-tab ${activeTab === "facility" ? "active" : ""}`} onClick={() => setActiveTab("facility")} type="button">C∆° s·ªü H·∫£i Ch√¢u</button>
+        <button
+          className={`dash-filter-tab ${activeTab === "specialties" ? "active" : ""}`}
+          onClick={() => setActiveTab("specialties")}
+          type="button"
+        >
+          ChuyÍn khoa
+        </button>
+        <button
+          className={`dash-filter-tab ${activeTab === "doctors" ? "active" : ""}`}
+          onClick={() => setActiveTab("doctors")}
+          type="button"
+        >
+          B·c si
+        </button>
+        <button
+          className={`dash-filter-tab ${activeTab === "facility" ? "active" : ""}`}
+          onClick={() => setActiveTab("facility")}
+          type="button"
+        >
+          Co s? H?i Ch‚u
+        </button>
       </div>
 
       {activeTab === "specialties" && (
         <div>
           <div className="dash-filter-bar">
-            <input className="dash-search-input" placeholder="T√¨m chuy√™n khoa..." value={specialtySearch} onChange={(event) => setSpecialtySearch(event.target.value)} />
-            <button className="dash-btn-primary" type="button">+ Th√™m chuy√™n khoa</button>
+            <input
+              className="dash-search-input"
+              placeholder="TÏm chuyÍn khoa..."
+              value={specialtySearch}
+              onChange={(event) => setSpecialtySearch(event.target.value)}
+            />
           </div>
+
+          <div className="mc-surface catalog-page__form-grid">
+            <Input
+              label="TÍn chuyÍn khoa"
+              value={specialtyForm.name}
+              onChange={(event) =>
+                setSpecialtyForm((current) => ({ ...current, name: event.target.value }))
+              }
+            />
+            <Input
+              label="MÙ t?"
+              value={specialtyForm.description}
+              onChange={(event) =>
+                setSpecialtyForm((current) => ({ ...current, description: event.target.value }))
+              }
+            />
+            <Button onClick={handleCreateSpecialty} disabled={saving}>
+              ThÍm chuyÍn khoa
+            </Button>
+          </div>
+
           <div className="catalog-grid">
-            {filteredSpecialties.map((specialty) => (
-              <div key={specialty.id} className={`catalog-card ${!specialty.active ? "catalog-card--inactive" : ""}`}>
-                <div className="catalog-card__icon">{React.createElement(specialty.icon, { className: "mc-icon mc-icon--lg" })}</div>
-                <div className="catalog-card__name">{specialty.name}</div>
-                <div className="catalog-card__meta">{specialty.doctors} b√°c sƒ©</div>
-                <Badge variant={specialty.active ? "success" : "neutral"}>{specialty.active ? "Ho·∫°t ƒë·ªông" : "T·∫°m ng·ª´ng"}</Badge>
-                <div className="catalog-card__actions">
-                  <button className="dash-action-btn dash-action-btn--sm" type="button">S·ª≠a</button>
-                  <button className="dash-action-btn dash-action-btn--sm" type="button">{specialty.active ? "T·∫Øt" : "B·∫≠t"}</button>
+            {filteredSpecialties.map((specialty) => {
+              const SpecialtyIcon = SPECIALTY_ICONS[specialty.name] || ShieldCheck;
+              return (
+                <div
+                  key={specialty.id}
+                  className={`catalog-card ${!specialty.is_active ? "catalog-card--inactive" : ""}`}
+                >
+                  <div className="catalog-card__icon">
+                    <SpecialtyIcon className="mc-icon mc-icon--lg" />
+                  </div>
+                  <div className="catalog-card__name">{specialty.name}</div>
+                  <div className="catalog-card__meta">
+                    {doctorCountBySpecialty[specialty.id] || 0} b·c si
+                  </div>
+                  <Badge variant={specialty.is_active ? "success" : "neutral"}>
+                    {specialty.is_active ? "Ho?t d?ng" : "T?m ngung"}
+                  </Badge>
+                  <div className="catalog-card__actions">
+                    <button
+                      className="dash-action-btn dash-action-btn--sm"
+                      type="button"
+                      onClick={() => handleEditSpecialty(specialty)}
+                    >
+                      S?a
+                    </button>
+                    <button
+                      className="dash-action-btn dash-action-btn--sm"
+                      type="button"
+                      onClick={() => handleToggleSpecialty(specialty)}
+                    >
+                      {specialty.is_active ? "T?t" : "B?t"}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -81,23 +331,84 @@ export default function CatalogPage() {
       {activeTab === "doctors" && (
         <div>
           <div className="dash-filter-bar">
-            <input className="dash-search-input" placeholder="T√¨m b√°c sƒ©, chuy√™n khoa..." value={doctorSearch} onChange={(event) => setDoctorSearch(event.target.value)} />
-            <button className="dash-btn-primary" type="button">+ Th√™m b√°c sƒ©</button>
+            <input
+              className="dash-search-input"
+              placeholder="TÏm b·c si, chuyÍn khoa..."
+              value={doctorSearch}
+              onChange={(event) => setDoctorSearch(event.target.value)}
+            />
           </div>
+
+          <div className="mc-surface catalog-page__form-grid catalog-page__form-grid--doctor">
+            <Input
+              label="H? tÍn b·c si"
+              value={doctorForm.fullName}
+              onChange={(event) =>
+                setDoctorForm((current) => ({ ...current, fullName: event.target.value }))
+              }
+            />
+            <Input
+              label="S? di?n tho?i"
+              value={doctorForm.phone}
+              onChange={(event) =>
+                setDoctorForm((current) => ({ ...current, phone: event.target.value }))
+              }
+            />
+            <label className="catalog-page__select-wrap">
+              <span>ChuyÍn khoa</span>
+              <select
+                className="dash-filter-select"
+                value={doctorForm.specialtyId}
+                onChange={(event) =>
+                  setDoctorForm((current) => ({ ...current, specialtyId: event.target.value }))
+                }
+              >
+                {specialties.map((specialty) => (
+                  <option key={specialty.id} value={specialty.id}>
+                    {specialty.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <Button onClick={handleCreateDoctor} disabled={saving}>
+              ThÍm b·c si
+            </Button>
+          </div>
+
           <div className="catalog-page__doctor-list">
             {filteredDoctors.map((doctor) => (
               <div key={doctor.id} className="dr-catalog-card catalog-page__doctor-card">
                 <div className="catalog-page__doctor-main">
-                  <div className="catalog-page__doctor-avatar"><UserRound className="mc-icon mc-icon--lg" /></div>
-                  <div className="catalog-page__doctor-copy">
-                    <div className="catalog-page__doctor-name">{doctor.name}</div>
-                    <div className="catalog-page__doctor-meta">{doctor.specialty} ¬∑ {doctor.phone}</div>
-                    <div className="catalog-page__doctor-count">{doctor.appointments} l∆∞·ª£t kh√°m</div>
+                  <div className="catalog-page__doctor-avatar">
+                    <UserRound className="mc-icon mc-icon--lg" />
                   </div>
-                  <Badge variant={doctor.active ? "success" : "neutral"}>{doctor.active ? "Ho·∫°t ƒë·ªông" : "T·∫°m ng·ª´ng"}</Badge>
+                  <div className="catalog-page__doctor-copy">
+                    <div className="catalog-page__doctor-name">{doctor.full_name}</div>
+                    <div className="catalog-page__doctor-meta">
+                      {doctor.specialty_name} ∑ {doctor.phone || "Chua c?p nh?t S–T"}
+                    </div>
+                    <div className="catalog-page__doctor-count">
+                      {doctor.is_active ? "–ang nh?n l?ch" : "T?m d?ng nh?n l?ch"}
+                    </div>
+                  </div>
+                  <Badge variant={doctor.is_active ? "success" : "neutral"}>
+                    {doctor.is_active ? "Ho?t d?ng" : "T?m ngung"}
+                  </Badge>
                   <div className="catalog-page__doctor-actions">
-                    <button className="dash-action-btn dash-action-btn--sm" type="button">S·ª≠a</button>
-                    <button className="dash-action-btn dash-action-btn--sm" type="button">L·ªãch</button>
+                    <button
+                      className="dash-action-btn dash-action-btn--sm"
+                      type="button"
+                      onClick={() => handleEditDoctor(doctor)}
+                    >
+                      S?a
+                    </button>
+                    <button
+                      className="dash-action-btn dash-action-btn--sm"
+                      type="button"
+                      onClick={() => handleToggleDoctor(doctor)}
+                    >
+                      {doctor.is_active ? "T?t" : "B?t"}
+                    </button>
                   </div>
                 </div>
               </div>
@@ -109,18 +420,24 @@ export default function CatalogPage() {
       {activeTab === "facility" && (
         <div className="branch-card catalog-page__facility-card">
           <div className="catalog-page__facility-header">
-            <div className="catalog-page__facility-icon"><Building2 className="mc-icon mc-icon--lg" /></div>
-            <div className="catalog-page__facility-copy">
-              <h3 className="catalog-page__facility-title">MediCare Clinic ‚Äì C∆° s·ªü H·∫£i Ch√¢u</h3>
-              <p className="catalog-page__facility-subtitle">123 Nguy·ªÖn VƒÉn Linh, H·∫£i Ch√¢u, ƒê√† N·∫µng</p>
+            <div className="catalog-page__facility-icon">
+              <Building2 className="mc-icon mc-icon--lg" />
             </div>
-            <Badge variant="success">ƒêang ho·∫°t ƒë·ªông</Badge>
+            <div className="catalog-page__facility-copy">
+              <h3 className="catalog-page__facility-title">MediCare Clinic - Co s? H?i Ch‚u</h3>
+              <p className="catalog-page__facility-subtitle">
+                123 Nguy?n Van Linh, H?i Ch‚u, –‡ N?ng
+              </p>
+            </div>
+            <Badge variant="success">–ang ho?t d?ng</Badge>
           </div>
 
           <div className="catalog-page__facility-stats">
-            {FACILITY_STATS.map((item) => (
+            {facilityStats.map((item) => (
               <div key={item.label} className="catalog-page__facility-stat">
-                <div className="catalog-page__facility-stat-icon">{React.createElement(item.icon, { className: "mc-icon mc-icon--md" })}</div>
+                <div className="catalog-page__facility-stat-icon">
+                  {React.createElement(item.icon, { className: "mc-icon mc-icon--md" })}
+                </div>
                 <div className="catalog-page__facility-stat-value">{item.value}</div>
                 <div className="catalog-page__facility-stat-label">{item.label}</div>
               </div>
@@ -129,12 +446,12 @@ export default function CatalogPage() {
 
           <div className="catalog-page__facility-meta">
             <div className="catalog-page__facility-meta-section">
-              <div className="catalog-page__facility-meta-title">Gi·ªù l√†m vi·ªác</div>
-              <div className="catalog-page__facility-meta-copy">Th·ª© 2‚Äì6: 08:00 ‚Äì 11:30 ¬∑ 13:30 ‚Äì 17:00</div>
-              <div className="catalog-page__facility-meta-copy">Th·ª© 7: 08:00 ‚Äì 11:30</div>
+              <div className="catalog-page__facility-meta-title">Gi? l‡m vi?c</div>
+              <div className="catalog-page__facility-meta-copy">Th? 2-6: 08:00 - 11:30 ∑ 13:30 - 17:00</div>
+              <div className="catalog-page__facility-meta-copy">Th? 7: 08:00 - 11:30</div>
             </div>
             <div className="catalog-page__facility-meta-section">
-              <div className="catalog-page__facility-meta-title">Li√™n h·ªá</div>
+              <div className="catalog-page__facility-meta-title">LiÍn h?</div>
               <div className="catalog-page__facility-meta-copy">Hotline: 1900 1234</div>
               <div className="catalog-page__facility-meta-copy">Email: haichau@medicare.vn</div>
             </div>

@@ -12,44 +12,44 @@ const STATE_CONFIG = {
   early: {
     icon: Clock3,
     cls: "early",
-    title: "Đến sớm",
-    sub: "Chưa đến cửa sổ check-in. Chỉ nhận check-in từ -15 phút trước giờ hẹn.",
+    title: "�?n s?m",
+    sub: "Chua d?n c?a s? check-in. Ch? nh?n check-in t? -15 ph�t tru?c gi? h?n.",
     badge: "info",
   },
   valid: {
     icon: CircleCheck,
     cls: "valid",
-    title: "Hợp lệ - Check-in thành công",
-    sub: "Bệnh nhân nằm trong cửa sổ check-in và đã được ghi nhận vào hàng đợi khám.",
+    title: "H?p l? - Check-in th�nh c�ng",
+    sub: "B?nh nh�n d� du?c ghi nh?n v�o h�ng d?i kh�m.",
     badge: "success",
   },
   late: {
     icon: TriangleAlert,
     cls: "late",
-    title: "Đến muộn (No-show risk)",
-    sub: "Đã quá cửa sổ check-in (+10 phút). Cần xử lý theo quy trình no-show hoặc dời lịch.",
+    title: "�?n mu?n",
+    sub: "�� qu� c?a s? check-in (+10 ph�t). C?n x? l� theo quy tr�nh no-show ho?c d?i l?ch.",
     badge: "danger",
   },
   not_found: {
     icon: CircleX,
     cls: "late",
-    title: "Không tìm thấy",
-    sub: "Mã hoặc SĐT không khớp với lịch hẹn hôm nay.",
+    title: "Kh�ng t�m th?y",
+    sub: "M� ho?c S�T kh�ng kh?p v?i l?ch h?n h�m nay.",
     badge: "danger",
   },
 };
 
 const RECENT_COLUMNS = [
-  { key: "code", title: "Mã lịch", dataIndex: "code" },
-  { key: "patientName", title: "Bệnh nhân", dataIndex: "patientName" },
-  { key: "slot", title: "Giờ hẹn", dataIndex: "slot" },
-  { key: "checkinAt", title: "Check-in lúc", dataIndex: "checkinAt" },
+  { key: "code", title: "M� l?ch", dataIndex: "code" },
+  { key: "patientName", title: "B?nh nh�n", dataIndex: "patientName" },
+  { key: "slot", title: "Gi? h?n", dataIndex: "slot" },
+  { key: "checkinAt", title: "Check-in l�c", dataIndex: "checkinAt" },
   {
     key: "status",
-    title: "Trạng thái",
+    title: "Tr?ng th�i",
     render: (row) => (
       <Badge variant={row.status === "CHECKED_IN" ? "success" : "neutral"}>
-        {row.status === "CHECKED_IN" ? "Đã check-in" : row.status}
+        {row.status === "CHECKED_IN" ? "�� check-in" : row.status}
       </Badge>
     ),
   },
@@ -61,13 +61,14 @@ export default function CheckinPage() {
   const [checkinResult, setCheckinResult] = useState(null);
   const [todayList, setTodayList] = useState([]);
   const [listLoading, setListLoading] = useState(true);
+  const today = new Date().toISOString().slice(0, 10);
 
   useEffect(() => {
     setListLoading(true);
-    listTodayAppointments()
+    listTodayAppointments(today)
       .then(setTodayList)
       .finally(() => setListLoading(false));
-  }, []);
+  }, [today]);
 
   async function handleCheckin(event) {
     event.preventDefault();
@@ -76,9 +77,10 @@ export default function CheckinPage() {
     setLoading(true);
     setCheckinResult(null);
     try {
-      const result = await checkinLookup(query.trim());
+      const result = await checkinLookup(query.trim(), today);
       setCheckinResult(result);
-      listTodayAppointments().then(setTodayList);
+      const refreshedList = await listTodayAppointments(today);
+      setTodayList(refreshedList);
     } catch {
       setCheckinResult({ state: "not_found", appointment: null });
     } finally {
@@ -94,7 +96,7 @@ export default function CheckinPage() {
       <div>
         <h1 className="home-hero-title checkin-page__title">Check-in PA4</h1>
         <p className="home-hero-sub">
-          Tra cứu bằng mã lịch hẹn hoặc số điện thoại • cửa sổ check-in: [giờ hẹn - 15p, giờ hẹn + 10p]
+          Tra c?u b?ng m� l?ch h?n ho?c s? di?n tho?i � c?a s? check-in: [gi? h?n - 15p, gi? h?n + 10p]
         </p>
       </div>
 
@@ -103,15 +105,15 @@ export default function CheckinPage() {
           <div className="ci-panel">
             <form onSubmit={handleCheckin} className="mc-stack-md">
               <Input
-                label="Mã lịch hẹn hoặc SĐT"
-                placeholder="APT-2025-8834 hoặc 0912345678"
+                label="M� l?ch h?n ho?c S�T"
+                placeholder="APT-2026-0001 ho?c 0901234567"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                hint="Nhập mã hoặc số điện thoại của bệnh nhân"
+                hint="Nh?p m� ho?c s? di?n tho?i c?a b?nh nh�n"
               />
               <Button type="submit" disabled={loading || !query.trim()}>
                 <Search className="mc-icon mc-icon--sm" />
-                {loading ? "Đang tìm..." : "Check-in"}
+                {loading ? "�ang t�m..." : "Check-in"}
               </Button>
             </form>
 
@@ -136,7 +138,7 @@ export default function CheckinPage() {
                 )}
                 {checkinResult.appointment && (
                   <div className="checkin-page__result-meta">
-                    {checkinResult.appointment.specialty} · {checkinResult.appointment.doctor} · {checkinResult.appointment.slot}
+                    {checkinResult.appointment.specialty} � {checkinResult.appointment.doctor} � {checkinResult.appointment.slot}
                   </div>
                 )}
               </div>
@@ -144,25 +146,21 @@ export default function CheckinPage() {
           </div>
 
           <div className="mc-surface checkin-page__note-card">
-            <strong>Mock data để test:</strong>
+            <strong>D? li?u l?y tr?c ti?p t? backend:</strong>
             <ul className="checkin-page__note-list">
-              <li>
-                <code>APT-2025-8834</code> hoặc <code>0912345678</code>
-              </li>
-              <li>
-                <code>APT-2025-8835</code> hoặc <code>0901111111</code>
-              </li>
-              <li>Hợp lệ chỉ trong khoảng [-15p, +10p] so với giờ hẹn</li>
+              <li>D�ng m� l?ch h?n ho?c S�T c?a l?ch d� x�c nh?n trong ng�y.</li>
+              <li>Check-in h?p l? trong kho?ng t? 15 ph�t tru?c d?n 10 ph�t sau gi? h?n.</li>
+              <li>Sau khi check-in h?p l?, tr?ng th�i s? c?p nh?t th�nh <code>CHECKED_IN</code>.</li>
             </ul>
           </div>
         </div>
 
         <div className="mc-stack-md">
-          <div className="ci-recent-title">Lịch hẹn hôm nay</div>
+          <div className="ci-recent-title">L?ch h?n h�m nay</div>
           {listLoading ? (
             <LoadingSpinner />
           ) : (
-            <Table columns={RECENT_COLUMNS} data={todayList} emptyMessage="Chưa có lịch hẹn hôm nay." />
+            <Table columns={RECENT_COLUMNS} data={todayList} emptyMessage="Chua c� l?ch h?n h�m nay." />
           )}
         </div>
       </div>

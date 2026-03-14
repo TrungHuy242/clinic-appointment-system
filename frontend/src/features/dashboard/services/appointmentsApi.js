@@ -1,125 +1,49 @@
-import { mockRequest } from "../../../shared/services/apiClient";
+import { apiClient } from "../../../shared/services/apiClient";
+import { ENDPOINTS } from "../../../shared/services/endpoints";
 
-const CHECKIN_OPEN_OFFSET_MIN = 15;
-const CHECKIN_CLOSE_OFFSET_MIN = 10;
-
-const TODAY_APPOINTMENTS = [
-  {
-    id: 1,
-    code: "APT-2025-8834",
-    patientName: "Trần Thị Bình",
-    phone: "0912345678",
-    specialty: "Da liễu",
-    doctor: "BS. Trần Ngọc Emily",
-    slot: "08:00",
-    status: "CONFIRMED",
-    checkinAt: null,
-  },
-  {
-    id: 2,
-    code: "APT-2025-8835",
-    patientName: "Lê Thành Nam",
-    phone: "0901111111",
-    specialty: "Nhi khoa",
-    doctor: "BS. Nguyễn Thị Sarah",
-    slot: "08:25",
-    status: "CONFIRMED",
-    checkinAt: null,
-  },
-  {
-    id: 3,
-    code: "APT-2025-8836",
-    patientName: "Phạm Hồng Nhung",
-    phone: "0922222222",
-    specialty: "Tổng quát",
-    doctor: "BS. Nguyễn Văn A",
-    slot: "09:00",
-    status: "CONFIRMED",
-    checkinAt: null,
-  },
-  {
-    id: 4,
-    code: "APT-2025-8837",
-    patientName: "Nguyễn Văn Cường",
-    phone: "0933333333",
-    specialty: "Tai Mũi Họng",
-    doctor: "BS. Phạm Quốc Hùng",
-    slot: "09:25",
-    status: "CHECKED_IN",
-    checkinAt: "08:55",
-  },
-  {
-    id: 5,
-    code: "APT-2025-8838",
-    patientName: "Võ Thị Thu Hà",
-    phone: "0944444444",
-    specialty: "Mắt",
-    doctor: "BS. Đinh Văn Phú",
-    slot: "10:00",
-    status: "CHECKED_IN",
-    checkinAt: "09:40",
-  },
-];
-
-const _checkinLog = [];
-
-function pad2(value) {
-  return String(value).padStart(2, "0");
+function formatTime(value) {
+  return new Intl.DateTimeFormat("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
 }
 
-function timeToMinutes(timeText) {
-  const [h, m] = timeText.split(":").map(Number);
-  return h * 60 + m;
+function buildSlotLabel(startValue, endValue) {
+  return `${formatTime(startValue)} - ${formatTime(endValue)}`;
 }
 
-export function listTodayAppointments() {
-  const merged = [
-    ...TODAY_APPOINTMENTS,
-    ..._checkinLog.filter(
-      (entry) => !TODAY_APPOINTMENTS.find((appointment) => appointment.code === entry.code)
-    ),
-  ];
-  return mockRequest({ data: merged.map((row) => ({ ...row })), delayMs: 400 });
+function mapAppointment(row) {
+  return {
+    id: row.id,
+    code: row.code,
+    patientName: row.patient_full_name,
+    phone: row.patient_phone,
+    specialty: row.specialty_name,
+    doctor: row.doctor_name,
+    slot: buildSlotLabel(row.scheduled_start, row.scheduled_end),
+    status: row.status,
+    checkinAt: row.status === "CHECKED_IN" ? formatTime(row.updated_at) : null,
+    scheduledStart: row.scheduled_start,
+    scheduledEnd: row.scheduled_end,
+  };
 }
 
-export function checkinLookup(query) {
-  const normalizedQuery = query.trim();
-  const qUpper = normalizedQuery.toUpperCase();
-  const found = TODAY_APPOINTMENTS.find(
-    (appointment) =>
-      appointment.code.toUpperCase() === qUpper || appointment.phone === normalizedQuery
-  );
+export function listTodayAppointments(date) {
+  return apiClient
+    .get(ENDPOINTS.appointments.reception, {
+      params: { date },
+    })
+    .then((data) => data.map(mapAppointment));
+}
 
-  if (!found) {
-    return mockRequest({
-      data: { state: "not_found", appointment: null },
-      delayMs: 400,
-    });
-  }
-
-  const now = new Date();
-  const nowMin = now.getHours() * 60 + now.getMinutes();
-  const slotMin = timeToMinutes(found.slot);
-  const diffMin = nowMin - slotMin;
-
-  let state = "valid";
-  if (diffMin < -CHECKIN_OPEN_OFFSET_MIN) {
-    state = "early";
-  } else if (diffMin > CHECKIN_CLOSE_OFFSET_MIN) {
-    state = "late";
-  }
-
-  if (state === "valid") {
-    found.checkinAt = `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
-    found.status = "CHECKED_IN";
-    const alreadyLogged = _checkinLog.find((row) => row.code === found.code);
-    if (!alreadyLogged) {
-      _checkinLog.push({ ...found, checkinState: state });
-    }
-  }
-
-  return mockRequest({
-    data: { state, appointment: { ...found } },
-    delayMs: 500,
-  });
+export function checkinLookup(query, date) {
+  return apiClient
+    .post(ENDPOINTS.appointments.checkinLookup, {
+      query,
+      date,
+    })
+    .then((data) => ({
+      state: data.state,
+      appointment: data.appointment ? mapAppointment(data.appointment) : null,
+    }));
 }

@@ -1,3 +1,7 @@
+from datetime import datetime, time, timedelta
+
+from django.db.models import Q
+from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
 from catalog.models import Doctor, Specialty
@@ -7,6 +11,14 @@ from .models import Appointment, AppointmentStatus
 
 STATUS_VALUES = [choice for choice, _label in AppointmentStatus.choices]
 STATUS_MESSAGE = f"status must be one of: {', '.join(STATUS_VALUES)}."
+SLOT_BLOCK_MINUTES = 25
+CHECKIN_OPEN_OFFSET_MIN = 15
+CHECKIN_CLOSE_OFFSET_MIN = 10
+PENDING_HOLD_MINUTES = 15
+CLINIC_START_TIME = time(hour=8, minute=0)
+LUNCH_START_TIME = time(hour=12, minute=0)
+LUNCH_END_TIME = time(hour=13, minute=30)
+CLINIC_END_TIME = time(hour=17, minute=0)
 
 
 def get_active_appointments_queryset():
@@ -112,11 +124,141 @@ def soft_delete_appointment(appointment):
     return appointment
 
 
+def expire_pending_appointment_if_needed(appointment, now=None):
+    if appointment.status != AppointmentStatus.PENDING:
+        return appointment
+
+    now = now or timezone.now()
+    if appointment.created_at + timedelta(minutes=PENDING_HOLD_MINUTES) <= now:
+        set_appointment_status(appointment, AppointmentStatus.CANCELLED)
+
+    return appointment
+
+
 def get_appointment_by_id_or_code(value):
     lookup_value = str(value).strip()
     queryset = get_active_appointments_queryset()
 
     if lookup_value.isdigit():
-        return queryset.get(pk=int(lookup_value))
+        appointment = queryset.get(pk=int(lookup_value))
+    else:
+        appointment = queryset.get(code=lookup_value.upper())
 
-    return queryset.get(code=lookup_value)
+    return expire_pending_appointment_if_needed(appointment)
+
+
+def get_appointment_by_code_and_phone(code, phone):
+    appointment = get_active_appointments_queryset().get(
+        code=str(code).strip().upper(),
+        patient_phone=str(phone).strip(),
+    )
+    return expire_pending_appointment_if_needed(appointment)
+
+
+def _make_aware_datetime(date_value, time_value):
+    return timezone.make_aware(
+        datetime.combine(date_value, time_value),
+        timezone.get_current_timezone(),
+    )
+
+
+def build_doctor_slots(doctor_id, appointment_date):
+    day_start = _make_aware_datetime(appointment_date, CLINIC_START_TIME)
+    lunch_start = _make_aware_datetime(appointment_date, LUNCH_START_TIME)
+    lunch_end = _make_aware_datetime(appointment_date, LUNCH_END_TIME)
+    day_end = _make_aware_datetime(appointment_date, CLINIC_END_TIME)
+
+    appointments = list(
+        get_active_appointments_queryset()
+        .filter(doctor_id=doctor_id, scheduled_start__date=appointment_date)
+        .exclude(status=AppointmentStatus.CANCELLED)
+        .order_by('scheduled_start')
+    )
+
+    active_appointments = []
+    for appointment in appointments:
+        expire_pending_appointment_if_needed(appointment)
+        if appointment.status != AppointmentStatus.CANCELLED:
+            active_appointments.append(appointment)
+
+    slots = []
+    cursor = day_start
+    block_index = 0
+
+    while cursor + timedelta(minutes=SLOT_BLOCK_MINUTES) <= day_end:
+        block_end = cursor + timedelta(minutes=SLOT_BLOCK_MINUTES)
+
+        if lunch_start <= cursor < lunch_end:
+            cursor = lunch_end
+            continue
+
+        if cursor < lunch_start < block_end:
+            cursor = lunch_end
+            continue
+
+        has_conflict = any(
+            appointment.scheduled_start < block_end and appointment.scheduled_end > cursor
+            for appointment in active_appointments
+        )
+
+        slots.append(
+            {
+                'id': f'{doctor_id}-{appointment_date.isoformat()}-{block_index}',
+                'start': timezone.localtime(cursor).strftime('%H:%M'),
+                'end': timezone.localtime(block_end).strftime('%H:%M'),
+                'duration': SLOT_BLOCK_MINUTES,
+                'status': 'conflict' if has_conflict else 'available',
+                'occupies': 1,
+                'blockIndexes': [block_index],
+                'primaryBlockIndex': block_index,
+                'nextBlockIndex': None,
+            }
+        )
+
+        cursor = block_end
+        block_index += 1
+
+    return slots
+
+
+def lookup_appointment_for_checkin(query, appointment_date, now=None):
+    normalized_query = str(query or '').strip()
+    if not normalized_query:
+        raise ValidationError({'query': 'query is required.'})
+
+    now = now or timezone.now()
+    appointment = (
+        get_active_appointments_queryset()
+        .filter(scheduled_start__date=appointment_date)
+        .exclude(status=AppointmentStatus.CANCELLED)
+        .filter(Q(code__iexact=normalized_query.upper()) | Q(patient_phone=normalized_query))
+        .order_by('scheduled_start')
+        .first()
+    )
+
+    if not appointment:
+        return {'state': 'not_found', 'appointment': None}
+
+    expire_pending_appointment_if_needed(appointment, now=now)
+
+    if appointment.status == AppointmentStatus.CANCELLED:
+        return {'state': 'not_found', 'appointment': None}
+
+    if appointment.status == AppointmentStatus.CHECKED_IN:
+        return {'state': 'valid', 'appointment': appointment}
+
+    if appointment.status != AppointmentStatus.CONFIRMED:
+        return {'state': 'not_found', 'appointment': None}
+
+    appointment_start = timezone.localtime(appointment.scheduled_start)
+    current_time = timezone.localtime(now)
+    diff_minutes = int((current_time - appointment_start).total_seconds() // 60)
+
+    if diff_minutes < -CHECKIN_OPEN_OFFSET_MIN:
+        return {'state': 'early', 'appointment': appointment}
+
+    if diff_minutes > CHECKIN_CLOSE_OFFSET_MIN:
+        return {'state': 'late', 'appointment': appointment}
+
+    set_appointment_status(appointment, AppointmentStatus.CHECKED_IN)
+    return {'state': 'valid', 'appointment': appointment}
