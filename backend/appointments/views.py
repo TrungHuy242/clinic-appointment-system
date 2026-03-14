@@ -3,19 +3,15 @@ from rest_framework import status, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Appointment
 from .serializers import AppointmentGuestSerializer, AppointmentSerializer
+from .services import get_active_appointments_queryset, soft_delete_appointment
 
 
 class AppointmentViewSet(viewsets.ModelViewSet):
     serializer_class = AppointmentSerializer
 
     def get_queryset(self):
-        queryset = (
-            Appointment.objects.select_related('specialty', 'doctor')
-            .filter(is_deleted=False)
-            .order_by('-scheduled_start', '-created_at')
-        )
+        queryset = get_active_appointments_queryset()
 
         date_value = self.request.query_params.get('date')
         if date_value:
@@ -45,8 +41,7 @@ class AppointmentViewSet(viewsets.ModelViewSet):
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
-        instance.is_deleted = True
-        instance.save(update_fields=['is_deleted', 'updated_at'])
+        soft_delete_appointment(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

@@ -5,11 +5,16 @@ from rest_framework import serializers
 from catalog.models import Doctor, Specialty
 
 from .models import Appointment, AppointmentStatus
+from .services import (
+    STATUS_MESSAGE,
+    create_guest_appointment,
+    set_appointment_status,
+    validate_doctor_specialty,
+    validate_time_range,
+)
 
 
 PHONE_PATTERN = re.compile(r'^\+?[0-9][0-9\s\-()]{7,18}$')
-STATUS_VALUES = [choice for choice, _label in AppointmentStatus.choices]
-STATUS_MESSAGE = f"status must be one of: {', '.join(STATUS_VALUES)}."
 
 
 class ActiveSpecialtyPrimaryKeyRelatedField(serializers.PrimaryKeyRelatedField):
@@ -151,17 +156,23 @@ class AppointmentSerializer(serializers.ModelSerializer):
         scheduled_start = attrs.get('scheduled_start') or getattr(self.instance, 'scheduled_start', None)
         scheduled_end = attrs.get('scheduled_end') or getattr(self.instance, 'scheduled_end', None)
 
-        if specialty and doctor and doctor.specialty_id != specialty.id:
-            raise serializers.ValidationError(
-                {'doctor': 'Doctor does not belong to the selected specialty.'}
-            )
-
-        if scheduled_start and scheduled_end and scheduled_end <= scheduled_start:
-            raise serializers.ValidationError(
-                {'scheduled_end': 'scheduled_end must be later than scheduled_start.'}
-            )
-
+        validate_doctor_specialty(doctor, specialty)
+        validate_time_range(scheduled_start, scheduled_end)
         return attrs
+
+    def update(self, instance, validated_data):
+        new_status = validated_data.pop('status', None)
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        if validated_data:
+            instance.save()
+
+        if new_status is not None:
+            set_appointment_status(instance, new_status)
+
+        return instance
 
 
 class AppointmentGuestSerializer(serializers.ModelSerializer):
@@ -230,23 +241,9 @@ class AppointmentGuestSerializer(serializers.ModelSerializer):
         return validate_phone_number(value, 'patient_phone', required=True)
 
     def validate(self, attrs):
-        doctor = attrs['doctor']
-        specialty = attrs['specialty']
-
-        if doctor.specialty_id != specialty.id:
-            raise serializers.ValidationError(
-                {'doctor': 'Doctor does not belong to the selected specialty.'}
-            )
-
-        if attrs['scheduled_end'] <= attrs['scheduled_start']:
-            raise serializers.ValidationError(
-                {'scheduled_end': 'scheduled_end must be later than scheduled_start.'}
-            )
-
+        validate_doctor_specialty(attrs['doctor'], attrs['specialty'])
+        validate_time_range(attrs['scheduled_start'], attrs['scheduled_end'])
         return attrs
 
     def create(self, validated_data):
-        return Appointment.objects.create(
-            **validated_data,
-            status=AppointmentStatus.PENDING,
-        )
+        return create_guest_appointment(validated_data)

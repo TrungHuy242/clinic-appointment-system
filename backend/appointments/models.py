@@ -1,4 +1,4 @@
-﻿import secrets
+import secrets
 
 from django.db import models
 from django.utils import timezone
@@ -14,6 +14,16 @@ class AppointmentStatus(models.TextChoices):
     COMPLETED = 'COMPLETED', 'Completed'
     CANCELLED = 'CANCELLED', 'Cancelled'
     NO_SHOW = 'NO_SHOW', 'No show'
+
+
+class AppointmentQuerySet(models.QuerySet):
+    def active(self):
+        return self.filter(is_deleted=False)
+
+
+class ActiveAppointmentManager(models.Manager.from_queryset(AppointmentQuerySet)):
+    def get_queryset(self):
+        return super().get_queryset().active()
 
 
 class Appointment(models.Model):
@@ -41,8 +51,13 @@ class Appointment(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    objects = ActiveAppointmentManager()
+    all_objects = models.Manager()
+
     class Meta:
         ordering = ['-scheduled_start', '-created_at']
+        base_manager_name = 'all_objects'
+        default_manager_name = 'objects'
 
     def save(self, *args, **kwargs):
         if not self.code:
@@ -58,5 +73,5 @@ def generate_appointment_code():
     while True:
         suffix = f'{secrets.randbelow(10000):04d}'
         code = f'APT-{year}-{suffix}'
-        if not Appointment.objects.filter(code=code).exists():
+        if not Appointment.all_objects.filter(code=code).exists():
             return code
