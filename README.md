@@ -189,3 +189,8 @@ Chi tiết từng lượt khám
 ## 8. Run project (sẽ cập nhật)
 - Frontend: `npm install` → `npm start`
 - Backend: `pip install -r requirements.txt` → `python manage.py runserver`
+
+## 9. Ghi chú encoding UTF-8
+- Tất cả file chứa tiếng Việt phải được lưu bằng UTF-8.
+- Không copy/paste nội dung từ nguồn làm hỏng dấu hoặc sai encoding.
+- Frontend đã khai báo `<meta charset="UTF-8" />` trong `frontend/public/index.html`; nếu thêm HTML/template mới thì giữ nguyên chuẩn này.
