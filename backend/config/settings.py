@@ -72,7 +72,7 @@ if DB_ENGINE in {'postgres', 'postgresql', 'psql'}:
             'ENGINE': 'django.db.backends.postgresql',
             'NAME': os.getenv('DB_NAME', 'clinic_appointment_system'),
             'USER': os.getenv('DB_USER', 'postgres'),
-            'PASSWORD': os.getenv('DB_PASSWORD', os.getenv('PGPASSWORD', '')),
+            'PASSWORD': os.getenv('DB_PASSWORD', os.getenv('PGPASSWORD', '12345')),
             'HOST': os.getenv('DB_HOST', 'localhost'),
             'PORT': os.getenv('DB_PORT', '5432'),
         }

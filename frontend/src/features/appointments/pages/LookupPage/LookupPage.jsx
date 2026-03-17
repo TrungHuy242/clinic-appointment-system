@@ -14,10 +14,11 @@ import {
   UserRound,
   XCircle,
   AlertCircle,
+  
 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import LoadingSpinner from "../../../../shared/components/LoadingSpinner/LoadingSpinner";
-import { lookupAppointment, lookupAppointmentsByPhone } from "../../services/bookingApi";
+import { lookupAppointment, lookupAppointmentsByPhone,expirePA1 } from "../../services/bookingApi";
 import "./LookupPage.css";
 
 const STATUS_CONFIG = {
@@ -38,6 +39,8 @@ export default function LookupPage() {
   const [results, setResults] = useState([]);
   const [errors, setErrors] = useState({});
   const [hasSearched, setHasSearched] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelSuccess, setCancelSuccess] = useState(false);
 
   // Check if we came from patient appointments (has code in URL)
   const hasCodeParam = searchParams.get("code");
@@ -87,6 +90,17 @@ export default function LookupPage() {
     }
   }, []);
 
+  // ✅ Auto hide toast sau 1s
+useEffect(() => {
+  if (cancelSuccess) {
+    const timer = setTimeout(() => {
+      setCancelSuccess(false);
+    }, 1000); // 1 giây
+
+    return () => clearTimeout(timer);
+  }
+}, [cancelSuccess]);
+
   function validate() {
     const nextErrors = {};
     if (!/^0\d{9}$/.test(phone.trim())) {
@@ -101,6 +115,24 @@ export default function LookupPage() {
     if (!validate()) return;
     await handleLookupInternal(code.trim(), phone.trim());
   }
+
+
+  async function handleCancelAppointment() {
+  try {
+    setLoading(true);
+
+    const updated = await expirePA1(result.code); // ✅ GỌI API THẬT
+
+    setResult(updated); // ✅ lấy dữ liệu mới từ server
+
+    setCancelSuccess(true);
+    setShowCancelModal(false);
+  } catch (error) {
+    console.log(error);
+  } finally {
+    setLoading(false);
+  }
+}
 
   const handleBack = () => {
     // Go back to patient appointments with current tab
@@ -289,32 +321,62 @@ export default function LookupPage() {
                 </div>
               </div>
 
-              {/* Actions */}
-              <div className="lk-actions">
-                {isPending && (
-                  <button className="lk-btn-primary" onClick={() => navigate(`/booking-success/${result.code}`)}>
-                    <CheckCircle2 size={18} />
-                    Xác nhận lịch hẹn
-                  </button>
-                )}
-                {result.status === "CONFIRMED" && !cameFromPatientAppointments && (
-                  <button className="lk-btn-primary" onClick={() => navigate(`/booking-success/${result.code}`)}>
-                    <Search size={18} />
-                    Xem chi tiết
-                  </button>
-                )}
-                {result.status === "CANCELLED" && (
-                  <button className="lk-btn-primary" onClick={() => navigate("/book")}>
-                    <RefreshCcw size={18} />
-                    Đặt lịch lại
-                  </button>
-                )}
-                {!cameFromPatientAppointments && (
-                  <button className="lk-btn-secondary" onClick={() => { setResult(null); setCode(""); }}>
-                    Tra cứu khác
-                  </button>
-                )}
-              </div>
+           {/* Actions */}
+                <div className="lk-actions">
+
+                  {isPending && (
+                    <button
+                      className="lk-btn-primary"
+                      onClick={() => navigate(`/booking-success/${result.code}`)}
+                    >
+                      <CheckCircle2 size={18} />
+                      Xác nhận lịch hẹn
+                    </button>
+                  )}
+
+                  {result.status === "CONFIRMED" && !cameFromPatientAppointments && (
+                    <button
+                      className="lk-btn-primary"
+                      onClick={() => navigate(`/booking-success/${result.code}`)}
+                    >
+                      <Search size={18} />
+                      Xem chi tiết
+                    </button>
+                  )}
+
+                  {/* ✅ THÊM NÚT HỦY Ở ĐÂY */}
+                  {(result.status === "CONFIRMED" || isPending) && (
+                                                <button
+                          className="lk-btn-danger"
+                          onClick={() => setShowCancelModal(true)}  // ✅ MỞ MODAL
+                        >
+                          <XCircle size={18} />
+                          Hủy lịch hẹn
+                        </button>
+                  )}
+
+                  {result.status === "CANCELLED" && (
+                    <button
+                      className="lk-btn-primary"
+                      onClick={() => navigate("/book")}
+                    >
+                      <RefreshCcw size={18} />
+                      Đặt lịch lại
+                    </button>
+                  )}
+
+                  {!cameFromPatientAppointments && (
+                    <button
+                      className="lk-btn-secondary"
+                      onClick={() => {
+                        setResult(null);
+                        setCode("");
+                      }}
+                    >
+                      Tra cứu khác
+                    </button>
+                  )}
+                </div>
 
               {/* Back Button in detail view - Show when came from patient appointments */}
               {cameFromPatientAppointments && (
@@ -329,6 +391,37 @@ export default function LookupPage() {
           </div>
         </div>
       )}
+      {/* Cancel Modal */}
+{showCancelModal && (
+  <div className="lk-modal-overlay">
+    <div className="lk-modal">
+      <h3>Bạn có muốn hủy lịch hẹn?</h3>
+      <p>Hành động này không thể hoàn tác.</p>
+
+      <div className="lk-modal-actions">
+        <button
+          className="lk-btn-secondary"
+          onClick={() => setShowCancelModal(false)}
+        >
+          Không
+        </button>
+
+        <button
+          className="lk-btn-danger"
+          onClick={handleCancelAppointment}
+        >
+          Có, hủy lịch
+        </button>
+      </div>
+    </div>
+  </div>
+  
+)}
+{cancelSuccess && (
+  <div className="lk-success-toast">
+    ✅ Hủy lịch hẹn thành công!
+  </div>
+)}
 
       {/* Help Text - Hide when came from patient appointments */}
       {!cameFromPatientAppointments && !hasSearched && !loading && !result && results.length === 0 && (
