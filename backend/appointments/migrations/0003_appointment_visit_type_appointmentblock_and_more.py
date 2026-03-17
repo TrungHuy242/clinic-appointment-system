@@ -15,7 +15,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='appointment',
             name='visit_type',
-            field=models.CharField(choices=[('VISIT_15', 'Kh?m 15 ph?t'), ('VISIT_20', 'Kh?m 20 ph?t'), ('VISIT_40', 'Kh?m 40 ph?t')], default='VISIT_20', max_length=20),
+            field=models.CharField(choices=[('VISIT_15', 'Khám 15 phút'), ('VISIT_20', 'Khám 20 phút'), ('VISIT_40', 'Khám 40 phút')], default='VISIT_20', max_length=20),
         ),
         migrations.CreateModel(
             name='AppointmentBlock',

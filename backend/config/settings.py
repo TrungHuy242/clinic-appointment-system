@@ -19,6 +19,7 @@ if ENV_FILE.exists():
 SECRET_KEY = 'django-insecure-i79q2d*u(2xyjq2awilnt!f=3x_4upv8vhi*)gk3x)(paf$^u_'
 DEBUG = True
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'testserver']
+DEFAULT_CHARSET = 'utf-8'
 
 INSTALLED_APPS = [
     'django.contrib.admin',
