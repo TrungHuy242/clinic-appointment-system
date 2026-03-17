@@ -13,8 +13,8 @@ from .services import (
     get_active_appointments_queryset,
     get_appointment_by_code_and_phone,
     get_appointment_by_id_or_code,
+    get_appointments_by_phone,
     lookup_appointment_for_checkin,
-    set_appointment_status,
     soft_delete_appointment,
 )
 
@@ -72,7 +72,8 @@ class PublicDoctorSlotsAPIView(APIView):
         if request.query_params.get('date') and appointment_date is None:
             raise ValidationError({'date': 'date must be in YYYY-MM-DD format.'})
 
-        return Response(build_doctor_slots(doctor_id, appointment_date))
+        visit_type = request.query_params.get('visit_type')
+        return Response(build_doctor_slots(doctor_id, appointment_date, visit_type=visit_type))
 
 
 class PublicAppointmentLookupAPIView(APIView):
@@ -90,6 +91,30 @@ class PublicAppointmentLookupAPIView(APIView):
             raise NotFound('Appointment not found.') from exc
 
         return Response(AppointmentSerializer(appointment).data)
+
+
+class PublicAppointmentSearchByPhoneAPIView(APIView):
+    def get(self, request, *args, **kwargs):
+        phone = request.query_params.get('phone')
+        code = request.query_params.get('code')
+
+        if not phone:
+            raise ValidationError({'phone': 'phone is required.'})
+
+        try:
+            appointments = get_appointments_by_phone(phone)
+        except Exception as exc:
+            raise NotFound('Appointment not found.') from exc
+
+        if code:
+            normalized_code = str(code).strip().upper()
+            appointments = [item for item in appointments if item.code == normalized_code]
+
+        if not appointments:
+            raise NotFound('Appointment not found.')
+
+        serializer = AppointmentSerializer(appointments, many=True)
+        return Response(serializer.data)
 
 
 class PublicAppointmentDetailAPIView(APIView):
@@ -124,6 +149,8 @@ class PublicAppointmentStatusAPIView(APIView):
             appointment = get_appointment_by_id_or_code(lookup_value)
         except Exception as exc:
             raise NotFound('Appointment not found.') from exc
+
+        from .services import set_appointment_status
 
         set_appointment_status(appointment, new_status)
         return Response(AppointmentSerializer(appointment).data)

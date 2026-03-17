@@ -52,6 +52,7 @@ async function parseResponse(response) {
 async function request(path, { method = "GET", params, body, headers } = {}) {
   const response = await fetch(buildUrl(path, params), {
     method,
+    credentials: 'include', // Send cookies with requests
     headers: {
       ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
       ...headers,

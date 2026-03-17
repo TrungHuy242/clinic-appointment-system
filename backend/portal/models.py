@@ -1,7 +1,43 @@
-﻿from django.db import models
+from django.db import models
 
 from appointments.models import Appointment
 from catalog.models import Doctor
+
+
+class UserRole(models.TextChoices):
+    ADMIN = 'admin', 'Admin'
+    RECEPTIONIST = 'receptionist', 'Receptionist'
+    DOCTOR = 'doctor', 'Doctor'
+
+
+class User(models.Model):
+    """Staff user model for admin, receptionist, doctor roles."""
+
+    username = models.CharField(max_length=150, unique=True)
+    password = models.CharField(max_length=128)
+    email = models.EmailField(blank=True)
+    full_name = models.CharField(max_length=150)
+    role = models.CharField(
+        max_length=20,
+        choices=UserRole.choices,
+        default=UserRole.RECEPTIONIST,
+    )
+    doctor = models.OneToOneField(
+        Doctor,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='user',
+    )
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['username']
+
+    def __str__(self):
+        return f'{self.full_name} ({self.role})'
 
 
 class PatientProfile(models.Model):

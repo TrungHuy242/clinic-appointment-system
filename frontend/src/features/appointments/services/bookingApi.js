@@ -1,8 +1,7 @@
 import { apiClient } from "../../../shared/services/apiClient";
 import { ENDPOINTS } from "../../../shared/services/endpoints";
 
-const SLOT_DURATION_MINUTES = 25;
-const HOLD_DURATION_MINUTES = 15;
+const SLOT_BLOCK_MINUTES = 25;
 
 function formatTime(value) {
   return new Intl.DateTimeFormat("en-GB", {
@@ -27,10 +26,6 @@ function toOffsetDateTime(dateValue, timeValue) {
   return `${dateValue}T${timeValue}:00${sign}${offsetHours}:${offsetMins}`;
 }
 
-function buildPendingExpiry(createdAt) {
-  return new Date(new Date(createdAt).getTime() + HOLD_DURATION_MINUTES * 60 * 1000).toISOString();
-}
-
 function mapAppointmentToBooking(appointment) {
   return {
     id: appointment.id,
@@ -45,10 +40,11 @@ function mapAppointmentToBooking(appointment) {
     slot: buildSlotLabel(appointment.scheduled_start, appointment.scheduled_end),
     status: appointment.status,
     createdAt: appointment.created_at,
-    expiresAt:
-      appointment.status === "PENDING" && appointment.created_at
-        ? buildPendingExpiry(appointment.created_at)
-        : null,
+    expiresAt: appointment.expires_at || null,
+    visitType: appointment.visit_type,
+    visitTypeLabel: appointment.visit_type_label,
+    visitBlocks: appointment.visit_blocks,
+    qrText: appointment.qr_text,
   };
 }
 
@@ -78,13 +74,13 @@ export async function getDoctorsBySpecialty(specialtyId) {
     phone: doctor.phone,
     specialtyId: doctor.specialty,
     specialtyName: doctor.specialty_name,
-    slotDuration: SLOT_DURATION_MINUTES,
+    slotDuration: SLOT_BLOCK_MINUTES,
   }));
 }
 
-export function getSlots(doctorId, date) {
+export function getSlots(doctorId, date, visitType) {
   return apiClient.get(ENDPOINTS.appointments.slots(doctorId), {
-    params: { date },
+    params: { date, visit_type: visitType },
   });
 }
 
@@ -97,6 +93,7 @@ export async function createGuestBooking(payload) {
     doctor: payload.doctorId,
     scheduled_start: toOffsetDateTime(payload.date, slotStart),
     scheduled_end: toOffsetDateTime(payload.date, slotEnd),
+    visit_type: payload.visitType,
   });
 
   return mapAppointmentToBooking(data);
@@ -144,6 +141,34 @@ export async function lookupAppointment(code, phone) {
       const wrapped = new Error("NOT_FOUND");
       wrapped.cause = error;
       throw wrapped;
+    }
+    throw error;
+  }
+}
+
+export async function staffLogin(credentials) {
+  const data = await apiClient.post(ENDPOINTS.portal.staffLogin, credentials);
+  return data;
+}
+
+export async function lookupAppointmentsByPhone(phone, code) {
+  try {
+    const params = {
+      phone: phone.trim(),
+    };
+
+    if (code && code.trim()) {
+      params.code = code.trim().toUpperCase();
+    }
+
+    const data = await apiClient.get(ENDPOINTS.appointments.lookupByPhone, {
+      params,
+    });
+
+    return Array.isArray(data) ? data.map(mapAppointmentToBooking) : [];
+  } catch (error) {
+    if (error.status === 404) {
+      return [];
     }
     throw error;
   }

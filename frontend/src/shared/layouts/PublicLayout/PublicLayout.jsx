@@ -1,10 +1,10 @@
 import React from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  ArrowRight,
   LogIn,
   MapPin,
   PhoneCall,
+  Search,
   ShieldCheck,
   Stethoscope,
   Users,
@@ -16,6 +16,7 @@ const NAV_ITEMS = [
   { label: "Trang chủ", to: "/" },
   { label: "Dịch vụ", to: "#services", icon: Stethoscope },
   { label: "Đội ngũ bác sĩ", to: "#team", icon: Users },
+  { label: "Tra cứu lịch hẹn", to: "/lookup", icon: Search },
   { label: "Liên hệ", to: "#contact", icon: PhoneCall },
 ];
 
@@ -83,15 +84,6 @@ export default function PublicLayout() {
             >
               <LogIn className="mc-icon mc-icon--sm" />
               Đăng nhập
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              className="public-nav__book-btn"
-              onClick={() => navigate("/book")}
-            >
-              Đặt lịch khám
-              <ArrowRight className="mc-icon mc-icon--sm" />
             </Button>
           </nav>
         </div>

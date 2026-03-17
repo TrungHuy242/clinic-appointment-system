@@ -1,4 +1,4 @@
-﻿from django.utils import timezone
+from django.utils import timezone
 from django.utils.dateparse import parse_date
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
@@ -27,6 +27,7 @@ from .services import (
     mark_notification_read,
     register_patient_account,
     save_visit_draft,
+    staff_login,
     update_account_info,
     update_health_profile,
 )
@@ -34,7 +35,12 @@ from .services import (
 
 class PatientLoginAPIView(APIView):
     def post(self, request, *args, **kwargs):
-        return Response(login_patient_account(request.data))
+        return Response(login_patient_account(request.data, request))
+
+
+class StaffLoginAPIView(APIView):
+    def post(self, request, *args, **kwargs):
+        return Response(staff_login(request.data))
 
 
 class PatientRegisterAPIView(APIView):
@@ -44,34 +50,34 @@ class PatientRegisterAPIView(APIView):
 
 class CurrentPatientProfileAPIView(APIView):
     def get(self, request, *args, **kwargs):
-        return Response(get_health_profile(get_current_profile()))
+        return Response(get_health_profile(get_current_profile(request)))
 
     def patch(self, request, *args, **kwargs):
-        return Response(update_health_profile(get_current_profile(), request.data))
+        return Response(update_health_profile(get_current_profile(request), request.data))
 
 
 class CurrentPatientAccountAPIView(APIView):
     def get(self, request, *args, **kwargs):
-        return Response(get_account_info(get_current_profile()))
+        return Response(get_account_info(get_current_profile(request)))
 
     def patch(self, request, *args, **kwargs):
-        return Response(update_account_info(get_current_profile(), request.data))
+        return Response(update_account_info(get_current_profile(request), request.data))
 
 
 class PatientChangePasswordAPIView(APIView):
     def post(self, request, *args, **kwargs):
-        return Response(change_password(get_current_profile(), request.data))
+        return Response(change_password(get_current_profile(request), request.data))
 
 
 class PatientAppointmentsAPIView(APIView):
     def get(self, request, *args, **kwargs):
         tab = request.query_params.get('tab', 'upcoming')
-        return Response(get_patient_appointments(get_current_profile(), tab))
+        return Response(get_patient_appointments(get_current_profile(request), tab))
 
 
 class PatientRecordDetailAPIView(APIView):
     def get(self, request, record_code, *args, **kwargs):
-        return Response(get_record_detail(get_current_profile(), record_code))
+        return Response(get_record_detail(get_current_profile(request), record_code))
 
 
 class PatientClaimProfileAPIView(APIView):
@@ -87,20 +93,20 @@ class PatientClaimProfileAPIView(APIView):
 
 class PatientNotificationsAPIView(APIView):
     def get(self, request, *args, **kwargs):
-        return Response(get_notifications(get_current_profile()))
+        return Response(get_notifications(get_current_profile(request)))
 
 
 class PatientNotificationsMarkAllReadAPIView(APIView):
     def post(self, request, *args, **kwargs):
-        return Response(mark_all_notifications_read(get_current_profile()))
+        return Response(mark_all_notifications_read(get_current_profile(request)))
 
 
 class PatientNotificationDetailAPIView(APIView):
     def patch(self, request, notification_id, *args, **kwargs):
-        return Response(mark_notification_read(get_current_profile(), notification_id))
+        return Response(mark_notification_read(get_current_profile(request), notification_id))
 
     def delete(self, request, notification_id, *args, **kwargs):
-        return Response(delete_notification(get_current_profile(), notification_id))
+        return Response(delete_notification(get_current_profile(request), notification_id))
 
 
 class DoctorScheduleAPIView(APIView):
@@ -121,6 +127,13 @@ class DoctorQueueAPIView(APIView):
             raise ValidationError({'date': 'date must be in YYYY-MM-DD format.'})
         doctor = get_current_doctor()
         return Response(get_visit_queue(doctor=doctor, appointment_date=appointment_date))
+
+
+class DoctorVisitsAPIView(APIView):
+    def get(self, request, *args, **kwargs):
+        status = request.query_params.get('status', 'all')
+        doctor = get_current_doctor()
+        return Response(get_doctor_visits(doctor=doctor, status=status))
 
 
 class DoctorVisitDetailAPIView(APIView):

@@ -1,4 +1,4 @@
-﻿from django.urls import path
+from django.urls import path
 
 from .views import (
     AdminAuditLogsAPIView,
@@ -10,6 +10,7 @@ from .views import (
     DoctorVisitCompleteAPIView,
     DoctorVisitDetailAPIView,
     DoctorVisitDraftAPIView,
+    DoctorVisitsAPIView,
     PatientAppointmentsAPIView,
     PatientChangePasswordAPIView,
     PatientClaimProfileAPIView,
@@ -20,9 +21,11 @@ from .views import (
     PatientRecordDetailAPIView,
     PatientRegisterAPIView,
     ReceptionPatientsAPIView,
+    StaffLoginAPIView,
 )
 
 urlpatterns = [
+    path('staff/auth/login/', StaffLoginAPIView.as_view(), name='staff-auth-login'),
     path('patient/auth/login/', PatientLoginAPIView.as_view(), name='patient-auth-login'),
     path('patient/auth/register/', PatientRegisterAPIView.as_view(), name='patient-auth-register'),
     path('patient/profile/', CurrentPatientProfileAPIView.as_view(), name='patient-profile'),
@@ -36,6 +39,7 @@ urlpatterns = [
     path('patient/notifications/<int:notification_id>/', PatientNotificationDetailAPIView.as_view(), name='patient-notification-detail'),
     path('doctor/schedule/', DoctorScheduleAPIView.as_view(), name='doctor-schedule'),
     path('doctor/queue/', DoctorQueueAPIView.as_view(), name='doctor-queue'),
+    path('doctor/visits/', DoctorVisitsAPIView.as_view(), name='doctor-visits'),
     path('doctor/visits/<str:code>/', DoctorVisitDetailAPIView.as_view(), name='doctor-visit-detail'),
     path('doctor/visits/<str:code>/draft/', DoctorVisitDraftAPIView.as_view(), name='doctor-visit-draft'),
     path('doctor/visits/<str:code>/complete/', DoctorVisitCompleteAPIView.as_view(), name='doctor-visit-complete'),

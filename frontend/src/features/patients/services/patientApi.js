@@ -6,6 +6,8 @@ export const appointmentApi = {
 
   register: (payload) => apiClient.post(ENDPOINTS.portal.register, payload),
 
+  staffLogin: (payload) => apiClient.post(ENDPOINTS.portal.staffLogin, payload),
+
   getAppointments: (tab = "upcoming") =>
     apiClient.get(ENDPOINTS.portal.appointments, {
       params: { tab },

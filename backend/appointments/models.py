@@ -16,6 +16,12 @@ class AppointmentStatus(models.TextChoices):
     NO_SHOW = 'NO_SHOW', 'No show'
 
 
+class AppointmentVisitType(models.TextChoices):
+    VISIT_15 = 'VISIT_15', 'Khám 15 phút'
+    VISIT_20 = 'VISIT_20', 'Khám 20 phút'
+    VISIT_40 = 'VISIT_40', 'Khám 40 phút'
+
+
 class AppointmentQuerySet(models.QuerySet):
     def active(self):
         return self.filter(is_deleted=False)
@@ -42,6 +48,11 @@ class Appointment(models.Model):
     )
     scheduled_start = models.DateTimeField()
     scheduled_end = models.DateTimeField()
+    visit_type = models.CharField(
+        max_length=20,
+        choices=AppointmentVisitType.choices,
+        default=AppointmentVisitType.VISIT_20,
+    )
     status = models.CharField(
         max_length=20,
         choices=AppointmentStatus.choices,
@@ -66,6 +77,33 @@ class Appointment(models.Model):
 
     def __str__(self):
         return f'{self.code} - {self.patient_full_name}'
+
+
+class AppointmentBlock(models.Model):
+    appointment = models.ForeignKey(
+        Appointment,
+        on_delete=models.CASCADE,
+        related_name='occupied_blocks',
+    )
+    doctor = models.ForeignKey(
+        Doctor,
+        on_delete=models.CASCADE,
+        related_name='appointment_blocks',
+    )
+    appointment_date = models.DateField()
+    block_index = models.PositiveSmallIntegerField()
+
+    class Meta:
+        ordering = ['appointment_date', 'block_index']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['doctor', 'appointment_date', 'block_index'],
+                name='uniq_appointment_block_per_doctor',
+            )
+        ]
+
+    def __str__(self):
+        return f'{self.doctor_id}:{self.appointment_date}:{self.block_index}'
 
 
 def generate_appointment_code():

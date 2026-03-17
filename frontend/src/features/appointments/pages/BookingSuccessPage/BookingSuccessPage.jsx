@@ -1,21 +1,52 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertCircle,
-  CalendarDays,
-  CircleCheck,
-  CircleX,
-  Clock3,
-  Home,
+  CalendarCheck,
+  CheckCircle2,
+  Clock,
+  Copy,
   MapPin,
-  Search,
-  ShieldCheck,
+  Phone,
   Stethoscope,
+  User,
+  X,
+  XCircle,
 } from "lucide-react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import Button from "../../../../shared/components/Button/Button";
 import LoadingSpinner from "../../../../shared/components/LoadingSpinner/LoadingSpinner";
 import { confirmPA1, expirePA1, getBookingByCode } from "../../services/bookingApi";
 import "./BookingSuccessPage.css";
+
+const STATUS_CONFIG = {
+  CONFIRMED: {
+    icon: CheckCircle2,
+    title: "Xác nhận thành công!",
+    subtitle: "Lịch hẹn đã được xác nhận. Vui lòng đến đúng giờ.",
+    color: "success",
+    pill: "Đã xác nhận",
+  },
+  PENDING: {
+    icon: Clock,
+    title: "Chờ xác nhận",
+    subtitle: "Vui lòng xác nhận trong 15 phút để giữ lịch hẹn.",
+    color: "warning",
+    pill: "Chờ xác nhận",
+  },
+  PENDING_PA1: {
+    icon: Clock,
+    title: "Chờ xác nhận PA1",
+    subtitle: "Vui lòng xác nhận trong 15 phút để giữ lịch hẹn.",
+    color: "warning",
+    pill: "Chờ xác nhận",
+  },
+  CANCELLED: {
+    icon: XCircle,
+    title: "Lịch hẹn đã hủy",
+    subtitle: "Lịch hẹn đã bị hủy do chưa được xác nhận kịp thời.",
+    color: "danger",
+    pill: "Đã hủy",
+  },
+};
 
 export default function BookingSuccessPage() {
   const { code } = useParams();
@@ -26,6 +57,7 @@ export default function BookingSuccessPage() {
   const [loading, setLoading] = useState(!location.state?.booking);
   const [status, setStatus] = useState(location.state?.booking?.status ?? null);
   const [secsLeft, setSecsLeft] = useState(null);
+  const [copyState, setCopyState] = useState("idle");
   const expirySyncedRef = useRef(false);
   const isPending = status === "PENDING" || status === "PENDING_PA1";
 
@@ -60,7 +92,6 @@ export default function BookingSuccessPage() {
         }
         return;
       }
-
       setSecsLeft(diff);
     };
 
@@ -80,43 +111,32 @@ export default function BookingSuccessPage() {
         await expirePA1(code).catch(() => {});
         setStatus("CANCELLED");
         setBooking((current) => (current ? { ...current, status: "CANCELLED" } : current));
-        alert("PA1 đã hết hạn, lịch hẹn đã được hủy.");
+        alert("Mã xác nhận đã hết hạn, lịch hẹn đã được hủy.");
       } else {
-        alert("Xác nhận thất bại.");
+        alert("Xác nhận thất bại. Vui lòng thử lại.");
       }
     } finally {
       setLoading(false);
     }
   }, [code]);
 
-  function renderCountdown() {
-    if (!isPending || secsLeft === null) return null;
+  const handleCopyCode = useCallback(async () => {
+    if (!booking?.code || !navigator?.clipboard?.writeText) return;
+    await navigator.clipboard.writeText(booking.code);
+    setCopyState("copied");
+    window.setTimeout(() => setCopyState("idle"), 2000);
+  }, [booking]);
 
+  const formatCountdown = () => {
+    if (secsLeft === null || secsLeft <= 0) return "00:00";
     const minutes = Math.floor(secsLeft / 60);
     const seconds = secsLeft % 60;
-    return (
-      <div className="bs-alert-box">
-        <div className="bs-alert-icon">
-          <Clock3 className="mc-icon mc-icon--lg" />
-        </div>
-        <div>
-          <div className="bs-alert-title">
-            {"Vui lòng xác nhận trong vòng"}{" "}
-            <strong>
-              {String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}
-            </strong>
-          </div>
-          <div className="bs-alert-sub">
-            {"Khung giờ này chỉ được giữ trong 15 phút trước khi hệ thống tự động hủy."}
-          </div>
-        </div>
-      </div>
-    );
-  }
+    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  };
 
   if (loading) {
     return (
-      <div className="booking-success__loading">
+      <div className="bs-loading">
         <LoadingSpinner />
       </div>
     );
@@ -124,158 +144,138 @@ export default function BookingSuccessPage() {
 
   if (status === "NOT_FOUND" || !booking) {
     return (
-      <div className="bs-wrap mc-stack-lg">
-        <div className="bs-card-v2">
-          <div className="bs-icon-circle bs-icon-circle--warning">
-            <AlertCircle className="mc-icon bs-icon-circle__icon" />
+      <div className="bs-modal-overlay">
+        <div className="bs-modal bs-modal--error">
+          <div className="bs-modal-icon bs-modal-icon--error">
+            <AlertCircle size={36} />
           </div>
-          <h1 className="booking-success__not-found-title">{"Không tìm thấy lịch hẹn"}</h1>
-          <p className="booking-success__not-found-copy">
-            {"Mã lịch hẹn "}<strong>{code}</strong>{" không tồn tại hoặc đã hết hiệu lực."}
-          </p>
-          <Button onClick={() => navigate("/book")}>{"Đặt lịch mới"}</Button>
+          <h2>Không tìm thấy lịch hẹn</h2>
+          <p>Mã lịch hẹn <strong>{code}</strong> không tồn tại hoặc đã hết hiệu lực.</p>
+          <button className="bs-modal-btn bs-modal-btn--primary" onClick={() => navigate("/book")}>
+            Đặt lịch mới
+          </button>
         </div>
       </div>
     );
   }
 
-  const doctorName = booking.doctorName || booking.doctor;
-  const specialtyName = booking.specialtyName || booking.specialty;
-  const statusIcon =
-    status === "CONFIRMED" ? (
-      <CircleCheck className="mc-icon bs-icon-circle__icon" />
-    ) : status === "CANCELLED" ? (
-      <CircleX className="mc-icon bs-icon-circle__icon" />
-    ) : (
-      <ShieldCheck className="mc-icon bs-icon-circle__icon" />
-    );
+  const statusConfig = STATUS_CONFIG[status] || STATUS_CONFIG.PENDING;
+  const StatusIcon = statusConfig.icon;
 
   return (
-    <div className="bs-wrap mc-stack-lg">
-      <div className="bs-card-v2">
-        <div
-          className={`bs-card-top-bar ${
-            status === "CONFIRMED" ? "success" : status === "CANCELLED" ? "danger" : "primary"
-          }`}
-        />
-        <div
-          className={`bs-icon-circle ${
-            status === "CONFIRMED"
-              ? "bs-icon-circle--success"
-              : status === "CANCELLED"
-                ? "bs-icon-circle--danger"
-                : "bs-icon-circle--primary"
-          }`}
-        >
-          {statusIcon}
+    <div className="bs-modal-overlay">
+      <div className="bs-modal">
+        {/* Header */}
+        <div className={`bs-modal-header bs-modal-header--${statusConfig.color}`}>
+          <div className="bs-modal-header-icon">
+            <StatusIcon size={24} />
+          </div>
+          <div className="bs-modal-header-content">
+            <h2>{statusConfig.title}</h2>
+            <p>{statusConfig.subtitle}</p>
+          </div>
+          <span className={`bs-modal-pill bs-modal-pill--${statusConfig.color}`}>
+            {statusConfig.pill}
+          </span>
         </div>
 
-        <h1 className="bs-title">
-          {status === "CONFIRMED"
-            ? "Lịch hẹn đã được xác nhận"
-            : status === "CANCELLED"
-              ? "Lịch hẹn đã hết hạn"
-              : "Đặt lịch thành công"}
-        </h1>
-
-        <p className="bs-subtitle">
-          {status === "CONFIRMED"
-            ? "Hệ thống sẽ nhắc bạn trước giờ khám qua SMS hoặc tại cổng bệnh nhân."
-            : status === "CANCELLED"
-              ? "Lịch hẹn đã bị hủy vì chưa được xác nhận trong thời hạn 15 phút."
-              : `Yêu cầu đặt hẹn của bạn đã được tiếp nhận cho số điện thoại ${booking.patientPhone}.`}
-        </p>
-
-        <div className="booking-success__status-group">
-          {status === "CONFIRMED" && (
-            <span className="bs-status-pill bs-status-pill--success">{"Đã xác nhận"}</span>
-          )}
-          {status === "CANCELLED" && (
-            <span className="bs-status-pill bs-status-pill--danger">{"Đã hủy"}</span>
-          )}
-          {isPending && (
-            <span className="bs-status-pill bs-status-pill--warning">{"Chờ xác nhận"}</span>
-          )}
-        </div>
-
-        <div className="bs-details-grid">
-          <div className="bs-detail-item">
-            <div className="bs-detail-icon">
-              <CalendarDays className="mc-icon mc-icon--sm" />
-            </div>
-            <div className="bs-detail-label">{"Ngày và giờ"}</div>
-            <div className="bs-detail-value">{booking.date}</div>
-            <div className="bs-detail-sub">{booking.slot}</div>
-          </div>
-          <div className="bs-detail-item">
-            <div className="bs-detail-icon">
-              <Stethoscope className="mc-icon mc-icon--sm" />
-            </div>
-            <div className="bs-detail-label">{"Bác sĩ"}</div>
-            <div className="bs-detail-value">{doctorName}</div>
-            <div className="bs-detail-sub">{specialtyName}</div>
-          </div>
-          <div className="bs-detail-item">
-            <div className="bs-detail-icon">
-              <ShieldCheck className="mc-icon mc-icon--sm" />
-            </div>
-            <div className="bs-detail-label">{"Mã lịch hẹn"}</div>
-            <div className="bs-detail-value bs-detail-value--code">{booking.code}</div>
-          </div>
-          <div className="bs-detail-item">
-            <div className="bs-detail-icon">
-              <MapPin className="mc-icon mc-icon--sm" />
-            </div>
-            <div className="bs-detail-label">{"Địa điểm"}</div>
-            <div className="bs-detail-value">{"Cơ sở Hải Châu"}</div>
-            <div className="bs-detail-sub">MediCare Clinic</div>
-          </div>
-        </div>
-
-        {renderCountdown()}
-
-        {status === "CANCELLED" && (
-          <div className="bs-alert-box bs-alert-box--danger">
-            <div className="bs-alert-icon">
-              <AlertCircle className="mc-icon mc-icon--lg" />
-            </div>
-            <div>
-              <div className="bs-alert-title">{"Đã hết hạn xác nhận PA1"}</div>
-              <div className="bs-alert-sub">
-                {"Lịch hẹn đã tự động hủy vì chưa được xác nhận trong 15 phút."}
-              </div>
-            </div>
+        {/* Countdown */}
+        {isPending && secsLeft !== null && (
+          <div className="bs-modal-countdown">
+            <Clock size={18} />
+            <span>{formatCountdown()}</span>
           </div>
         )}
 
-        <div className="bs-actions">
+        {/* Content */}
+        <div className="bs-modal-content">
+          {/* Code */}
+          <div className="bs-modal-code">
+            <span className="bs-modal-code-label">Mã lịch hẹn</span>
+            <div className="bs-modal-code-value">
+              <strong>{booking.code}</strong>
+              <button className="bs-modal-copy" onClick={handleCopyCode}>
+                {copyState === "copied" ? "Đã lưu" : "Sao chép"}
+              </button>
+            </div>
+          </div>
+
+          {/* Info Grid - Compact */}
+          <div className="bs-modal-grid">
+            <div className="bs-modal-item">
+              <CalendarCheck size={16} />
+              <div>
+                <span>Ngày</span>
+                <strong>{booking.date}</strong>
+              </div>
+            </div>
+            <div className="bs-modal-item">
+              <Clock size={16} />
+              <div>
+                <span>Giờ</span>
+                <strong>{booking.slot}</strong>
+              </div>
+            </div>
+            <div className="bs-modal-item">
+              <Stethoscope size={16} />
+              <div>
+                <span>Bác sĩ</span>
+                <strong>{booking.doctorName || booking.doctor}</strong>
+              </div>
+            </div>
+            <div className="bs-modal-item">
+              <User size={16} />
+              <div>
+                <span>Bệnh nhân</span>
+                <strong>{booking.patientName}</strong>
+              </div>
+            </div>
+            <div className="bs-modal-item">
+              <Phone size={16} />
+              <div>
+                <span>Điện thoại</span>
+                <strong>{booking.patientPhone}</strong>
+              </div>
+            </div>
+            <div className="bs-modal-item">
+              <MapPin size={16} />
+              <div>
+                <span>Địa điểm</span>
+                <strong>MediCare</strong>
+              </div>
+            </div>
+          </div>
+
+          {/* QR */}
+          {booking.qrText && (
+            <div className="bs-modal-qr">
+              <span>QR Check-in</span>
+              <code>{booking.qrText}</code>
+            </div>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div className="bs-modal-actions">
           {isPending && (
-            <Button onClick={handleConfirm} disabled={loading} className="booking-success__action-btn">
-              <ShieldCheck className="mc-icon mc-icon--sm" />
-              {loading ? "Đang xác nhận..." : "Xác nhận PA1"}
-            </Button>
+            <button className="bs-modal-btn bs-modal-btn--primary" onClick={handleConfirm} disabled={loading}>
+              <CheckCircle2 size={18} />
+              {loading ? "Đang xác nhận..." : "Xác nhận ngay"}
+            </button>
+          )}
+          {status === "CONFIRMED" && (
+            <button className="bs-modal-btn bs-modal-btn--secondary" onClick={() => navigate("/lookup")}>
+              Tra cứu lịch hẹn
+            </button>
           )}
           {status === "CANCELLED" && (
-            <Button onClick={() => navigate("/book")} className="booking-success__action-btn">
-              {"Đặt lại"}
-            </Button>
+            <button className="bs-modal-btn bs-modal-btn--primary" onClick={() => navigate("/book")}>
+              Đặt lịch mới
+            </button>
           )}
-          <Button
-            variant="secondary"
-            onClick={() => navigate("/lookup")}
-            className="booking-success__action-btn"
-          >
-            <Search className="mc-icon mc-icon--sm" />
-            {"Tra cứu lịch hẹn"}
-          </Button>
-          <Button
-            variant="ghost"
-            onClick={() => navigate("/")}
-            className="booking-success__action-btn"
-          >
-            <Home className="mc-icon mc-icon--sm" />
-            {"Về trang chủ"}
-          </Button>
+          <button className="bs-modal-btn bs-modal-btn--ghost" onClick={() => navigate("/")}>
+            Về trang chủ
+          </button>
         </div>
       </div>
     </div>

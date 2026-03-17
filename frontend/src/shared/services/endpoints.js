@@ -11,6 +11,7 @@ export const ENDPOINTS = {
   appointments: {
     guest: `${API_PREFIX}/public/appointments/guest/`,
     lookup: `${API_PREFIX}/public/appointments/lookup/`,
+    lookupByPhone: `${API_PREFIX}/public/appointments/search-by-phone/`,
     detail: (value) => `${API_PREFIX}/public/appointments/${value}/`,
     status: (value) => `${API_PREFIX}/public/appointments/${value}/status/`,
     slots: (doctorId) => `${API_PREFIX}/public/doctors/${doctorId}/slots/`,
@@ -18,6 +19,7 @@ export const ENDPOINTS = {
     checkinLookup: `${API_PREFIX}/reception/checkin/lookup/`,
   },
   portal: {
+    staffLogin: `${API_PREFIX}/staff/auth/login/`,
     login: `${API_PREFIX}/patient/auth/login/`,
     register: `${API_PREFIX}/patient/auth/register/`,
     profile: `${API_PREFIX}/patient/profile/`,
@@ -31,6 +33,7 @@ export const ENDPOINTS = {
     notificationsMarkAllRead: `${API_PREFIX}/patient/notifications/mark-all-read/`,
     doctorSchedule: `${API_PREFIX}/doctor/schedule/`,
     doctorQueue: `${API_PREFIX}/doctor/queue/`,
+    doctorVisits: `${API_PREFIX}/doctor/visits/`,
     doctorVisit: (code) => `${API_PREFIX}/doctor/visits/${code}/`,
     doctorVisitDraft: (code) => `${API_PREFIX}/doctor/visits/${code}/draft/`,
     doctorVisitComplete: (code) => `${API_PREFIX}/doctor/visits/${code}/complete/`,

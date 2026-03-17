@@ -17,18 +17,42 @@ import Button from "../../../../shared/components/Button/Button";
 import Input from "../../../../shared/components/Input/Input";
 import LoadingSpinner from "../../../../shared/components/LoadingSpinner/LoadingSpinner";
 import {
-  getSpecialties,
+  createGuestBooking,
   getDoctorsBySpecialty,
   getSlots,
-  createGuestBooking,
+  getSpecialties,
 } from "../../services/bookingApi";
 import "./BookingWizardPage.css";
 
-const STEPS = ["Chọn khoa", "Chọn bác sĩ", "Chọn giờ", "Thông tin bệnh nhân"];
+const STEPS = ["Chọn khoa", "Chọn bác sĩ", "Chọn loại khám & giờ", "Thông tin bệnh nhân"];
+
+const VISIT_TYPES = [
+  {
+    id: "VISIT_15",
+    label: "Khám 15 phút",
+    duration: 15,
+    blocks: 1,
+    description: "Chiếm 1 block 25 phút.",
+  },
+  {
+    id: "VISIT_20",
+    label: "Khám 20 phút",
+    duration: 20,
+    blocks: 1,
+    description: "Chiếm 1 block 25 phút.",
+  },
+  {
+    id: "VISIT_40",
+    label: "Khám 40 phút",
+    duration: 40,
+    blocks: 2,
+    description: "Cần 2 block liên tiếp.",
+  },
+];
 
 const SPECIALTY_META = {
   "Nhi khoa": { icon: Baby, cardClass: "bw-card--nhi" },
-  "Da liểu": { icon: Sparkles, cardClass: "bw-card--da-lieu" },
+  "Da liễu": { icon: Sparkles, cardClass: "bw-card--da-lieu" },
   "Tai Mũi Họng": { icon: Stethoscope, cardClass: "bw-card--tai-mui-hong" },
   "Khám tổng quát": { icon: HeartPulse, cardClass: "bw-card--tong-quat" },
   "Mắt": { icon: Eye, cardClass: "bw-card--mat" },
@@ -53,6 +77,10 @@ function todayStr() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function formatSlotMeta(slot) {
+  return `${slot.duration}p | ${slot.occupies === 2 ? "x2 block" : "x1 block"}`;
+}
+
 export default function BookingWizardPage() {
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
@@ -61,6 +89,7 @@ export default function BookingWizardPage() {
   const [selectedSpecialty, setSelectedSpecialty] = useState(null);
   const [doctors, setDoctors] = useState([]);
   const [selectedDoctor, setSelectedDoctor] = useState(null);
+  const [selectedVisitType, setSelectedVisitType] = useState(VISIT_TYPES[1]);
   const [date, setDate] = useState(todayStr());
   const [slots, setSlots] = useState([]);
   const [selectedSlot, setSelectedSlot] = useState(null);
@@ -73,7 +102,10 @@ export default function BookingWizardPage() {
   }, []);
 
   useEffect(() => {
-    if (!selectedSpecialty) return;
+    if (!selectedSpecialty) {
+      return;
+    }
+
     setLoading(true);
     setSelectedDoctor(null);
     setSelectedSlot(null);
@@ -81,31 +113,50 @@ export default function BookingWizardPage() {
   }, [selectedSpecialty]);
 
   useEffect(() => {
-    if (!selectedDoctor) return;
+    if (!selectedDoctor) {
+      return;
+    }
+
     setLoading(true);
     setSelectedSlot(null);
-    getSlots(selectedDoctor.id, date).then(setSlots).finally(() => setLoading(false));
-  }, [selectedDoctor, date]);
+    getSlots(selectedDoctor.id, date, selectedVisitType.id).then(setSlots).finally(() => setLoading(false));
+  }, [selectedDoctor, date, selectedVisitType]);
 
   function validateForm() {
     const nextErrors = {};
-    if (!form.name.trim()) nextErrors.name = "Vui lòng nhập họ tên.";
+
+    if (!form.name.trim()) {
+      nextErrors.name = "Vui lòng nhập họ tên.";
+    }
+
     if (!/^0\d{9}$/.test(form.phone.trim())) {
       nextErrors.phone = "Số điện thoại không hợp lệ (10 số, bắt đầu bằng 0).";
     }
-    if (!form.dob) nextErrors.dob = "Vui lòng nhập ngày sinh.";
+
+    if (!form.dob) {
+      nextErrors.dob = "Vui lòng nhập ngày sinh.";
+    }
+
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   }
 
   function isLockedBySelected(slot) {
-    if (!selectedSlot || selectedSlot.occupies !== 2) return false;
-    if (slot.id === selectedSlot.id) return false;
+    if (!selectedSlot || selectedSlot.occupies !== 2) {
+      return false;
+    }
+
+    if (slot.id === selectedSlot.id) {
+      return false;
+    }
+
     return slot.primaryBlockIndex === selectedSlot.nextBlockIndex;
   }
 
   async function handleSubmit() {
-    if (!validateForm() || !selectedSlot) return;
+    if (!validateForm() || !selectedSlot) {
+      return;
+    }
 
     setLoading(true);
     try {
@@ -120,6 +171,8 @@ export default function BookingWizardPage() {
         slotDuration: selectedSlot.duration,
         slotBlocks: selectedSlot.occupies,
         slotBlockIndexes: selectedSlot.blockIndexes,
+        visitType: selectedVisitType.id,
+        visitTypeLabel: selectedVisitType.label,
         patientName: form.name.trim(),
         patientPhone: form.phone.trim(),
         patientDob: form.dob,
@@ -128,16 +181,25 @@ export default function BookingWizardPage() {
       const booking = await createGuestBooking(payload);
       navigate(`/booking-success/${booking.code}`, { state: { booking } });
     } catch (error) {
-      alert(`Đặt lịch thất bại : ${error.message}`);
+      alert(`Đặt lịch thất bại: ${error.message}`);
     } finally {
       setLoading(false);
     }
   }
 
   function canNext() {
-    if (step === 0) return Boolean(selectedSpecialty);
-    if (step === 1) return Boolean(selectedDoctor);
-    if (step === 2) return Boolean(selectedSlot);
+    if (step === 0) {
+      return Boolean(selectedSpecialty);
+    }
+
+    if (step === 1) {
+      return Boolean(selectedDoctor);
+    }
+
+    if (step === 2) {
+      return Boolean(selectedSlot);
+    }
+
     return true;
   }
 
@@ -192,7 +254,7 @@ export default function BookingWizardPage() {
                   >
                     <div className="bw-card__avatar bw-card__avatar-initials">{getInitials(doctor.name)}</div>
                     <div className="bw-card__name">{doctor.name}</div>
-                    <div className="bw-card__sub">{doctor.slotDuration} phút / lượt</div>
+                    <div className="bw-card__sub">1 block = {doctor.slotDuration} phút</div>
                   </button>
                 ))}
               </div>
@@ -202,6 +264,20 @@ export default function BookingWizardPage() {
       case 2:
         return (
           <div>
+            <div className="bw-visit-type-grid">
+              {VISIT_TYPES.map((visitType) => (
+                <button
+                  key={visitType.id}
+                  type="button"
+                  className={`bw-visit-type${selectedVisitType.id === visitType.id ? " selected" : ""}`}
+                  onClick={() => setSelectedVisitType(visitType)}
+                >
+                  <div className="bw-visit-type__title">{visitType.label}</div>
+                  <div className="bw-visit-type__meta">{visitType.description}</div>
+                </button>
+              ))}
+            </div>
+
             <div className="bw-date-row">
               <div className="bw-date-label">Ngày khám:</div>
               <input
@@ -212,9 +288,16 @@ export default function BookingWizardPage() {
                 onChange={(event) => setDate(event.target.value)}
               />
             </div>
+
             <div className="bw-panel-title bw-panel-title--spaced">
-              Chọn khung giờ ({selectedDoctor?.slotDuration} phút/lượt)
+              Chọn khung giờ cho {selectedVisitType.label}
             </div>
+            <p className="bw-empty-note bw-empty-note--spaced">
+              {selectedVisitType.blocks === 2
+                ? "Loại khám này yêu cầu 2 block liên tiếp. Hệ thống sẽ khóa block kế tiếp khi bạn chọn slot."
+                : "Loại khám này chiếm 1 block 25 phút."}
+            </p>
+
             {slots.length === 0 ? (
               <p className="bw-empty-note">Không có slot khả dụng cho ngày này.</p>
             ) : (
@@ -223,6 +306,7 @@ export default function BookingWizardPage() {
                   {slots.map((slot) => {
                     const locked = isLockedBySelected(slot);
                     const disabled = slot.status === "conflict" || locked;
+
                     return (
                       <button
                         type="button"
@@ -238,18 +322,20 @@ export default function BookingWizardPage() {
                         onClick={() => setSelectedSlot(slot)}
                         title={
                           slot.status === "conflict"
-                            ? "Khung giờ này đã có người đặt"
+                            ? "Khung giờ này đã full hoặc không đủ block liên tiếp."
                             : locked
-                            ? "Khung giờ này bị khóa vì slot 40 phút đang được chọn"
-                            : ""
+                              ? "Khung giờ này bị khóa vì slot 40 phút đang được chọn."
+                              : ""
                         }
                       >
-                        {slot.start}
-                        <div className="bw-slot__dur">{slot.duration}p</div>
+                        <div className="bw-slot__time">{slot.start}</div>
+                        <div className="bw-slot__sub">{slot.end}</div>
+                        <div className="bw-slot__dur">{formatSlotMeta(slot)}</div>
                       </button>
                     );
                   })}
                 </div>
+
                 <div className="bw-slot-legend">
                   <span className="bw-legend-chip">
                     <span className="bw-legend-swatch bw-legend-swatch--available" />
@@ -261,7 +347,7 @@ export default function BookingWizardPage() {
                   </span>
                   <span className="bw-legend-chip bw-slot-legend__conflict">
                     <span className="bw-legend-swatch bw-legend-swatch--conflict" />
-                    Đã đặt
+                    Đã full / không đủ block
                   </span>
                   <span className="bw-legend-chip bw-slot-legend__locked">
                     <Lock className="mc-icon mc-icon--xs" />
@@ -276,15 +362,33 @@ export default function BookingWizardPage() {
         return (
           <div className="mc-stack-md">
             <div className="bw-panel-title">Thông tin bệnh nhân</div>
-            <Input label="Họ và tên *" placeholder="Nguyễn Văn An" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} error={errors.name} />
-            <Input label="Số điện thoại *" placeholder="0901234567" value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} error={errors.phone} />
-            <Input label="Ngày sinh *" type="date" value={form.dob} onChange={(event) => setForm({ ...form, dob: event.target.value })} error={errors.dob} />
+            <Input
+              label="Họ và tên *"
+              placeholder="Nguyễn Văn An"
+              value={form.name}
+              onChange={(event) => setForm({ ...form, name: event.target.value })}
+              error={errors.name}
+            />
+            <Input
+              label="Số điện thoại *"
+              placeholder="0901234567"
+              value={form.phone}
+              onChange={(event) => setForm({ ...form, phone: event.target.value })}
+              error={errors.phone}
+            />
+            <Input
+              label="Ngày sinh *"
+              type="date"
+              value={form.dob}
+              onChange={(event) => setForm({ ...form, dob: event.target.value })}
+              error={errors.dob}
+            />
             <Input
               label="Ghi chú triệu chứng (không bắt buộc)"
               placeholder="Mô tả ngắn triệu chứng..."
               value={form.note}
               onChange={(event) => setForm({ ...form, note: event.target.value })}
-              hint="Thông tin này để bác sĩ chuẩn bị trước, không thể thay đổi chẩn đoán."
+              hint="Thông tin này để bác sĩ chuẩn bị trước, không thay thế chẩn đoán."
             />
           </div>
         );
@@ -303,7 +407,9 @@ export default function BookingWizardPage() {
       <div className="bw-stepper">
         {STEPS.map((label, index) => (
           <div key={label} className={`bw-step${index === step ? " active" : ""}${index < step ? " done" : ""}`}>
-            <div className="bw-step__dot">{index < step ? <Check className="mc-icon mc-icon--sm bw-step__dot-icon" /> : index + 1}</div>
+            <div className="bw-step__dot">
+              {index < step ? <Check className="mc-icon mc-icon--sm bw-step__dot-icon" /> : index + 1}
+            </div>
             <div className="bw-step__label hidden-md-down">{label}</div>
           </div>
         ))}
@@ -321,6 +427,7 @@ export default function BookingWizardPage() {
             ) : (
               <div />
             )}
+
             {step < STEPS.length - 1 ? (
               <Button onClick={() => setStep((currentStep) => currentStep + 1)} disabled={!canNext()}>
                 Tiếp theo
@@ -339,12 +446,13 @@ export default function BookingWizardPage() {
           <div className="bw-summary__title">Tóm tắt lịch hẹn</div>
           {[
             ["Cơ sở", "Cơ sở Hải Châu"],
-            ["Chuyên khoa", selectedSpecialty?.name ?? "—"],
-            ["Bác sĩ", selectedDoctor?.name ?? "—"],
+            ["Chuyên khoa", selectedSpecialty?.name ?? "-"],
+            ["Bác sĩ", selectedDoctor?.name ?? "-"],
+            ["Loại khám", selectedVisitType.label],
             ["Ngày khám", date],
-            ["Giờ khám", selectedSlot ? `${selectedSlot.start} - ${selectedSlot.end}` : "—"],
-            ["Bệnh nhân", form.name || "—"],
-            ["SĐT", form.phone || "—"],
+            ["Giờ khám", selectedSlot ? `${selectedSlot.start} - ${selectedSlot.end}` : "-"],
+            ["Bệnh nhân", form.name || "-"],
+            ["SĐT", form.phone || "-"],
           ].map(([key, value]) => (
             <div className="bw-summary__row" key={key}>
               <span className="bw-summary__key">{key}</span>
@@ -360,4 +468,3 @@ export default function BookingWizardPage() {
     </div>
   );
 }
-

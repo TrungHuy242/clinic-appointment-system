@@ -4,7 +4,9 @@ import {
   ArrowLeft,
   BarChart3,
   Building2,
-  CalendarDays,  FileText,
+  CalendarDays,
+  FileText,
+  ListOrdered,
   PanelLeftClose,
   PanelLeftOpen,
   ScanLine,
@@ -30,6 +32,8 @@ const ROLE_ROUTES = {
 const MENUS = {
   doctor: [
     { to: "/app/doctor/schedule", label: "Lịch của tôi", icon: CalendarDays },
+    { to: "/app/doctor/queue", label: "Hàng đợi", icon: ListOrdered },
+    { to: "/app/doctor/visits", label: "Lịch sử khám", icon: FileText },
     { to: "/app/doctor/visit", label: "Khám bệnh", icon: Stethoscope },
   ],
   admin: [

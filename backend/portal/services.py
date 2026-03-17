@@ -1,4 +1,4 @@
-﻿import re
+import re
 from datetime import date, timedelta
 
 from django.db import transaction
@@ -11,7 +11,7 @@ from appointments.models import Appointment, AppointmentStatus
 from appointments.services import get_active_appointments_queryset, set_appointment_status
 from catalog.models import Doctor, Specialty
 
-from .models import MedicalRecord, PatientNotification, PatientProfile
+from .models import MedicalRecord, PatientNotification, PatientProfile, User
 
 
 BRANCH_NAME = 'Cơ sở Hải Châu'
@@ -98,11 +98,24 @@ def validate_phone(phone):
     return normalized
 
 
-def get_current_profile():
+def get_current_profile(request=None):
+    """Get the current patient profile from session or database fallback."""
+    from django.contrib.sessions.backends.db import SessionStore
+
+    # Try to get from session first
+    if request and hasattr(request, 'session') and request.session.session_key:
+        profile_id = request.session.get('patient_profile_id')
+        if profile_id:
+            profile = PatientProfile.objects.filter(pk=profile_id).first()
+            if profile:
+                return profile
+
+    # Fallback to is_current flag (legacy behavior)
     profile = PatientProfile.objects.filter(is_current=True).first()
     if profile:
         return profile
 
+    # Last resort: get first profile
     profile = PatientProfile.objects.order_by('id').first()
     if not profile:
         raise ValidationError('No patient profile available.')
@@ -113,16 +126,23 @@ def get_current_profile():
 
 
 @transaction.atomic
-def set_current_profile(profile):
+def set_current_profile(profile, request=None):
+    """Set the current patient profile in session and database."""
     PatientProfile.objects.filter(is_current=True).exclude(pk=profile.pk).update(is_current=False)
     if not profile.is_current:
         profile.is_current = True
         profile.save(update_fields=['is_current', 'updated_at'])
+
+    # Save to session if request is provided
+    if request and hasattr(request, 'session'):
+        request.session['patient_profile_id'] = profile.id
+        request.session.modified = True
+
     return profile
 
 
 @transaction.atomic
-def login_patient_account(payload):
+def login_patient_account(payload, request=None):
     identifier = str(
         payload.get('identifier')
         or payload.get('phone')
@@ -145,10 +165,40 @@ def login_patient_account(payload):
     if not profile or profile.account_password != password:
         raise ValidationError({'non_field_errors': 'Thông tin đăng nhập không hợp lệ.'})
 
-    set_current_profile(profile)
+    set_current_profile(profile, request)
     return {
         'success': True,
         'account': get_account_info(profile),
+        'role': 'patient',
+    }
+
+
+def staff_login(payload):
+    """Login for admin, receptionist, doctor roles."""
+    from django.contrib.auth.hashers import check_password
+    
+    username = str(payload.get('username') or payload.get('identifier') or '').strip()
+    password = str(payload.get('password') or '').strip()
+
+    if not username:
+        raise ValidationError({'username': 'username is required.'})
+    if not password:
+        raise ValidationError({'password': 'password is required.'})
+
+    user = User.objects.filter(username=username, is_active=True).first()
+    if not user or not check_password(password, user.password):
+        raise ValidationError({'non_field_errors': 'Thông tin đăng nhập không hợp lệ.'})
+
+    return {
+        'success': True,
+        'user': {
+            'id': user.id,
+            'username': user.username,
+            'fullName': user.full_name,
+            'email': user.email,
+            'role': user.role,
+            'doctorId': user.doctor_id,
+        },
     }
 
 
@@ -556,6 +606,37 @@ def get_visit_queue(doctor=None, appointment_date=None):
         }
         for appointment in appointments
     ]
+
+
+def get_doctor_visits(doctor=None, status='all'):
+    from appointments.models import AppointmentStatus, Appointment
+    doctor = doctor or get_current_doctor()
+    queryset = Appointment.objects.select_related('specialty', 'doctor', 'medical_record').filter(
+        doctor=doctor,
+    )
+    if status == 'completed':
+        queryset = queryset.filter(status=AppointmentStatus.COMPLETED)
+    elif status == 'draft':
+        queryset = queryset.filter(
+            status__in=[AppointmentStatus.IN_PROGRESS, AppointmentStatus.WAITING],
+            medical_record__isnull=False,
+        ).exclude(medical_record__draft={})
+    else:
+        queryset = queryset.exclude(status=AppointmentStatus.CANCELLED)
+    
+    queryset = queryset.order_by('-scheduled_start')[:50]
+    return [
+        {
+            'id': appointment.id,
+            'code': appointment.code,
+            'patientName': appointment.patient_full_name,
+            'date': timezone.localtime(appointment.scheduled_start).strftime('%d/%m/%Y'),
+            'status': appointment.status,
+            'diagnosis': appointment.medical_record.diagnosis_name if appointment.medical_record else None,
+        }
+        for appointment in queryset
+    ]
+
 
 def get_or_create_record_for_appointment(appointment):
     record = getattr(appointment, 'medical_record', None)

@@ -4,10 +4,14 @@ from rest_framework import serializers
 
 from catalog.models import Doctor, Specialty
 
-from .models import Appointment, AppointmentStatus
+from .models import Appointment, AppointmentStatus, AppointmentVisitType
 from .services import (
     STATUS_MESSAGE,
+    VISIT_TYPE_MESSAGE,
+    build_appointment_qr_text,
     create_guest_appointment,
+    get_pending_expiry,
+    get_visit_type_blocks,
     set_appointment_status,
     validate_doctor_specialty,
     validate_time_range,
@@ -103,6 +107,14 @@ class AppointmentSerializer(serializers.ModelSerializer):
             'null': 'scheduled_end is required.',
         },
     )
+    visit_type = serializers.ChoiceField(
+        choices=AppointmentVisitType.choices,
+        required=False,
+        default=AppointmentVisitType.VISIT_20,
+        error_messages={
+            'invalid_choice': VISIT_TYPE_MESSAGE,
+        },
+    )
     status = serializers.ChoiceField(
         choices=AppointmentStatus.choices,
         required=False,
@@ -112,6 +124,10 @@ class AppointmentSerializer(serializers.ModelSerializer):
     )
     specialty_name = serializers.CharField(source='specialty.name', read_only=True)
     doctor_name = serializers.CharField(source='doctor.full_name', read_only=True)
+    visit_type_label = serializers.CharField(source='get_visit_type_display', read_only=True)
+    visit_blocks = serializers.SerializerMethodField()
+    expires_at = serializers.SerializerMethodField()
+    qr_text = serializers.SerializerMethodField()
 
     class Meta:
         model = Appointment
@@ -126,7 +142,12 @@ class AppointmentSerializer(serializers.ModelSerializer):
             'doctor_name',
             'scheduled_start',
             'scheduled_end',
+            'visit_type',
+            'visit_type_label',
+            'visit_blocks',
             'status',
+            'qr_text',
+            'expires_at',
             'is_deleted',
             'created_at',
             'updated_at',
@@ -136,6 +157,10 @@ class AppointmentSerializer(serializers.ModelSerializer):
             'code',
             'specialty_name',
             'doctor_name',
+            'visit_type_label',
+            'visit_blocks',
+            'qr_text',
+            'expires_at',
             'is_deleted',
             'created_at',
             'updated_at',
@@ -173,6 +198,17 @@ class AppointmentSerializer(serializers.ModelSerializer):
             set_appointment_status(instance, new_status)
 
         return instance
+
+    def get_visit_blocks(self, obj):
+        return get_visit_type_blocks(obj.visit_type)
+
+    def get_expires_at(self, obj):
+        if obj.status != AppointmentStatus.PENDING:
+            return None
+        return get_pending_expiry(obj)
+
+    def get_qr_text(self, obj):
+        return build_appointment_qr_text(obj)
 
 
 class AppointmentGuestSerializer(serializers.ModelSerializer):
@@ -219,6 +255,14 @@ class AppointmentGuestSerializer(serializers.ModelSerializer):
             'null': 'scheduled_end is required.',
         },
     )
+    visit_type = serializers.ChoiceField(
+        choices=AppointmentVisitType.choices,
+        required=False,
+        default=AppointmentVisitType.VISIT_20,
+        error_messages={
+            'invalid_choice': VISIT_TYPE_MESSAGE,
+        },
+    )
 
     class Meta:
         model = Appointment
@@ -229,6 +273,7 @@ class AppointmentGuestSerializer(serializers.ModelSerializer):
             'doctor',
             'scheduled_start',
             'scheduled_end',
+            'visit_type',
         ]
 
     def validate_patient_full_name(self, value):

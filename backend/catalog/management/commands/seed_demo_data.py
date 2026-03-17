@@ -1,12 +1,13 @@
-﻿from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta
 
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 from django.utils.dateparse import parse_date
 
 from appointments.models import Appointment, AppointmentStatus
+from appointments.services import get_daily_block_frames, sync_appointment_blocks
 from catalog.models import Doctor, Specialty
-from portal.models import MedicalRecord, PatientNotification, PatientProfile
+from portal.models import MedicalRecord, PatientNotification, PatientProfile, User
 
 
 SEED_SPECIALTIES = [
@@ -138,6 +139,7 @@ class Command(BaseCommand):
         profile_map = self.seed_profiles()
         self.seed_appointments(doctor_map, specialty_map, profile_map)
         self.seed_notifications(profile_map)
+        self.seed_staff_users()
         self.stdout.write(self.style.SUCCESS('Seed completed successfully.'))
 
     def seed_specialties(self):
@@ -203,8 +205,7 @@ class Command(BaseCommand):
             )
 
     def seed_appointments(self, doctor_map, specialty_map, profile_map):
-        dynamic_base = timezone.localtime(timezone.now()).replace(second=0, microsecond=0)
-        dynamic_base = dynamic_base + timedelta(minutes=5)
+        dynamic_base = self.next_slot_start(timezone.localtime(timezone.now()) + timedelta(minutes=5))
         queue_today = dynamic_base.date()
 
         schedules = [
@@ -286,8 +287,8 @@ class Command(BaseCommand):
                 'patient_phone': '0909000005',
                 'specialty': 'Da liễu',
                 'doctor': 'BS. Trần Ngọc Emily',
-                'start': dynamic_base - timedelta(minutes=90),
-                'end': dynamic_base - timedelta(minutes=65),
+                'start': dynamic_base - timedelta(minutes=50),
+                'end': dynamic_base - timedelta(minutes=25),
                 'status': AppointmentStatus.COMPLETED,
                 'record': {
                     'chief_complaint': 'Viêm da tái phát ở vùng cổ tay.',
@@ -306,8 +307,8 @@ class Command(BaseCommand):
                 'patient_phone': '0909000004',
                 'specialty': 'Da liễu',
                 'doctor': 'BS. Trần Ngọc Emily',
-                'start': dynamic_base - timedelta(minutes=30),
-                'end': dynamic_base - timedelta(minutes=5),
+                'start': dynamic_base - timedelta(minutes=25),
+                'end': dynamic_base,
                 'status': AppointmentStatus.IN_PROGRESS,
                 'record': {
                     'chief_complaint': 'Nổi mề đay tái đi tái lại trong 1 tuần.',
@@ -341,8 +342,8 @@ class Command(BaseCommand):
                 'patient_phone': '0912345678',
                 'specialty': 'Da liễu',
                 'doctor': 'BS. Trần Ngọc Emily',
-                'start': dynamic_base + timedelta(minutes=35),
-                'end': dynamic_base + timedelta(minutes=60),
+                'start': dynamic_base + timedelta(minutes=25),
+                'end': dynamic_base + timedelta(minutes=50),
                 'status': AppointmentStatus.CHECKED_IN,
             },
         ]
@@ -361,6 +362,7 @@ class Command(BaseCommand):
                     'is_deleted': False,
                 },
             )
+            sync_appointment_blocks(appointment)
 
             record_data = item.get('record')
             if not record_data:
@@ -391,4 +393,71 @@ class Command(BaseCommand):
 
     def make_aware(self, value):
         return timezone.make_aware(value, timezone.get_current_timezone())
+
+    def next_slot_start(self, value):
+        local_value = timezone.localtime(value).replace(second=0, microsecond=0)
+        search_date = local_value.date()
+
+        while True:
+            for frame in get_daily_block_frames(search_date):
+                if frame['start'] >= local_value:
+                    return frame['start']
+
+            search_date = search_date + timedelta(days=1)
+            local_value = self.make_aware(datetime.combine(search_date, time(hour=8, minute=0)))
+
+    def seed_staff_users(self):
+        """Create staff users for testing."""
+        from django.contrib.auth.hashers import make_password
+        
+        staff_users = [
+            {
+                'username': 'admin',
+                'password': 'admin123',
+                'full_name': 'Admin User',
+                'role': 'admin',
+                'email': 'admin@medicare.com',
+            },
+            {
+                'username': 'reception',
+                'password': 'reception123',
+                'full_name': 'Nguyễn Thị Lễ Tân',
+                'role': 'receptionist',
+                'email': 'reception@medicare.com',
+            },
+            {
+                'username': 'doctor1',
+                'password': 'doctor123',
+                'full_name': 'BS. Nguyễn Thị Sarah',
+                'role': 'doctor',
+                'email': 'doctor1@medicare.com',
+            },
+            {
+                'username': 'doctor2',
+                'password': 'doctor123',
+                'full_name': 'BS. Trần Ngọc Emily',
+                'role': 'doctor',
+                'email': 'doctor2@medicare.com',
+            },
+        ]
+        
+        created_count = 0
+        for data in staff_users:
+            user, created = User.objects.get_or_create(
+                username=data['username'],
+                defaults={
+                    'password': make_password(data['password']),
+                    'full_name': data['full_name'],
+                    'role': data['role'],
+                    'email': data['email'],
+                }
+            )
+            if created:
+                created_count += 1
+        
+        self.stdout.write(self.style.SUCCESS(f'Created {created_count} staff users (admin/reception/doctor).'))
+        self.stdout.write(self.style.WARNING('Staff login credentials:'))
+        self.stdout.write(self.style.WARNING('  - admin / admin123'))
+        self.stdout.write(self.style.WARNING('  - reception / reception123'))
+        self.stdout.write(self.style.WARNING('  - doctor1 / doctor123'))
 
