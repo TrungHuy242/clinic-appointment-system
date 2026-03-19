@@ -19,8 +19,7 @@ export const ENDPOINTS = {
     checkinLookup: `${API_PREFIX}/reception/checkin/lookup/`,
   },
   portal: {
-    staffLogin: `${API_PREFIX}/staff/auth/login/`,
-    login: `${API_PREFIX}/patient/auth/login/`,
+    login:      `${API_PREFIX}/auth/login/`,
     register: `${API_PREFIX}/patient/auth/register/`,
     claimProfile: `${API_PREFIX}/patient/claim-profile/`,
     profile: `${API_PREFIX}/patient/profile/`,

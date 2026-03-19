@@ -14,6 +14,7 @@ from .services import (
     get_current_doctor,
     get_current_profile,
     get_doctor_schedule,
+    get_doctor_visits,
     get_health_profile,
     get_notifications,
     get_patient_appointments,
@@ -22,26 +23,18 @@ from .services import (
     get_reports_data,
     get_visit_detail,
     get_visit_queue,
-    login_patient_account,
+    unified_login,
     mark_all_notifications_read,
     mark_notification_read,
     register_patient_account,
     save_visit_draft,
-    staff_login,
     update_account_info,
     update_health_profile,
 )
 
-
-class PatientLoginAPIView(APIView):
+class LoginAPIView(APIView):
     def post(self, request, *args, **kwargs):
-        return Response(login_patient_account(request.data, request))
-
-
-class StaffLoginAPIView(APIView):
-    def post(self, request, *args, **kwargs):
-        return Response(staff_login(request.data))
-
+        return Response(unified_login(request.data, request))
 
 class PatientRegisterAPIView(APIView):
     def post(self, request, *args, **kwargs):

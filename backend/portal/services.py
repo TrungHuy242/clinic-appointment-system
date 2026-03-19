@@ -140,68 +140,72 @@ def set_current_profile(profile, request=None):
 
     return profile
 
-
 @transaction.atomic
-def login_patient_account(payload, request=None):
+def unified_login(payload, request=None):
+    from django.contrib.auth.hashers import check_password as django_check_password
+ 
     identifier = str(
         payload.get('identifier')
         or payload.get('phone')
-        or payload.get('email')
         or payload.get('username')
         or ''
     ).strip()
     password = str(payload.get('password') or '').strip()
-
+ 
     if not identifier:
-        raise ValidationError({'identifier': 'identifier is required.'})
+        raise ValidationError({'identifier': 'Vui lòng nhập số điện thoại hoặc tên đăng nhập.'})
     if not password:
-        raise ValidationError({'password': 'password is required.'})
-
-    profile = PatientProfile.objects.filter(
+        raise ValidationError({'password': 'Vui lòng nhập mật khẩu.'})
+ 
+    # bệnh nhân (PatientProfile – plain-text password) ─────────────
+    patient = PatientProfile.objects.filter(
         Q(phone=identifier)
         | Q(account_username__iexact=identifier)
         | Q(account_email__iexact=identifier)
     ).first()
-    if not profile or profile.account_password != password:
-        raise ValidationError({'non_field_errors': 'Thông tin đăng nhập không hợp lệ.'})
-
-    set_current_profile(profile, request)
-    return {
-        'success': True,
-        'account': get_account_info(profile),
-        'role': 'patient',
-    }
-
-
-def staff_login(payload):
-    """Login for admin, receptionist, doctor roles."""
-    from django.contrib.auth.hashers import check_password
-    
-    username = str(payload.get('username') or payload.get('identifier') or '').strip()
-    password = str(payload.get('password') or '').strip()
-
-    if not username:
-        raise ValidationError({'username': 'username is required.'})
-    if not password:
-        raise ValidationError({'password': 'password is required.'})
-
-    user = User.objects.filter(username=username, is_active=True).first()
-    if not user or not check_password(password, user.password):
-        raise ValidationError({'non_field_errors': 'Thông tin đăng nhập không hợp lệ.'})
-
-    return {
-        'success': True,
-        'user': {
-            'id': user.id,
-            'username': user.username,
-            'fullName': user.full_name,
-            'email': user.email,
-            'role': user.role,
-            'doctorId': user.doctor_id,
-        },
-    }
-
-
+ 
+    if patient and patient.account_password == password:
+        set_current_profile(patient, request)
+        return {
+            'success': True,
+            'role': 'patient',
+            'account': get_account_info(patient),
+        }
+ 
+    # nhân viên (portal_user – hashed password) ────────────────────
+    staff = User.objects.filter(username=identifier, is_active=True).first()
+ 
+    # Fallback: thử case-insensitive nếu exact không có kết quả
+    if not staff:
+        staff = User.objects.filter(username__iexact=identifier, is_active=True).first()
+ 
+    if staff and django_check_password(password, staff.password):
+        # doctor_id trong portal_user đang NULL → tự tra catalog_doctor theo full_name
+        doctor_id = staff.doctor_id
+        if doctor_id is None and staff.role == 'doctor':
+            matched_doctor = Doctor.objects.filter(
+                full_name=staff.full_name, is_active=True
+            ).first()
+            if matched_doctor:
+                doctor_id = matched_doctor.id
+                # Cập nhật luôn vào DB để lần sau khỏi tra lại
+                User.objects.filter(pk=staff.pk).update(doctor_id=doctor_id)
+ 
+        return {
+            'success': True,
+            'role': staff.role,   # 'admin' | 'receptionist' | 'doctor'
+            'user': {
+                'id': staff.id,
+                'username': staff.username,
+                'fullName': staff.full_name,
+                'email': staff.email,
+                'role': staff.role,
+                'doctorId': doctor_id,
+            },
+        }
+ 
+    # Sai thông tin ────────────────────────────────────────────────────
+    raise ValidationError({'non_field_errors': 'Thông tin đăng nhập không hợp lệ.'})
 @transaction.atomic
 def register_patient_account(payload):
     full_name = str(payload.get('name') or payload.get('fullName') or '').strip()
