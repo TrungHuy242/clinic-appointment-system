@@ -5,6 +5,7 @@ import {
   CalendarDays,
   CalendarX,
   CheckCircle2,
+  ChevronRight,
   Clock,
   MapPin,
   Plus,
@@ -16,16 +17,16 @@ import { appointmentApi } from "../../../services/patientApi";
 import "./MyAppointmentsPage.css";
 
 const TABS = [
-  { key: "upcoming", label: "Sắp tới", icon: CalendarCheck },
-  { key: "history", label: "Đã hoàn thành", icon: CheckCircle2 },
-  { key: "cancelled", label: "Đã hủy", icon: CalendarX },
+  { key: "upcoming",  label: "Sắp tới",        icon: CalendarCheck },
+  { key: "history",   label: "Đã hoàn thành",   icon: CheckCircle2  },
+  { key: "cancelled", label: "Đã hủy",          icon: CalendarX     },
 ];
 
 const STATUS_CONFIG = {
-  confirmed: { label: "Đã xác nhận", className: "status-confirmed", color: "#16a34a" },
-  pending: { label: "Chờ xác nhận", className: "status-pending", color: "#d97706" },
-  completed: { label: "Hoàn thành", className: "status-completed", color: "#16a34a" },
-  cancelled: { label: "Đã hủy", className: "status-cancelled", color: "#dc2626" },
+  confirmed:  { label: "Đã xác nhận", className: "status-confirmed" },
+  pending:    { label: "Chờ xác nhận", className: "status-pending"  },
+  completed:  { label: "Hoàn thành",  className: "status-completed" },
+  cancelled:  { label: "Đã hủy",      className: "status-cancelled" },
 };
 
 function StatusBadge({ status }) {
@@ -42,6 +43,7 @@ export default function MyAppointmentsPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const activeTab = searchParams.get("tab") || "upcoming";
+
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -71,27 +73,19 @@ export default function MyAppointmentsPage() {
     const days = ["Chủ nhật", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
     return {
       dayName: days[date.getDay()],
-      date: date.getDate(),
-      month: date.getMonth() + 1,
-      year: date.getFullYear(),
+      date:    date.getDate(),
+      month:   date.getMonth() + 1,
     };
   };
 
-  const handleRefresh = () => {
-    loadAppointments(true);
-  };
-
-  const handleViewAppointment = async (appointment) => {
-    // Get patient phone from account info or use from appointment
-    try {
-      const accountInfo = await appointmentApi.getAccountInfo();
-      const phoneNumber = accountInfo?.phone || "";
-      // Navigate to lookup page with code and current tab info
-      navigate(`/lookup?code=${appointment.code}&phone=${encodeURIComponent(phoneNumber)}&tab=${activeTab}&from=patient`);
-    } catch {
-      // If can't get phone, still navigate with just code
-      navigate(`/lookup?code=${appointment.code}&tab=${activeTab}&from=patient`);
+  const handleViewAppointment = (appointment) => {
+    // Nếu có recordId (lịch đã hoàn thành) → vào trang hồ sơ khám
+    if (appointment.recordId) {
+      navigate(`/app/patient/records/${appointment.recordId}`);
+      return;
     }
+    // Chưa có hồ sơ (lịch sắp tới / đã hủy) → tra cứu bằng mã lịch hẹn
+    navigate(`/lookup?code=${appointment.code}&from=patient`);
   };
 
   return (
@@ -104,11 +98,18 @@ export default function MyAppointmentsPage() {
             <p>Quản lý và theo dõi lịch khám tại MediCare Clinic</p>
           </div>
           <div className="ma-header-actions">
-            <button className="ma-btn ma-btn--refresh" onClick={handleRefresh} disabled={refreshing}>
+            <button
+              className="ma-btn ma-btn--refresh"
+              onClick={() => loadAppointments(true)}
+              disabled={refreshing}
+            >
               <Search size={18} className={refreshing ? "spinning" : ""} />
               Làm mới
             </button>
-            <button className="ma-btn ma-btn--primary" onClick={() => navigate("/book")}>
+            <button
+              className="ma-btn ma-btn--primary"
+              onClick={() => navigate("/book")}
+            >
               <Plus size={18} />
               Đặt lịch hẹn mới
             </button>
@@ -136,7 +137,7 @@ export default function MyAppointmentsPage() {
       <main className="ma-content">
         {loading ? (
           <div className="ma-state ma-state--loading">
-            <div className="ma-spinner"></div>
+            <div className="ma-spinner" />
             <p>Đang tải lịch hẹn...</p>
           </div>
         ) : error ? (
@@ -146,7 +147,7 @@ export default function MyAppointmentsPage() {
             </div>
             <h3>Không tải được lịch hẹn</h3>
             <p>{error}</p>
-            <button className="ma-btn ma-btn--primary" onClick={handleRefresh}>
+            <button className="ma-btn ma-btn--primary" onClick={() => loadAppointments(true)}>
               Thử lại
             </button>
           </div>
@@ -174,13 +175,14 @@ export default function MyAppointmentsPage() {
           <div className="ma-list">
             {appointments.map((appointment) => {
               const { dayName, date, month } = formatDate(appointment.date);
+              const isClickable = !!appointment.recordId || activeTab !== "cancelled";
               return (
                 <div
                   key={appointment.id}
-                  className="ma-card"
-                  onClick={() => handleViewAppointment(appointment)}
+                  className={`ma-card ${isClickable ? "ma-card--clickable" : ""}`}
+                  onClick={isClickable ? () => handleViewAppointment(appointment) : undefined}
                 >
-                  {/* Date Column */}
+                  {/* Date */}
                   <div className="ma-card-date">
                     <div className="ma-card-date-main">
                       <span className="ma-card-day">{date}</span>
@@ -189,7 +191,7 @@ export default function MyAppointmentsPage() {
                     <span className="ma-card-weekday">{dayName}</span>
                   </div>
 
-                  {/* Info Column */}
+                  {/* Info */}
                   <div className="ma-card-info">
                     <div className="ma-card-header">
                       <StatusBadge status={appointment.status} />
@@ -204,7 +206,7 @@ export default function MyAppointmentsPage() {
                     <div className="ma-card-details">
                       <div className="ma-card-detail">
                         <Clock size={14} />
-                        <span>{appointment.timeStart} - {appointment.timeEnd}</span>
+                        <span>{appointment.timeStart} – {appointment.timeEnd}</span>
                       </div>
                       <div className="ma-card-detail">
                         <User size={14} />
@@ -217,10 +219,12 @@ export default function MyAppointmentsPage() {
                     </div>
                   </div>
 
-                  {/* Arrow */}
-                  <div className="ma-card-arrow">
-                    <Stethoscope size={18} />
-                  </div>
+                  {/* Arrow — chỉ hiện khi có thể click */}
+                  {isClickable && (
+                    <div className="ma-card-arrow">
+                      <ChevronRight size={20} />
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -230,5 +234,3 @@ export default function MyAppointmentsPage() {
     </div>
   );
 }
-
-
