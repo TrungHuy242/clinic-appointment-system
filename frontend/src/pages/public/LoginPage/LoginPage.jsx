@@ -9,9 +9,8 @@ import "./LoginPage.css";
 export default function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [loginType, setLoginType] = useState("login"); // "login" | "register"
   const [showPass, setShowPass] = useState(false);
-  const [form, setForm] = useState({ identifier: "", name: "", password: "" });
+  const [form, setForm] = useState({ identifier: "", password: "" });
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -25,18 +24,6 @@ export default function LoginPage() {
     setError("");
 
     try {
-      if (loginType === "register") {
-        await authApi.register({
-          name: form.name,
-          phone: form.identifier,
-          password: form.password,
-        });
-        setLoginType("login");
-        setError("Đăng ký thành công! Vui lòng đăng nhập.");
-        return;
-      }
-
-      // Unified login — backend trả về role để frontend tự phân luồng
       const response = await authApi.login({
         identifier: form.identifier,
         password: form.password,
@@ -48,7 +35,6 @@ export default function LoginPage() {
         if (role === ROLES.PATIENT) {
           login(response.account, ROLES.PATIENT);
         } else {
-          // admin | receptionist | doctor
           login(response.user, role);
         }
 
@@ -60,8 +46,6 @@ export default function LoginPage() {
       setSubmitting(false);
     }
   }
-
-  const isRegister = loginType === "register";
 
   return (
     <div className="login-page">
@@ -77,25 +61,13 @@ export default function LoginPage() {
 
       <form onSubmit={handleSubmit} className="auth-page-form">
         <Input
-          label={isRegister ? "Số điện thoại" : "Số điện thoại / Tên đăng nhập"}
-          placeholder={
-            isRegister ? "Nhập số điện thoại" : "Nhập số điện thoại hoặc tên đăng nhập"
-          }
+          label="Số điện thoại / Tên đăng nhập"
+          placeholder="Nhập số điện thoại hoặc tên đăng nhập"
           type="text"
           value={form.identifier}
           onChange={handleChange("identifier")}
           required
         />
-
-        {isRegister && (
-          <Input
-            label="Họ và tên"
-            placeholder="Nguyễn Văn An"
-            value={form.name}
-            onChange={handleChange("name")}
-            required
-          />
-        )}
 
         <div className="auth-pass-field">
           <Input
@@ -117,70 +89,41 @@ export default function LoginPage() {
           </button>
         </div>
 
-        {!isRegister && (
-          <div className="auth-row-between">
-            <label className="auth-remember">
-              <input type="checkbox" />
-              <span>Ghi nhớ đăng nhập</span>
-            </label>
-            <button type="button" className="auth-forgot-link">
-              Quên mật khẩu?
-            </button>
-          </div>
-        )}
+        <div className="auth-row-between">
+          <label className="auth-remember">
+            <input type="checkbox" />
+            <span>Ghi nhớ đăng nhập</span>
+          </label>
+          <button type="button" className="auth-forgot-link">
+            Quên mật khẩu?
+          </button>
+        </div>
 
-        {error && (
-          <div
-            className={`claim-submit-error${
-              error.includes("thành công") ? " claim-submit-success" : ""
-            }`}
-          >
-            {error}
-          </div>
-        )}
+        {error && <div className="claim-submit-error">{error}</div>}
 
         <Button type="submit" className="auth-submit-btn" disabled={submitting}>
-          {submitting ? "Đang xử lý..." : isRegister ? "Tạo tài khoản" : "Đăng nhập"}
+          {submitting ? "Đang xử lý..." : "Đăng nhập"}
           <ArrowRight className="mc-icon mc-icon--sm" />
         </Button>
 
-        {!isRegister && (
-          <>
-            <div className="auth-divider">
-              <span>HOẶC</span>
-            </div>
-            <button type="button" className="auth-otp-btn">
-              <Smartphone className="mc-icon mc-icon--sm" />
-              Tiếp tục với OTP
-            </button>
-          </>
-        )}
+        <div className="auth-divider">
+          <span>HOẶC</span>
+        </div>
+        <button type="button" className="auth-otp-btn">
+          <Smartphone className="mc-icon mc-icon--sm" />
+          Tiếp tục với OTP
+        </button>
       </form>
 
       <p className="auth-switch">
-        {isRegister ? (
-          <>
-            Đã có tài khoản?{" "}
-            <button
-              type="button"
-              className="auth-forgot-link"
-              onClick={() => { setLoginType("login"); setError(""); }}
-            >
-              Đăng nhập
-            </button>
-          </>
-        ) : (
-          <>
-            Chưa có tài khoản?{" "}
-            <button
-              type="button"
-              className="auth-forgot-link"
-              onClick={() => { setLoginType("register"); setError(""); }}
-            >
-              Đăng ký ngay
-            </button>
-          </>
-        )}
+        Chưa có tài khoản?{" "}
+        <button
+          type="button"
+          className="auth-forgot-link"
+          onClick={() => navigate("/register")}
+        >
+          Đăng ký ngay
+        </button>
       </p>
     </div>
   );

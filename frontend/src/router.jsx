@@ -60,6 +60,8 @@ export default function AppRouter() {
         <Route path="/patient/register" element={<RegisterPage />} />
         <Route path="/patient/claim" element={<ClaimProfilePage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        
       </Route>
 
       <Route
