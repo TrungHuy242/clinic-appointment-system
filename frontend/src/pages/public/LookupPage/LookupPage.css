@@ -710,3 +710,73 @@
     transform: translate(-50%, -50%) scale(1);
   }
 }
+
+
+.lk-btn-danger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 10px;
+  background-color: #e53935; /* ✅ giữ nguyên màu đỏ */
+  color: white;
+  border: none;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.lk-modal-overlay {
+  position: fixed;       /* 🔥 bắt buộc */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+
+  background: rgba(0, 0, 0, 0.4);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  z-index: 9999;         /* 🔥 để nổi lên trên */
+}
+
+.lk-modal {
+  background: white;
+  padding: 24px;
+  border-radius: 12px;
+  width: 320px;
+  max-width: 90%;
+}
+
+.lk-success-toast {
+  position: fixed;              /* 🔥 giữ nguyên vị trí khi scroll */
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  background-color: #4caf50;
+  color: white;
+  padding: 16px 24px;
+  border-radius: 12px;
+
+  font-size: 16px;
+  font-weight: 500;
+
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+
+  z-index: 9999;
+
+  animation: popup 0.25s ease;
+}
+
+@keyframes popup {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -40%) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}  
