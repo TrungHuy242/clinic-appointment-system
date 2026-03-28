@@ -1,8 +1,10 @@
 import re
 
-from rest_framework import serializers
+from django.contrib.auth.hashers import make_password
+from rest_framework import filters, serializers, viewsets
 
-from .models import Doctor, Specialty
+from portal.models import User
+from .models import Doctor, Specialty, VisitType
 
 
 PHONE_PATTERN = re.compile(r'^\+?[0-9][0-9\s\-()]{7,18}$')
@@ -89,6 +91,8 @@ class DoctorSerializer(serializers.ModelSerializer):
         },
     )
     specialty_name = serializers.CharField(source='specialty.name', read_only=True)
+    has_account = serializers.SerializerMethodField()
+    linked_username = serializers.SerializerMethodField()
 
     class Meta:
         model = Doctor
@@ -96,13 +100,23 @@ class DoctorSerializer(serializers.ModelSerializer):
             'id',
             'full_name',
             'phone',
+            'email',
             'specialty',
             'specialty_name',
             'bio',
             'is_active',
             'created_at',
+            'has_account',
+            'linked_username',
         ]
-        read_only_fields = ['id', 'created_at', 'specialty_name']
+        read_only_fields = ['id', 'created_at', 'specialty_name', 'has_account', 'linked_username']
+
+    def get_has_account(self, obj):
+        return User.objects.filter(doctor=obj, role='doctor').exists()
+
+    def get_linked_username(self, obj):
+        user = User.objects.filter(doctor=obj, role='doctor').first()
+        return user.username if user else None
 
     def validate_full_name(self, value):
         value = value.strip()
@@ -112,3 +126,32 @@ class DoctorSerializer(serializers.ModelSerializer):
 
     def validate_phone(self, value):
         return validate_phone_number(value, 'phone', required=False)
+
+    def validate_email(self, value):
+        value = str(value or '').strip()
+        if value and '@' not in value:
+            raise serializers.ValidationError('email must be a valid email address.')
+        return value
+
+
+class VisitTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VisitType
+        fields = ['id', 'name', 'duration_minutes', 'price', 'description', 'is_active', 'created_at']
+        read_only_fields = ['id', 'created_at']
+
+    def validate_name(self, value):
+        value = value.strip()
+        if len(value) < 2:
+            raise serializers.ValidationError('name must be at least 2 characters long.')
+        return value
+
+    def validate_duration_minutes(self, value):
+        if value < 5:
+            raise serializers.ValidationError('duration_minutes must be at least 5.')
+        return value
+
+    def validate_price(self, value):
+        if value < 0:
+            raise serializers.ValidationError('price must be a positive number.')
+        return value

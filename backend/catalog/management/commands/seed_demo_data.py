@@ -6,7 +6,7 @@ from django.utils.dateparse import parse_date
 
 from appointments.models import Appointment, AppointmentStatus
 from appointments.services import get_daily_block_frames, sync_appointment_blocks
-from catalog.models import Doctor, Specialty
+from catalog.models import Doctor, Specialty, VisitType
 from portal.models import MedicalRecord, PatientNotification, PatientProfile, User
 
 
@@ -27,6 +27,13 @@ SEED_SPECIALTIES = [
         'name': 'Khám tổng quát',
         'description': 'Khám sàng lọc và theo dõi sức khỏe định kỳ.',
     },
+]
+
+SEED_VISIT_TYPES = [
+    {'name': 'Khám thường', 'duration_minutes': 15, 'price': 150000, 'description': 'Khám tổng quát, không thủ thuật.'},
+    {'name': 'Khám chuyên sâu', 'duration_minutes': 25, 'price': 250000, 'description': 'Khám chi tiết hơn, có tư vấn chuyên sâu.'},
+    {'name': 'Tái khám', 'duration_minutes': 15, 'price': 100000, 'description': 'Tái khám theo yêu cầu bác sĩ.'},
+    {'name': 'Khám + Xét nghiệm', 'duration_minutes': 40, 'price': 350000, 'description': 'Khám kèm xét nghiệm máu hoặc sinh hóa cơ bản.'},
 ]
 
 SEED_DOCTORS = [
@@ -135,6 +142,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         specialty_map = self.seed_specialties()
+        self.seed_visit_types()
         doctor_map = self.seed_doctors(specialty_map)
         profile_map = self.seed_profiles()
         self.seed_appointments(doctor_map, specialty_map, profile_map)
@@ -154,6 +162,18 @@ class Command(BaseCommand):
             )
             specialty_map[item['name']] = specialty
         return specialty_map
+
+    def seed_visit_types(self):
+        for item in SEED_VISIT_TYPES:
+            VisitType.objects.update_or_create(
+                name=item['name'],
+                defaults={
+                    'duration_minutes': item['duration_minutes'],
+                    'price': item['price'],
+                    'description': item['description'],
+                    'is_active': True,
+                },
+            )
 
     def seed_doctors(self, specialty_map):
         doctor_map = {}
