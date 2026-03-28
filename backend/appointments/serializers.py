@@ -4,7 +4,7 @@ from rest_framework import serializers
 
 from catalog.models import Doctor, Specialty
 
-from .models import Appointment, AppointmentStatus, AppointmentVisitType
+from .models import Appointment, AppointmentHistory, AppointmentStatus, AppointmentVisitType
 from .services import (
     STATUS_MESSAGE,
     VISIT_TYPE_MESSAGE,
@@ -292,3 +292,10 @@ class AppointmentGuestSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         return create_guest_appointment(validated_data)
+
+
+class AppointmentHistorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AppointmentHistory
+        fields = ['id', 'action', 'changed_by', 'changed_by_role', 'note', 'created_at']
+        read_only_fields = fields

@@ -8,7 +8,7 @@ from rest_framework.exceptions import ValidationError
 
 from catalog.models import Doctor, Specialty
 
-from .models import Appointment, AppointmentBlock, AppointmentStatus, AppointmentVisitType
+from .models import Appointment, AppointmentBlock, AppointmentHistory, AppointmentStatus, AppointmentVisitType
 
 
 STATUS_VALUES = [choice for choice, _label in AppointmentStatus.choices]
@@ -299,7 +299,7 @@ def _save_status(appointment, new_status):
     return appointment
 
 
-def set_appointment_status(appointment, new_status):
+def set_appointment_status(appointment, new_status, changed_by='', changed_by_role='', note=''):
     if new_status not in STATUS_VALUES:
         raise ValidationError({'status': STATUS_MESSAGE})
 
@@ -315,7 +315,16 @@ def set_appointment_status(appointment, new_status):
         raise ValidationError({'status': 'Cancelled appointments cannot be reopened through this endpoint.'})
 
     if appointment.status != new_status:
+        old_status = appointment.status
         _save_status(appointment, new_status)
+        _record_history(
+            appointment=appointment,
+            action=_status_to_history_action(new_status),
+            changed_by=changed_by,
+            changed_by_role=changed_by_role,
+            note=note,
+        )
+        _log_admin_status_change(appointment, old_status, new_status, changed_by, changed_by_role)
 
     if new_status == AppointmentStatus.CANCELLED:
         release_appointment_blocks(appointment)
@@ -323,10 +332,81 @@ def set_appointment_status(appointment, new_status):
     return appointment
 
 
+def _status_to_history_action(status):
+    mapping = {
+        AppointmentStatus.CONFIRMED: 'CONFIRM',
+        AppointmentStatus.CANCELLED: 'CANCEL',
+        AppointmentStatus.CHECKED_IN: 'CHECKIN',
+        AppointmentStatus.NO_SHOW: 'NO_SHOW',
+        AppointmentStatus.IN_PROGRESS: 'IN_PROGRESS',
+        AppointmentStatus.COMPLETED: 'COMPLETE',
+    }
+    return mapping.get(status, status)
+
+
+def _record_history(appointment, action, changed_by='', changed_by_role='', note=''):
+    AppointmentHistory.objects.create(
+        appointment=appointment,
+        action=action,
+        changed_by=changed_by or 'Hệ thống',
+        changed_by_role=changed_by_role,
+        note=note,
+    )
+
+
+def _log_admin_status_change(appointment, old_status, new_status, changed_by, changed_by_role):
+    """Write to AdminAuditLog for status changes (admin or doctor actions)."""
+    try:
+        from portal.services import log_admin_action as _log
+        _log(
+            'STATUS_CHANGE', 'Appointment', appointment.id, appointment.code,
+            actor_name=changed_by or 'Hệ thống',
+            actor_role=changed_by_role or 'admin',
+            detail=f'Đổi trạng thái {appointment.code}: {old_status} → {new_status}',
+        )
+    except Exception:
+        pass
+
+
 def soft_delete_appointment(appointment):
     appointment.is_deleted = True
     appointment.save(update_fields=['is_deleted', 'updated_at'])
     release_appointment_blocks(appointment)
+    _record_history(
+        appointment=appointment,
+        action='DELETE',
+        changed_by='Hệ thống',
+        changed_by_role='admin',
+        note='Xóa mềm qua Admin',
+    )
+    return appointment
+
+
+def reschedule_appointment(appointment, new_scheduled_start, new_scheduled_end,
+                            changed_by='', changed_by_role='', note=''):
+    """Đổi giờ hẹn: cập nhật scheduled_start/end, sync blocks, ghi history."""
+    CANCELLED = AppointmentStatus.CANCELLED
+    if appointment.status == CANCELLED:
+        raise ValidationError({'status': 'Không thể dời lịch của lịch hẹn đã hủy.'})
+
+    old_start = timezone.localtime(appointment.scheduled_start).strftime('%d/%m/%Y %H:%M')
+    old_end = timezone.localtime(appointment.scheduled_end).strftime('%d/%m/%Y %H:%M')
+
+    appointment.scheduled_start = new_scheduled_start
+    appointment.scheduled_end = new_scheduled_end
+    appointment.save(update_fields=['scheduled_start', 'scheduled_end', 'updated_at'])
+
+    block_indexes = sync_appointment_blocks(appointment)
+
+    history_note = note or f'Lịch cũ: {old_start} – {old_end}'
+    _record_history(
+        appointment=appointment,
+        action='RESCHEDULE',
+        changed_by=changed_by or 'Admin',
+        changed_by_role=changed_by_role or 'admin',
+        note=history_note,
+    )
+
     return appointment
 
 

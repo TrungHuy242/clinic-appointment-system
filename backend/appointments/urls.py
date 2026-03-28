@@ -2,6 +2,7 @@ from django.urls import path
 from rest_framework.routers import DefaultRouter
 
 from .views import (
+    AdminAppointmentViewSet,
     AppointmentViewSet,
     GuestAppointmentCreateAPIView,
     PublicAppointmentDetailAPIView,
@@ -14,6 +15,7 @@ from .views import (
 
 router = DefaultRouter()
 router.register(r'reception/appointments', AppointmentViewSet, basename='reception-appointment')
+router.register(r'admin/appointments', AdminAppointmentViewSet, basename='admin-appointment')
 
 urlpatterns = [
     path('public/appointments/guest/', GuestAppointmentCreateAPIView.as_view(), name='public-guest-appointment'),
