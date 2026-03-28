@@ -17,6 +17,8 @@ class User(models.Model):
     password = models.CharField(max_length=128)
     email = models.EmailField(blank=True)
     full_name = models.CharField(max_length=150)
+    phone = models.CharField(max_length=20, blank=True)
+    notes = models.TextField(blank=True)
     role = models.CharField(
         max_length=20,
         choices=UserRole.choices,
