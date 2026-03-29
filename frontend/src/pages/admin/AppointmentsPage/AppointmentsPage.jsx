@@ -30,7 +30,7 @@ export default function AppointmentsPage() {
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
-  const [dateFilter, setDateFilter] = useState(todayStr);
+  const [dateFilter, setDateFilter] = useState(todayStr());
   const [showAllDays, setShowAllDays] = useState(false);
 
   // Summary

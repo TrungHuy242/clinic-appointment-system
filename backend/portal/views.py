@@ -8,11 +8,19 @@ from .services import (
     change_password,
     claim_profile,
     complete_visit,
+    create_admin_receptionist_profile,
+    delete_admin_patient_profile,
+    delete_admin_receptionist_profile,
     delete_notification,
     get_account_info,
+    get_admin_doctor_detail,
+    get_admin_patient_profiles,
+    get_admin_receptionist_profile,
+    get_admin_receptionist_profiles,
     get_audit_logs_data,
     get_current_doctor,
     get_current_profile,
+    get_dashboard_data,
     get_doctor_schedule,
     get_doctor_visits,
     get_health_profile,
@@ -24,12 +32,15 @@ from .services import (
     get_visit_detail,
     get_visit_queue,
     log_admin_action,
+    reset_admin_patient_password,
+    reset_admin_receptionist_password,
     unified_login,
     mark_all_notifications_read,
     mark_notification_read,
     register_patient_account,
     save_visit_draft,
     update_account_info,
+    update_admin_receptionist_profile,
     update_health_profile,
 )
 
@@ -158,3 +169,69 @@ class AdminAuditLogsAPIView(APIView):
 class AdminReportsAPIView(APIView):
     def get(self, request, *args, **kwargs):
         return Response(get_reports_data(request.query_params.get('period', 'year')))
+
+
+# ── Admin Dashboard ──────────────────────────────────────────────────────────────
+
+class AdminDashboardAPIView(APIView):
+    def get(self, request, *args, **kwargs):
+        return Response(get_dashboard_data())
+
+
+# ── Admin Doctor Detail ─────────────────────────────────────────────────────────
+
+class AdminDoctorDetailAPIView(APIView):
+    def get(self, request, doctor_id, *args, **kwargs):
+        return Response(get_admin_doctor_detail(doctor_id))
+
+
+# ── Admin Patient Profiles ─────────────────────────────────────────────────────
+
+class AdminPatientProfilesAPIView(APIView):
+    def get(self, request, *args, **kwargs):
+        return Response(get_admin_patient_profiles())
+
+    def post(self, request, *args, **kwargs):
+        return Response(get_admin_patient_profiles())  # read-only list
+
+
+class AdminPatientProfileAPIView(APIView):
+    def delete(self, request, profile_id, *args, **kwargs):
+        delete_admin_patient_profile(profile_id)
+        return Response(status=204)
+
+
+class AdminPatientProfileResetPasswordAPIView(APIView):
+    def post(self, request, profile_id, *args, **kwargs):
+        new_password = request.data.get('new_password')
+        reset_admin_patient_password(profile_id, new_password)
+        return Response({'success': True})
+
+
+# ── Admin Receptionist Profiles ─────────────────────────────────────────────────
+
+class AdminReceptionistProfilesAPIView(APIView):
+    def get(self, request, *args, **kwargs):
+        return Response(get_admin_receptionist_profiles())
+
+    def post(self, request, *args, **kwargs):
+        return Response(create_admin_receptionist_profile(request.data), status=201)
+
+
+class AdminReceptionistProfileAPIView(APIView):
+    def get(self, request, profile_id, *args, **kwargs):
+        return Response(get_admin_receptionist_profile(profile_id))
+
+    def patch(self, request, profile_id, *args, **kwargs):
+        return Response(update_admin_receptionist_profile(profile_id, request.data))
+
+    def delete(self, request, profile_id, *args, **kwargs):
+        delete_admin_receptionist_profile(profile_id)
+        return Response(status=204)
+
+
+class AdminReceptionistProfileResetPasswordAPIView(APIView):
+    def post(self, request, profile_id, *args, **kwargs):
+        new_password = request.data.get('new_password')
+        reset_admin_receptionist_password(profile_id, new_password)
+        return Response({'success': True})

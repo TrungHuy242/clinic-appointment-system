@@ -2,6 +2,14 @@ from django.urls import path
 
 from .views import (
     AdminAuditLogsAPIView,
+    AdminDashboardAPIView,
+    AdminDoctorDetailAPIView,
+    AdminPatientProfileAPIView,
+    AdminPatientProfileResetPasswordAPIView,
+    AdminPatientProfilesAPIView,
+    AdminReceptionistProfileAPIView,
+    AdminReceptionistProfileResetPasswordAPIView,
+    AdminReceptionistProfilesAPIView,
     AdminReportsAPIView,
     CurrentPatientAccountAPIView,
     CurrentPatientProfileAPIView,
@@ -44,4 +52,12 @@ urlpatterns = [
     path('reception/patients/', ReceptionPatientsAPIView.as_view(), name='reception-patients'),
     path('admin/audit-logs/', AdminAuditLogsAPIView.as_view(), name='admin-audit-logs'),
     path('admin/reports/', AdminReportsAPIView.as_view(), name='admin-reports'),
+    path('admin/dashboard/', AdminDashboardAPIView.as_view(), name='admin-dashboard'),
+    path('admin/doctor-detail/<int:doctor_id>/', AdminDoctorDetailAPIView.as_view(), name='admin-doctor-detail'),
+    path('admin/patient-profiles/', AdminPatientProfilesAPIView.as_view(), name='admin-patient-profiles'),
+    path('admin/patient-profiles/<int:profile_id>/', AdminPatientProfileAPIView.as_view(), name='admin-patient-profile'),
+    path('admin/patient-profiles/<int:profile_id>/reset-password/', AdminPatientProfileResetPasswordAPIView.as_view(), name='admin-patient-profile-reset-password'),
+    path('admin/receptionist-profiles/', AdminReceptionistProfilesAPIView.as_view(), name='admin-receptionist-profiles'),
+    path('admin/receptionist-profiles/<int:profile_id>/', AdminReceptionistProfileAPIView.as_view(), name='admin-receptionist-profile'),
+    path('admin/receptionist-profiles/<int:profile_id>/reset-password/', AdminReceptionistProfileResetPasswordAPIView.as_view(), name='admin-receptionist-profile-reset-password'),
 ]

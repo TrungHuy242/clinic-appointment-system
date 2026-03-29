@@ -16,6 +16,8 @@ def _admin_actor(request):
     return 'Admin', 'admin', request.META.get('REMOTE_ADDR')
 
 
+# ── Specialty ───────────────────────────────────────────────────────────────────
+
 class SpecialtyViewSet(viewsets.ModelViewSet):
     serializer_class = SpecialtySerializer
     filter_backends = [filters.SearchFilter]
@@ -46,15 +48,21 @@ class SpecialtyViewSet(viewsets.ModelViewSet):
             detail=f'Cập nhật chuyên khoa "{instance.name}"', ip_address=ip,
         )
 
-    def perform_destroy(self, instance):
-        actor_name, actor_role, ip = _admin_actor(self.request)
+    # Soft-delete: set is_active=False (avoids PROTECT constraint with Doctor/Appointment FKs)
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.is_active = False
+        instance.save(update_fields=['is_active'])
+        actor_name, actor_role, ip = _admin_actor(request)
         log_admin_action(
             'DELETE', 'Specialty', instance.id, instance.name,
             actor_name=actor_name, actor_role=actor_role,
             detail=f'Xóa chuyên khoa "{instance.name}"', ip_address=ip,
         )
-        instance.delete()
+        return Response(status=204)
 
+
+# ── Doctor ─────────────────────────────────────────────────────────────────────
 
 class DoctorViewSet(viewsets.ModelViewSet):
     serializer_class = DoctorSerializer
@@ -101,13 +109,13 @@ class DoctorViewSet(viewsets.ModelViewSet):
 
         update_fields = []
         if 'full_name' in data:
-            instance.full_name = data['full_name']
+            instance.full_name = data['full_name'].strip()
             update_fields.append('full_name')
         if 'phone' in data:
-            instance.phone = data['phone']
+            instance.phone = data['phone'].strip()
             update_fields.append('phone')
         if 'email' in data:
-            instance.email = data['email']
+            instance.email = data['email'].strip()
             update_fields.append('email')
         if 'specialty' in data:
             specialty = Specialty.objects.filter(pk=data['specialty']).first()
@@ -115,7 +123,7 @@ class DoctorViewSet(viewsets.ModelViewSet):
                 instance.specialty = specialty
                 update_fields.append('specialty')
         if 'bio' in data:
-            instance.bio = data['bio']
+            instance.bio = data['bio'].strip()
             update_fields.append('bio')
         if 'is_active' in data:
             instance.is_active = bool(data['is_active'])
@@ -133,15 +141,18 @@ class DoctorViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-    def perform_destroy(self, instance):
-        actor_name, actor_role, ip = _admin_actor(self.request)
-        label = instance.full_name
+    # Soft-delete: set is_active=False
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.is_active = False
+        instance.save(update_fields=['is_active'])
+        actor_name, actor_role, ip = _admin_actor(request)
         log_admin_action(
-            'DELETE', 'Doctor', instance.id, label,
+            'DELETE', 'Doctor', instance.id, instance.full_name,
             actor_name=actor_name, actor_role=actor_role,
-            detail=f'Xóa bác sĩ "{label}"', ip_address=ip,
+            detail=f'Xóa bác sĩ "{instance.full_name}"', ip_address=ip,
         )
-        instance.delete()
+        return Response(status=204)
 
     @action(detail=True, methods=['post'], url_path='create-account')
     def create_account(self, request, pk=None):
@@ -183,6 +194,8 @@ class DoctorViewSet(viewsets.ModelViewSet):
         }, status=201)
 
 
+# ── VisitType ───────────────────────────────────────────────────────────────────
+
 class VisitTypeViewSet(viewsets.ModelViewSet):
     serializer_class = VisitTypeSerializer
     filter_backends = [filters.SearchFilter]
@@ -213,11 +226,15 @@ class VisitTypeViewSet(viewsets.ModelViewSet):
             detail=f'Cập nhật loại khám "{instance.name}"', ip_address=ip,
         )
 
-    def perform_destroy(self, instance):
-        actor_name, actor_role, ip = _admin_actor(self.request)
+    # Soft-delete: set is_active=False
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.is_active = False
+        instance.save(update_fields=['is_active'])
+        actor_name, actor_role, ip = _admin_actor(request)
         log_admin_action(
             'DELETE', 'VisitType', instance.id, instance.name,
             actor_name=actor_name, actor_role=actor_role,
             detail=f'Xóa loại khám "{instance.name}"', ip_address=ip,
         )
-        instance.delete()
+        return Response(status=204)
