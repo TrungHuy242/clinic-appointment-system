@@ -48,7 +48,7 @@ class SpecialtyViewSet(viewsets.ModelViewSet):
             detail=f'Cập nhật chuyên khoa "{instance.name}"', ip_address=ip,
         )
 
-    # Soft-delete: set is_active=False (avoids PROTECT constraint with Doctor/Appointment FKs)
+    # Soft-delete: set is_active=False
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         instance.is_active = False
@@ -141,18 +141,14 @@ class DoctorViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-    # Soft-delete: set is_active=False
-    def destroy(self, request, *args, **kwargs):
-        instance = self.get_object()
-        instance.is_active = False
-        instance.save(update_fields=['is_active'])
-        actor_name, actor_role, ip = _admin_actor(request)
+    def perform_destroy(self, instance):
+        actor_name, actor_role, ip = _admin_actor(self.request)
         log_admin_action(
             'DELETE', 'Doctor', instance.id, instance.full_name,
             actor_name=actor_name, actor_role=actor_role,
             detail=f'Xóa bác sĩ "{instance.full_name}"', ip_address=ip,
         )
-        return Response(status=204)
+        instance.delete()
 
     @action(detail=True, methods=['post'], url_path='create-account')
     def create_account(self, request, pk=None):
@@ -226,15 +222,11 @@ class VisitTypeViewSet(viewsets.ModelViewSet):
             detail=f'Cập nhật loại khám "{instance.name}"', ip_address=ip,
         )
 
-    # Soft-delete: set is_active=False
-    def destroy(self, request, *args, **kwargs):
-        instance = self.get_object()
-        instance.is_active = False
-        instance.save(update_fields=['is_active'])
-        actor_name, actor_role, ip = _admin_actor(request)
+    def perform_destroy(self, instance):
+        actor_name, actor_role, ip = _admin_actor(self.request)
         log_admin_action(
             'DELETE', 'VisitType', instance.id, instance.name,
             actor_name=actor_name, actor_role=actor_role,
             detail=f'Xóa loại khám "{instance.name}"', ip_address=ip,
         )
-        return Response(status=204)
+        instance.delete()
