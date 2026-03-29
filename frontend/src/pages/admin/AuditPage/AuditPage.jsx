@@ -5,6 +5,42 @@ import Table from "../../../components/Table/Table";
 import { getAuditLogs } from "../../../services/adminApi";
 import "./AuditPage.css";
 
+const ROLE_MAP = { receptionist: "Lễ tân", doctor: "Bác sĩ", admin: "Quản trị" };
+const ACTION_LABELS = {
+  CREATE: "Tạo mới",
+  UPDATE: "Cập nhật",
+  DELETE: "Xóa",
+  LOGIN: "Đăng nhập",
+  CHECKIN: "Check-in",
+  COMPLETE: "Hoàn tất khám",
+};
+
+function exportCSV(items) {
+  const headers = ["Thời gian", "Người thực hiện", "Vai trò", "Hành động", "Đối tượng", "Chi tiết", "IP"];
+  const rows = items.map((item) => [
+    item.time || "",
+    item.actor || "",
+    ROLE_MAP[item.role] || item.role || "",
+    ACTION_LABELS[item.action] || item.action || "",
+    item.resource || "",
+    item.detail || "",
+    item.ip || "",
+  ]);
+  const csvContent = [headers, ...rows]
+    .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+    .join("\n");
+  const BOM = "\uFEFF";
+  const blob = new Blob([BOM + csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `audit-logs-${new Date().toISOString().split("T")[0]}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 const ACTION_CONFIG = {
   CREATE: { label: "Tạo mới", variant: "success" },
   UPDATE: { label: "Cập nhật", variant: "info" },
@@ -14,7 +50,6 @@ const ACTION_CONFIG = {
   COMPLETE: { label: "Hoàn tất khám", variant: "success" },
 };
 
-const ROLE_MAP = { receptionist: "Lễ tân", doctor: "Bác sĩ", admin: "Quản trị" };
 const STAT_CARDS = [
   { key: "total", label: "Tổng thao tác", icon: FileText, tone: "sky" },
   { key: "create", label: "Tạo mới", icon: ShieldCheck, tone: "green" },
@@ -105,7 +140,7 @@ export default function AuditPage() {
           <h1 className="dash-page-title">Nhật ký thao tác</h1>
           <p className="dash-page-sub">Theo dõi mọi hành động trên hệ thống MediCare</p>
         </div>
-        <button className="dash-btn-primary" type="button"><Download className="mc-icon mc-icon--sm" /> Xuất CSV</button>
+        <button className="dash-btn-primary" type="button" onClick={() => exportCSV(payload.items)}><Download className="mc-icon mc-icon--sm" /> Xuất CSV</button>
       </div>
 
       <div className="dash-stats-row">

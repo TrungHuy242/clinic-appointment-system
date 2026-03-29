@@ -57,6 +57,25 @@ GENDER_LABELS = {
 PHONE_PATTERN = re.compile(r'^0\d{9}$')
 
 
+def log_admin_action(action, resource_type, resource_id='', resource_label='',
+                     actor_name='', actor_role='', detail='', ip_address=None):
+    """Persist an admin audit log entry. Safe to call even if the caller fails."""
+    from .models import AdminAuditLog
+    try:
+        AdminAuditLog.objects.create(
+            action=action,
+            resource_type=resource_type,
+            resource_id=str(resource_id),
+            resource_label=resource_label,
+            actor_name=actor_name,
+            actor_role=actor_role,
+            detail=detail,
+            ip_address=ip_address,
+        )
+    except Exception:
+        pass
+
+
 def normalize_text(value):
     return ' '.join((value or '').strip().lower().split())
 
@@ -834,108 +853,70 @@ def _build_log_item(log_id, when, actor, role, action, resource, detail, ip='127
 
 
 def get_audit_logs_data():
-    items = []
-    log_id = 1
+    """Read real audit logs from AdminAuditLog table.
+    NOTE: Logs are written from v2.1 onwards. Historical data before this
+    migration is captured via _seed_historical_logs() which runs once.
+    """
+    from .models import AdminAuditLog
 
-    for specialty in Specialty.objects.order_by('-created_at'):
-        items.append(
-            _build_log_item(
-                log_id,
-                specialty.created_at,
-                'Admin Demo',
-                'admin',
-                'CREATE',
-                f'Specialty:{specialty.name}',
-                f'Thêm chuyên khoa {specialty.name}',
-            )
-        )
-        log_id += 1
+    _seed_historical_logs()
 
-    for doctor in Doctor.objects.select_related('specialty').order_by('-created_at'):
-        items.append(
-            _build_log_item(
-                log_id,
-                doctor.created_at,
-                'Admin Demo',
-                'admin',
-                'CREATE',
-                f'Doctor:{doctor.full_name}',
-                f'Thêm bác sĩ {doctor.full_name} - {doctor.specialty.name}',
-            )
-        )
-        log_id += 1
-
-    appointments = Appointment.all_objects.select_related('doctor', 'specialty').filter(is_deleted=False).order_by('-created_at')
-    for appointment in appointments:
-        items.append(
-            _build_log_item(
-                log_id,
-                appointment.created_at,
-                'Lễ tân Demo',
-                'receptionist',
-                'CREATE',
-                appointment.code,
-                f'Tạo lịch hẹn cho {appointment.patient_full_name}',
-            )
-        )
-        log_id += 1
-
-        if appointment.status in {AppointmentStatus.CHECKED_IN, AppointmentStatus.IN_PROGRESS, AppointmentStatus.COMPLETED}:
-            items.append(
-                _build_log_item(
-                    log_id,
-                    appointment.updated_at - timedelta(minutes=5),
-                    'Lễ tân Demo',
-                    'receptionist',
-                    'CHECKIN',
-                    appointment.code,
-                    f'Check-in thành công cho {appointment.patient_full_name}',
-                )
-            )
-            log_id += 1
-
-        if appointment.status == AppointmentStatus.COMPLETED:
-            items.append(
-                _build_log_item(
-                    log_id,
-                    appointment.updated_at,
-                    appointment.doctor.full_name,
-                    'doctor',
-                    'COMPLETE',
-                    appointment.code,
-                    f'Hoàn tất khám cho {appointment.patient_full_name}',
-                )
-            )
-            log_id += 1
-
-    for record in MedicalRecord.objects.select_related('doctor').exclude(diagnosis_name='').order_by('-updated_at'):
-        items.append(
-            _build_log_item(
-                log_id,
-                record.updated_at,
-                record.doctor.full_name,
-                'doctor',
-                'UPDATE',
-                record.code,
-                f'Cập nhật hồ sơ khám {record.code}',
-            )
-        )
-        log_id += 1
-
-    items.sort(key=lambda item: item['_sort'], reverse=True)
-    for item in items:
-        item.pop('_sort', None)
+    queryset = AdminAuditLog.objects.all().order_by('-created_at')
+    items = [
+        {
+            'id': log.id,
+            'time': format_datetime_display(log.created_at),
+            'actor': log.actor_name,
+            'role': log.actor_role,
+            'action': log.action,
+            'resource': f'{log.resource_type}:{log.resource_label}',
+            'detail': log.detail,
+            'ip': log.ip_address or '',
+        }
+        for log in queryset
+    ]
 
     stats = {
         'total': len(items),
         'create': sum(1 for item in items if item['action'] == 'CREATE'),
-        'update': sum(1 for item in items if item['action'] == 'UPDATE'),
-        'delete': sum(1 for item in items if item['action'] == 'DELETE'),
+        'update': sum(1 for item in items if item['action'] in {'UPDATE', 'RESCHEDULE', 'STATUS_CHANGE'}),
+        'delete': sum(1 for item in items if item['action'] in {'DELETE', 'RESET_PASSWORD', 'CREATE_ACCOUNT'}),
     }
     return {
         'items': items,
         'stats': stats,
     }
+
+
+def _seed_historical_logs():
+    """One-time backfill: create AdminAuditLog entries from existing database records.
+    Idempotent — skips if AdminAuditLog already has records.
+    """
+    from .models import AdminAuditLog
+    from catalog.models import Doctor, Specialty
+
+    if AdminAuditLog.objects.exists():
+        return
+
+    logs_to_create = []
+
+    for specialty in Specialty.objects.all():
+        logs_to_create.append(AdminAuditLog(
+            action='CREATE', resource_type='Specialty', resource_id=str(specialty.id),
+            resource_label=specialty.name, actor_name='System', actor_role='admin',
+            detail=f'Tạo chuyên khoa "{specialty.name}" (historical)',
+        ))
+
+    for doctor in Doctor.objects.select_related('specialty').all():
+        logs_to_create.append(AdminAuditLog(
+            action='CREATE', resource_type='Doctor', resource_id=str(doctor.id),
+            resource_label=f'{doctor.full_name} ({doctor.specialty.name})',
+            actor_name='System', actor_role='admin',
+            detail=f'Tạo hồ sơ bác sĩ "{doctor.full_name}" - {doctor.specialty.name} (historical)',
+        ))
+
+    if logs_to_create:
+        AdminAuditLog.objects.bulk_create(logs_to_create, ignore_conflicts=True)
 
 
 def _month_labels():

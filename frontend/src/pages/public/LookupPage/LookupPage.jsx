@@ -16,8 +16,8 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import LoadingSpinner from "../../components/LoadingSpinner/LoadingSpinner";
-import { lookupAppointment, lookupAppointmentsByPhone } from "../../services/bookingApi";
+import LoadingSpinner from "../../../components/LoadingSpinner/LoadingSpinner";
+import { lookupAppointment, lookupAppointmentsByPhone } from "../../../services/bookingApi";
 import "./LookupPage.css";
 
 const STATUS_CONFIG = {

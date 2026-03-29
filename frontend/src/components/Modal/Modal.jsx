@@ -7,13 +7,13 @@ function joinClasses(...parts) {
   return parts.filter(Boolean).join(" ");
 }
 
-export function Modal({ open, title, description, children, onClose, footer }) {
+export function Modal({ open, title, description, children, onClose, footer, size }) {
   if (!open) return null;
 
   return (
     <div className="mc-modal-backdrop">
       <div className="mc-modal-overlay" onClick={onClose} />
-      <div className="mc-modal">
+      <div className={joinClasses("mc-modal", size === "lg" ? "mc-modal--lg" : "")}>
         <div className="mc-modal-header">
           <div>
             {title && <h2 className="mc-modal-title">{title}</h2>}

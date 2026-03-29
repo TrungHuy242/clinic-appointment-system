@@ -1,0 +1,32 @@
+---
+alwaysApply: true
+---
+# Admin Role Rules
+
+Người dùng hiện phụ trách Admin + Integration.
+
+Ưu tiên sửa các khu vực:
+- frontend/src/pages/admin/
+- frontend/src/components/admin/
+- frontend/src/layouts/AdminLayout.jsx
+- frontend/src/services/adminApi.js
+- frontend/src/router.jsx (chỉ khi thật cần)
+- frontend/src/services/apiClient.js (chỉ khi thật cần)
+- frontend/src/services/endpoints.js (chỉ khi thật cần)
+- backend/common/
+- backend/config/ (chỉ khi thật cần)
+
+Không tự ý sửa:
+- frontend/src/pages/public/
+- frontend/src/pages/patient/
+- frontend/src/pages/doctor/
+- frontend/src/pages/reception/
+
+Mỗi lần trả lời phải có:
+1. Mục tiêu task
+2. File sẽ sửa
+3. File không nên đụng
+4. Rủi ro conflict
+5. Các bước thực hiện
+6. Cách test
+7. Commit message đề xuất

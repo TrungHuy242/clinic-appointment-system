@@ -22,6 +22,7 @@ from .services import (
     get_reports_data,
     get_visit_detail,
     get_visit_queue,
+    log_admin_action,
     login_patient_account,
     mark_all_notifications_read,
     mark_notification_read,
@@ -31,6 +32,13 @@ from .services import (
     update_account_info,
     update_health_profile,
 )
+
+
+def _admin_actor(request):
+    user = getattr(request, 'user', None)
+    if user and hasattr(user, 'full_name'):
+        return user.full_name, getattr(user, 'role', 'admin'), request.META.get('REMOTE_ADDR')
+    return 'Admin', 'admin', request.META.get('REMOTE_ADDR')
 
 
 class PatientLoginAPIView(APIView):

@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import PublicLayout from "./layouts/PublicLayout/PublicLayout";
 import PatientLayout from "./layouts/PatientLayout/PatientLayout";
 import StaffLayout from "./layouts/StaffLayout/StaffLayout";
+import AdminLayout from "./layouts/AdminLayout/AdminLayout";
 import { RequireGuest, RequireRole, ROLES } from "./services/authService";
 import LandingPage from "./pages/public/LandingPage/LandingPage";
 import BookingWizardPage from "./pages/public/BookingWizardPage/BookingWizardPage";
@@ -25,10 +26,14 @@ import DoctorSchedulePage from "./pages/doctor/SchedulePage/SchedulePage";
 import DoctorQueuePage from "./pages/doctor/QueuePage/QueuePage";
 import DoctorVisitsPage from "./pages/doctor/VisitsPage/VisitsPage";
 import DoctorVisitPage from "./pages/doctor/VisitPage/VisitPage";
-import AdminUsersPage from "./pages/admin/UsersPage/UsersPage";
+import AdminDashboardPage from "./pages/admin/DashboardPage/DashboardPage";
+import AdminDoctorDetailPage from "./pages/admin/DoctorDetailPage/DoctorDetailPage";
+import AdminReceptionistDetailPage from "./pages/admin/ReceptionistDetailPage/ReceptionistDetailPage";
 import AdminCatalogPage from "./pages/admin/CatalogPage/CatalogPage";
+import AdminUsersPage from "./pages/admin/UsersPage/UsersPage";
 import AdminAuditPage from "./pages/admin/AuditPage/AuditPage";
 import AdminReportsPage from "./pages/admin/ReportsPage/ReportsPage";
+import AdminAppointmentsPage from "./pages/admin/AppointmentsPage/AppointmentsPage";
 
 function LegacyPatientRedirect({ suffix = "" }) {
   const location = useLocation();
@@ -112,13 +117,19 @@ export default function AppRouter() {
         path="/app/admin"
         element={
           <RequireRole allowedRoles={[ROLES.ADMIN]}>
-            <StaffLayout portal="admin" />
+            <AdminLayout />
           </RequireRole>
         }
       >
-        <Route index element={<Navigate replace to="/app/admin/catalog" />} />
+        <Route index element={<Navigate replace to="/app/admin/dashboard" />} />
+        <Route path="dashboard" element={<AdminDashboardPage />} />
+        <Route path="appointments" element={<AdminAppointmentsPage />} />
         <Route path="users" element={<AdminUsersPage />} />
         <Route path="catalog" element={<AdminCatalogPage />} />
+        <Route path="catalog/doctors/create" element={<AdminDoctorDetailPage />} />
+        <Route path="catalog/doctors/:id" element={<AdminDoctorDetailPage />} />
+        <Route path="catalog/receptionists/create" element={<AdminReceptionistDetailPage />} />
+        <Route path="catalog/receptionists/:id" element={<AdminReceptionistDetailPage />} />
         <Route path="audit" element={<AdminAuditPage />} />
         <Route path="reports" element={<AdminReportsPage />} />
       </Route>

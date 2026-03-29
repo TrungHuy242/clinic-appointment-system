@@ -1,0 +1,6 @@
+Thêm model AdminAuditLog và hệ thống ghi nhật ký hành động
+
+- Thêm model AdminAuditLog ghi nhận mọi hành động của quản trị viên
+- Thêm hàm log_admin_action để ghi nhật ký từ bất kỳ view nào
+- Cập nhật get_audit_logs_data đọc từ bảng AdminAuditLog thực
+- Thêm _seed_historical_logs để tự động backfill dữ liệu lịch sử

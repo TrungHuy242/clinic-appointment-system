@@ -2,63 +2,283 @@ import React, { useEffect, useState } from "react";
 import {
   Baby,
   Building2,
-  CalendarDays,
+  ClipboardList,
   HeartPulse,
-  ShieldCheck,
+  KeyRound,
+  Pencil,
+  Plus,
   Sparkles,
   Stethoscope,
+  Timer,
+  Trash2,
+  UserCheck,
   UserRound,
-  Users,
+  UsersRound,
 } from "lucide-react";
 import Badge from "../../../components/Badge/Badge";
 import Button from "../../../components/Button/Button";
 import Input from "../../../components/Input/Input";
 import LoadingSpinner from "../../../components/LoadingSpinner/LoadingSpinner";
+import Modal from "../../../components/Modal/Modal";
 import {
-  createDoctor,
-  createSpecialty,
+  deleteDoctor,
+  deleteReceptionistProfile,
+  deleteSpecialty,
+  deleteVisitType,
   listDoctors,
+  listReceptionistProfiles,
   listSpecialties,
-  updateDoctor,
+  listVisitTypes,
+  resetReceptionistPassword,
+  resetUserPassword,
   updateSpecialty,
+  updateVisitType,
 } from "../../../services/adminApi";
 import "./CatalogPage.css";
 
 const SPECIALTY_ICONS = {
   "Nhi khoa": Baby,
-  "Da liểu": Sparkles,
-  "Tai Mui Họng": Stethoscope,
+  "Da liễu": Sparkles,
+  "Tai Mũi Họng": Stethoscope,
   "Khám tổng quát": HeartPulse,
 };
 
+function formatPrice(value) {
+  if (!value && value !== 0) return "—";
+  return new Intl.NumberFormat("vi-VN").format(value) + " đ";
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function IconBtn({ icon: Icon, label, onClick, variant = "default", disabled = false }) {
+  return (
+    <button
+      type="button"
+      className={`cat-icon-btn cat-icon-btn--${variant}`}
+      title={label}
+      aria-label={label}
+      onClick={onClick}
+      disabled={disabled}
+    >
+      <Icon className="cat-icon-btn__icon" />
+    </button>
+  );
+}
+
+function ConfirmModal({ open, title, body, confirmLabel, confirmVariant, onConfirm, onCancel, saving }) {
+  if (!open) return null;
+  return (
+    <Modal
+      open={open}
+      title={title}
+      onClose={onCancel}
+      footer={
+        <>
+          <Button variant="secondary" size="sm" onClick={onCancel} disabled={saving}>Hủy</Button>
+          <Button variant={confirmVariant || "primary"} size="sm" onClick={onConfirm} disabled={saving}>
+            {confirmLabel}
+          </Button>
+        </>
+      }
+    >
+      <p style={{ margin: 0, color: "var(--color-text-main)", fontSize: 14 }}>{body}</p>
+    </Modal>
+  );
+}
+
+// ── Specialty Card ───────────────────────────────────────────────────────────
+
+function SpecialtyCard({ item, saving, onEdit, onDelete }) {
+  const SpecialtyIcon = SPECIALTY_ICONS[item.name] || Building2;
+  return (
+    <div className={`cat-card ${!item.is_active ? "cat-card--inactive" : ""}`}>
+      <div className="cat-card__icon">
+        <SpecialtyIcon className="mc-icon mc-icon--lg" />
+      </div>
+      <div className="cat-card__body">
+        <div className="cat-card__name">{item.name}</div>
+        {item.description && <div className="cat-card__desc">{item.description}</div>}
+        <div className="cat-card__meta">{item.doc_count || 0} bác sĩ</div>
+      </div>
+      <Badge variant={item.is_active ? "success" : "neutral"}>{item.is_active ? "Hoạt động" : "Tạm ngưng"}</Badge>
+      <div className="cat-card__actions">
+        <IconBtn icon={Pencil} label="Sửa" onClick={() => onEdit(item)} disabled={saving} />
+        <IconBtn icon={Trash2} label="Xóa" variant="danger" onClick={() => onDelete(item)} disabled={saving} />
+      </div>
+    </div>
+  );
+}
+
+// ── Doctor Card ──────────────────────────────────────────────────────────────
+
+function DoctorCard({ item, saving, onDelete, onResetPassword }) {
+  return (
+    <div className={`cat-card cat-card--doctor ${!item.is_active ? "cat-card--inactive" : ""}`}>
+      <div className="cat-card__icon">
+        <UserRound className="mc-icon mc-icon--lg" />
+      </div>
+      <div className="cat-card__body">
+        <div className="cat-card__name">{item.full_name}</div>
+        <div className="cat-card__meta">
+          {item.specialty_name || "—"} · {item.phone || "Chưa có SĐT"}
+        </div>
+        {item.bio && <div className="cat-card__desc cat-card__desc--bio">{item.bio}</div>}
+        <div className="cat-card__badges">
+          <Badge variant={item.is_active ? "success" : "neutral"}>
+            {item.is_active ? "Đang nhận lịch" : "Tạm ngưng"}
+          </Badge>
+          {item.has_account ? (
+            <Badge variant="info"><UserCheck className="mc-icon mc-icon--xs" style={{ marginRight: 3 }} />@{item.linked_username}</Badge>
+          ) : (
+            <Badge variant="warning">Chưa có tài khoản</Badge>
+          )}
+        </div>
+      </div>
+      <div className="cat-card__actions">
+        <IconBtn
+          icon={Pencil}
+          label="Sửa"
+          onClick={() => { window.location.href = `/app/admin/catalog/doctors/${item.id}`; }}
+          disabled={saving}
+        />
+        {item.has_account && (
+          <IconBtn
+            icon={KeyRound}
+            label="Đặt lại mật khẩu"
+            onClick={() => onResetPassword(item)}
+            disabled={saving}
+          />
+        )}
+        <IconBtn
+          icon={Trash2}
+          label="Xóa"
+          variant="danger"
+          onClick={() => onDelete(item)}
+          disabled={saving}
+        />
+      </div>
+    </div>
+  );
+}
+
+// ── VisitType Card ───────────────────────────────────────────────────────────
+
+function VisitTypeCard({ item, saving, onEdit, onDelete }) {
+  return (
+    <div className={`cat-card cat-card--visittype ${!item.is_active ? "cat-card--inactive" : ""}`}>
+      <div className="cat-card__icon">
+        <ClipboardList className="mc-icon mc-icon--md" />
+      </div>
+      <div className="cat-card__body">
+        <div className="cat-card__name">{item.name}</div>
+        <div className="cat-card__meta">
+          <span className="cat-card__meta-item"><Timer className="mc-icon mc-icon--xs" />{item.duration_minutes} phút</span>
+          <span className="cat-card__meta-item"><Building2 className="mc-icon mc-icon--xs" />{formatPrice(item.price)}</span>
+        </div>
+        {item.description && <div className="cat-card__desc">{item.description}</div>}
+      </div>
+      <Badge variant={item.is_active ? "success" : "neutral"}>{item.is_active ? "Hoạt động" : "Tạm ngưng"}</Badge>
+      <div className="cat-card__actions">
+        <IconBtn icon={Pencil} label="Sửa" onClick={() => onEdit(item)} disabled={saving} />
+        <IconBtn icon={Trash2} label="Xóa" variant="danger" onClick={() => onDelete(item)} disabled={saving} />
+      </div>
+    </div>
+  );
+}
+
+// ── Receptionist Card ──────────────────────────────────────────────────────────
+
+function ReceptionistCard({ item, saving, onDelete, onResetPassword }) {
+  return (
+    <div className={`cat-card cat-card--receptionist ${!item.is_active ? "cat-card--inactive" : ""}`}>
+      <div className="cat-card__icon cat-card__icon--teal">
+        <UsersRound className="mc-icon mc-icon--lg" />
+      </div>
+      <div className="cat-card__body">
+        <div className="cat-card__name">{item.full_name}</div>
+        <div className="cat-card__meta">
+          {item.email || "—"} · {item.phone || "Chưa có SĐT"}
+        </div>
+        {item.notes && <div className="cat-card__desc cat-card__desc--bio">{item.notes}</div>}
+        <div className="cat-card__badges">
+          <Badge variant={item.is_active ? "success" : "neutral"}>{item.is_active ? "Hoạt động" : "Tạm ngưng"}</Badge>
+          <Badge variant="info">@{item.username}</Badge>
+        </div>
+      </div>
+      <div className="cat-card__actions">
+        <IconBtn
+          icon={Pencil}
+          label="Sửa"
+          onClick={() => { window.location.href = `/app/admin/catalog/receptionists/${item.id}`; }}
+          disabled={saving}
+        />
+        <IconBtn
+          icon={KeyRound}
+          label="Đặt lại mật khẩu"
+          onClick={() => onResetPassword(item)}
+          disabled={saving}
+        />
+        <IconBtn
+          icon={Trash2}
+          label="Xóa"
+          variant="danger"
+          onClick={() => onDelete(item)}
+          disabled={saving}
+        />
+      </div>
+    </div>
+  );
+}
+
+// ── Main CatalogPage ─────────────────────────────────────────────────────────
+
 export default function CatalogPage() {
   const [activeTab, setActiveTab] = useState("specialties");
-  const [specialtySearch, setSpecialtySearch] = useState("");
-  const [doctorSearch, setDoctorSearch] = useState("");
+
+  // ── Specialty ──────────────────────────────────────────────────────────────
   const [specialties, setSpecialties] = useState([]);
+  const [specialtySearch, setSpecialtySearch] = useState("");
+  const [specialtyModal, setSpecialtyModal] = useState({ open: false, item: null });
+
+  // ── Doctor ─────────────────────────────────────────────────────────────────
   const [doctors, setDoctors] = useState([]);
+  const [doctorSearch, setDoctorSearch] = useState("");
+  const [resetPwModal, setResetPwModal] = useState({ open: false, item: null, type: null });
+  const [resetPwForm, setResetPwForm] = useState({ new_password: "", confirm_password: "" });
+  const [resetPwError, setResetPwError] = useState("");
+
+  // ── VisitType ──────────────────────────────────────────────────────────────
+  const [visitTypes, setVisitTypes] = useState([]);
+  const [visitTypeSearch, setVisitTypeSearch] = useState("");
+  const [visitTypeModal, setVisitTypeModal] = useState({ open: false, item: null });
+
+  // ── Receptionist ────────────────────────────────────────────────────────────
+  const [receptionists, setReceptionists] = useState([]);
+  const [receptionistSearch, setReceptionistSearch] = useState("");
+
+  // ── Shared ─────────────────────────────────────────────────────────────────
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
-  const [specialtyForm, setSpecialtyForm] = useState({ name: "", description: "" });
-  const [doctorForm, setDoctorForm] = useState({ fullName: "", phone: "", specialtyId: "" });
+  const [confirmModal, setConfirmModal] = useState({ open: false, onConfirm: null });
 
+  // ── Load ───────────────────────────────────────────────────────────────────
   async function loadCatalog() {
     setLoading(true);
     setError("");
     try {
-      const [nextSpecialties, nextDoctors] = await Promise.all([
+      const [nextSpecialties, nextDoctors, nextVisitTypes, nextReceptionists] = await Promise.all([
         listSpecialties(),
         listDoctors(),
+        listVisitTypes(),
+        listReceptionistProfiles(),
       ]);
       setSpecialties(nextSpecialties);
       setDoctors(nextDoctors);
-      setDoctorForm((current) => ({
-        ...current,
-        specialtyId: current.specialtyId || String(nextSpecialties[0]?.id || ""),
-      }));
-    } catch (nextError) {
-      setError(nextError.message || "Không tải được danh mục.");
+      setVisitTypes(nextVisitTypes);
+      setReceptionists(nextReceptionists);
+    } catch (err) {
+      setError(err.message || "Không tải được danh mục.");
     } finally {
       setLoading(false);
     }
@@ -66,151 +286,206 @@ export default function CatalogPage() {
 
   useEffect(() => {
     loadCatalog();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const filteredSpecialties = specialties.filter((item) =>
-    item.name.toLowerCase().includes(specialtySearch.toLowerCase())
+  // ── Derived ────────────────────────────────────────────────────────────────
+  const filteredSpecialties = specialties.filter((s) =>
+    s.name.toLowerCase().includes(specialtySearch.toLowerCase())
   );
   const filteredDoctors = doctors.filter(
-    (item) =>
-      item.full_name.toLowerCase().includes(doctorSearch.toLowerCase()) ||
-      item.specialty_name.toLowerCase().includes(doctorSearch.toLowerCase())
+    (d) =>
+      d.full_name.toLowerCase().includes(doctorSearch.toLowerCase()) ||
+      (d.specialty_name || "").toLowerCase().includes(doctorSearch.toLowerCase())
   );
-  const doctorCountBySpecialty = doctors.reduce((accumulator, doctor) => {
-    accumulator[doctor.specialty] = (accumulator[doctor.specialty] || 0) + 1;
-    return accumulator;
-  }, {});
-  const facilityStats = [
-    { label: "Tổng bác sĩ", value: doctors.length, icon: Users },
-    { label: "Chuyên khoa", value: specialties.length, icon: Building2 },
-    {
-      label: "Đang hoạt động",
-      value: doctors.filter((doctor) => doctor.is_active).length,
-      icon: CalendarDays,
-    },
-  ];
+  const filteredVisitTypes = visitTypes.filter((v) =>
+    v.name.toLowerCase().includes(visitTypeSearch.toLowerCase())
+  );
+  const filteredReceptionists = receptionists.filter(
+    (r) =>
+      r.full_name.toLowerCase().includes(receptionistSearch.toLowerCase()) ||
+      (r.username || "").toLowerCase().includes(receptionistSearch.toLowerCase())
+  );
 
-  async function handleCreateSpecialty() {
-    if (!specialtyForm.name.trim()) {
-      setError("Tên chuyên khoa là bắt buộc.");
+  const specialtiesWithCount = filteredSpecialties.map((s) => ({
+    ...s,
+    doc_count: doctors.filter((d) => d.specialty === s.id || d.specialty_name === s.name).length,
+  }));
+
+  // ── Specialty handlers ────────────────────────────────────────────────────
+  async function handleSaveSpecialty() {
+    const { name, description } = specialtyModal.item;
+    if (!name?.trim()) { setError("Tên khoa là bắt buộc."); return; }
+    setSaving(true);
+    setError("");
+    try {
+      await updateSpecialty(specialtyModal.item.id, { name: name.trim(), description: (description || "").trim() });
+      setSpecialtyModal({ open: false, item: null });
+      await loadCatalog();
+    } catch (err) {
+      setError(err.message || "Không sửa được khoa.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function handleDeleteSpecialty(item) {
+    setConfirmModal({
+      open: true,
+      title: "Xóa khoa?",
+      body: `Khoa "${item.name}" sẽ bị xóa vĩnh viễn. Hành động này không thể hoàn tác. Bạn chắc chắn?`,
+      confirmLabel: "Xóa",
+      confirmVariant: "danger",
+      onConfirm: async () => {
+        setConfirmModal({ open: false });
+        setSaving(true);
+        setError("");
+        try {
+          await deleteSpecialty(item.id);
+          await loadCatalog();
+        } catch (err) {
+          setError(err.message || "Không xóa được khoa.");
+        } finally {
+          setSaving(false);
+        }
+      },
+    });
+  }
+
+  // ── Doctor handlers ───────────────────────────────────────────────────────
+  function handleDeleteDoctor(item) {
+    setConfirmModal({
+      open: true,
+      title: "Xóa bác sĩ?",
+      body: `Bác sĩ "${item.full_name}" sẽ bị xóa vĩnh viễn. Hành động này không thể hoàn tác. Bạn chắc chắn?`,
+      confirmLabel: "Xóa",
+      confirmVariant: "danger",
+      onConfirm: async () => {
+        setConfirmModal({ open: false });
+        setSaving(true);
+        setError("");
+        try {
+          await deleteDoctor(item.id);
+          await loadCatalog();
+        } catch (err) {
+          setError(err.message || "Không xóa được bác sĩ.");
+        } finally {
+          setSaving(false);
+        }
+      },
+    });
+  }
+
+  // ── VisitType handlers ────────────────────────────────────────────────────
+  async function handleSaveVisitType() {
+    const { name, duration_minutes, price, description } = visitTypeModal.item;
+    if (!name?.trim()) { setError("Tên loại khám là bắt buộc."); return; }
+    setSaving(true);
+    setError("");
+    try {
+      await updateVisitType(visitTypeModal.item.id, {
+        name: name.trim(),
+        duration_minutes: Number(duration_minutes) || 25,
+        price: Number(price) || 0,
+        description: (description || "").trim(),
+      });
+      setVisitTypeModal({ open: false, item: null });
+      await loadCatalog();
+    } catch (err) {
+      setError(err.message || "Không sửa được loại khám.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function handleDeleteVisitType(item) {
+    setConfirmModal({
+      open: true,
+      title: "Xóa loại khám?",
+      body: `Loại khám "${item.name}" sẽ bị xóa vĩnh viễn. Hành động này không thể hoàn tác. Bạn chắc chắn?`,
+      confirmLabel: "Xóa",
+      confirmVariant: "danger",
+      onConfirm: async () => {
+        setConfirmModal({ open: false });
+        setSaving(true);
+        setError("");
+        try {
+          await deleteVisitType(item.id);
+          await loadCatalog();
+        } catch (err) {
+          setError(err.message || "Không xóa được loại khám.");
+        } finally {
+          setSaving(false);
+        }
+      },
+    });
+  }
+
+  // ── Receptionist handlers ─────────────────────────────────────────────────
+  function handleDeleteReceptionist(item) {
+    setConfirmModal({
+      open: true,
+      title: "Xóa lễ tân?",
+      body: `Lễ tân "${item.full_name}" (@${item.username}) sẽ bị xóa vĩnh viễn. Hành động này không thể hoàn tác. Bạn chắc chắn?`,
+      confirmLabel: "Xóa",
+      confirmVariant: "danger",
+      onConfirm: async () => {
+        setConfirmModal({ open: false });
+        setSaving(true);
+        setError("");
+        try {
+          await deleteReceptionistProfile(item.id);
+          await loadCatalog();
+        } catch (err) {
+          setError(err.message || "Không xóa được lễ tân.");
+        } finally {
+          setSaving(false);
+        }
+      },
+    });
+  }
+
+  // ── Reset password (shared) ───────────────────────────────────────────────
+  function openResetPw(item, type) {
+    setResetPwForm({ new_password: "", confirm_password: "" });
+    setResetPwError("");
+    setResetPwModal({ open: true, item, type });
+  }
+
+  function closeResetPw() {
+    setResetPwModal({ open: false, item: null, type: null });
+    setResetPwForm({ new_password: "", confirm_password: "" });
+    setResetPwError("");
+  }
+
+  async function handleResetPassword() {
+    const { new_password, confirm_password } = resetPwForm;
+    if (!new_password || new_password.length < 6) {
+      setResetPwError("Mật khẩu mới phải có ít nhất 6 ký tự.");
       return;
     }
-
-    setSaving(true);
-    setError("");
-    try {
-      await createSpecialty({
-        name: specialtyForm.name.trim(),
-        description: specialtyForm.description.trim(),
-        is_active: true,
-      });
-      setSpecialtyForm({ name: "", description: "" });
-      await loadCatalog();
-    } catch (nextError) {
-      setError(nextError.message || "Không tạo được chuyên khoa.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleToggleSpecialty(specialty) {
-    setSaving(true);
-    setError("");
-    try {
-      await updateSpecialty(specialty.id, { is_active: !specialty.is_active });
-      await loadCatalog();
-    } catch (nextError) {
-      setError(nextError.message || "Không cập nhật được chuyên khoa.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleEditSpecialty(specialty) {
-    const nextName = window.prompt("Tên chuyên khoa", specialty.name);
-    if (!nextName || !nextName.trim()) return;
-    const nextDescription = window.prompt(
-      "Mô tả chuyên khoa",
-      specialty.description || ""
-    );
-
-    setSaving(true);
-    setError("");
-    try {
-      await updateSpecialty(specialty.id, {
-        name: nextName.trim(),
-        description: (nextDescription || "").trim(),
-      });
-      await loadCatalog();
-    } catch (nextError) {
-      setError(nextError.message || "Không sửa được chuyên khoa.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleCreateDoctor() {
-    if (!doctorForm.fullName.trim() || !doctorForm.specialtyId) {
-      setError("Họ tên bác sĩ và chuyên khoa là bắt buộc.");
+    if (new_password !== confirm_password) {
+      setResetPwError("Mật khẩu mới và xác nhận không khớp.");
       return;
     }
-
     setSaving(true);
-    setError("");
+    setResetPwError("");
     try {
-      await createDoctor({
-        full_name: doctorForm.fullName.trim(),
-        phone: doctorForm.phone.trim(),
-        specialty: Number(doctorForm.specialtyId),
-        bio: "",
-        is_active: true,
-      });
-      setDoctorForm((current) => ({
-        ...current,
-        fullName: "",
-        phone: "",
-      }));
-      await loadCatalog();
-    } catch (nextError) {
-      setError(nextError.message || "Không tạo được bác sĩ.");
+      const { item, type } = resetPwModal;
+      if (type === "doctor") {
+        // Doctor accounts are User model — use adminUserResetPassword with linked_user_id
+        await resetUserPassword(item.linked_user_id, { new_password });
+      } else if (type === "receptionist") {
+        await resetReceptionistPassword(item.id, { new_password });
+      }
+      closeResetPw();
+    } catch (err) {
+      setResetPwError(err.message || "Không đặt lại được mật khẩu.");
     } finally {
       setSaving(false);
     }
   }
 
-  async function handleToggleDoctor(doctor) {
-    setSaving(true);
-    setError("");
-    try {
-      await updateDoctor(doctor.id, { is_active: !doctor.is_active });
-      await loadCatalog();
-    } catch (nextError) {
-      setError(nextError.message || "Không cập nhật được bác sĩ.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleEditDoctor(doctor) {
-    const nextName = window.prompt("Họ tên bác sĩ", doctor.full_name);
-    if (!nextName || !nextName.trim()) return;
-    const nextPhone = window.prompt("Số điện thoại", doctor.phone || "");
-
-    setSaving(true);
-    setError("");
-    try {
-      await updateDoctor(doctor.id, {
-        full_name: nextName.trim(),
-        phone: (nextPhone || "").trim(),
-      });
-      await loadCatalog();
-    } catch (nextError) {
-      setError(nextError.message || "Không sửa được bác sĩ.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
+  // ── Render ────────────────────────────────────────────────────────────────
   if (loading) {
     return (
       <div className="dash-page catalog-page">
@@ -219,246 +494,290 @@ export default function CatalogPage() {
     );
   }
 
+  const TABS = [
+    { key: "specialties", label: "Khoa", count: specialties.length },
+    { key: "doctors", label: "Bác sĩ", count: doctors.length },
+    { key: "visitTypes", label: "Loại khám", count: visitTypes.length },
+    { key: "receptionists", label: "Lễ tân", count: receptionists.length },
+  ];
+
   return (
     <div className="dash-page catalog-page">
       <div className="dash-page-header">
         <div>
-          <h1 className="dash-page-title">Danh mục & Cơ sở Hải Châu</h1>
-          <p className="dash-page-sub">
-            Quản lý chuyên khoa, bác sĩ và thông tin vận hành của Cơ sở Hải Châu
-          </p>
+          <h1 className="dash-page-title">Danh mục hệ thống</h1>
+          <p className="dash-page-sub">Quản lý khoa, bác sĩ, loại khám và lễ tân</p>
         </div>
       </div>
 
-      {error && <div className="mc-surface catalog-page__error">{error}</div>}
+      {error && (
+        <div className="cat-error" role="alert">
+          {error}
+          <button type="button" className="cat-error__close" onClick={() => setError("")}>×</button>
+        </div>
+      )}
 
       <div className="dash-filter-tabs catalog-page__tabs">
-        <button
-          className={`dash-filter-tab ${activeTab === "specialties" ? "active" : ""}`}
-          onClick={() => setActiveTab("specialties")}
-          type="button"
-        >
-          Chuyên khoa
-        </button>
-        <button
-          className={`dash-filter-tab ${activeTab === "doctors" ? "active" : ""}`}
-          onClick={() => setActiveTab("doctors")}
-          type="button"
-        >
-          Bác sĩ
-        </button>
-        <button
-          className={`dash-filter-tab ${activeTab === "facility" ? "active" : ""}`}
-          onClick={() => setActiveTab("facility")}
-          type="button"
-        >
-          Cơ sở Hải Châu
-        </button>
+        {TABS.map((tab) => (
+          <button
+            key={tab.key}
+            className={`dash-filter-tab ${activeTab === tab.key ? "active" : ""}`}
+            onClick={() => setActiveTab(tab.key)}
+            type="button"
+          >
+            {tab.label}
+            <span className="catalog-page__tab-count">{tab.count}</span>
+          </button>
+        ))}
       </div>
 
+      {/* ─── SPECIALTY TAB ─── */}
       {activeTab === "specialties" && (
         <div>
           <div className="dash-filter-bar">
             <input
               className="dash-search-input"
-              placeholder="Tìm chuyên khoa..."
+              placeholder="Tìm khoa..."
               value={specialtySearch}
-              onChange={(event) => setSpecialtySearch(event.target.value)}
+              onChange={(e) => setSpecialtySearch(e.target.value)}
             />
           </div>
-
-          <div className="mc-surface catalog-page__form-grid">
-            <Input
-              label="Tên chuyên khoa"
-              value={specialtyForm.name}
-              onChange={(event) =>
-                setSpecialtyForm((current) => ({ ...current, name: event.target.value }))
-              }
-            />
-            <Input
-              label="Mô tả"
-              value={specialtyForm.description}
-              onChange={(event) =>
-                setSpecialtyForm((current) => ({ ...current, description: event.target.value }))
-              }
-            />
-            <Button onClick={handleCreateSpecialty} disabled={saving}>
-              {"Thêm chuyên khoa"}
-            </Button>
-          </div>
-
-          <div className="catalog-grid">
-            {filteredSpecialties.map((specialty) => {
-              const SpecialtyIcon = SPECIALTY_ICONS[specialty.name] || ShieldCheck;
-              return (
-                <div
-                  key={specialty.id}
-                  className={`catalog-card ${!specialty.is_active ? "catalog-card--inactive" : ""}`}
-                >
-                  <div className="catalog-card__icon">
-                    <SpecialtyIcon className="mc-icon mc-icon--lg" />
-                  </div>
-                  <div className="catalog-card__name">{specialty.name}</div>
-                  <div className="catalog-card__meta">
-                    {doctorCountBySpecialty[specialty.id] || 0} {"bác sĩ"}
-                  </div>
-                  <Badge variant={specialty.is_active ? "success" : "neutral"}>
-                    {specialty.is_active ? "Hoạt động" : "Tạm ngưng"}
-                  </Badge>
-                  <div className="catalog-card__actions">
-                    <button
-                      className="dash-action-btn dash-action-btn--sm"
-                      type="button"
-                      onClick={() => handleEditSpecialty(specialty)}
-                    >
-                      {"Sửa"}
-                    </button>
-                    <button
-                      className="dash-action-btn dash-action-btn--sm"
-                      type="button"
-                      onClick={() => handleToggleSpecialty(specialty)}
-                    >
-                      {specialty.is_active ? "Tắt" : "Bật"}
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          {specialtiesWithCount.length === 0 ? (
+            <div className="cat-empty">Không có khoa nào.</div>
+          ) : (
+            <div className="cat-list">
+              {specialtiesWithCount.map((s) => (
+                <SpecialtyCard
+                  key={s.id}
+                  item={s}
+                  saving={saving}
+                  onEdit={(item) => setSpecialtyModal({ open: true, item: { ...item } })}
+                  onDelete={handleDeleteSpecialty}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
 
+      {/* ─── DOCTOR TAB ─── */}
       {activeTab === "doctors" && (
         <div>
           <div className="dash-filter-bar">
             <input
               className="dash-search-input"
-              placeholder="Tìm bác sĩ, chuyên khoa..."
+              placeholder="Tìm bác sĩ, khoa..."
               value={doctorSearch}
-              onChange={(event) => setDoctorSearch(event.target.value)}
+              onChange={(e) => setDoctorSearch(e.target.value)}
             />
-          </div>
-
-          <div className="mc-surface catalog-page__form-grid catalog-page__form-grid--doctor">
-            <Input
-              label="Họ tên bác sĩ"
-              value={doctorForm.fullName}
-              onChange={(event) =>
-                setDoctorForm((current) => ({ ...current, fullName: event.target.value }))
-              }
-            />
-            <Input
-              label="Số điện thoại"
-              value={doctorForm.phone}
-              onChange={(event) =>
-                setDoctorForm((current) => ({ ...current, phone: event.target.value }))
-              }
-            />
-            <label className="catalog-page__select-wrap">
-              <span>Chuyên khoa</span>
-              <select
-                className="dash-filter-select"
-                value={doctorForm.specialtyId}
-                onChange={(event) =>
-                  setDoctorForm((current) => ({ ...current, specialtyId: event.target.value }))
-                }
-              >
-                {specialties.map((specialty) => (
-                  <option key={specialty.id} value={specialty.id}>
-                    {specialty.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <Button onClick={handleCreateDoctor} disabled={saving}>
-              {"Thêm bác sĩ"}
+            <Button size="sm" onClick={() => { window.location.href = "/app/admin/catalog/doctors/create"; }}>
+              <Plus className="mc-icon mc-icon--xs" style={{ marginRight: 4 }} />
+              Thêm bác sĩ
             </Button>
           </div>
-
-          <div className="catalog-page__doctor-list">
-            {filteredDoctors.map((doctor) => (
-              <div key={doctor.id} className="dr-catalog-card catalog-page__doctor-card">
-                <div className="catalog-page__doctor-main">
-                  <div className="catalog-page__doctor-avatar">
-                    <UserRound className="mc-icon mc-icon--lg" />
-                  </div>
-                  <div className="catalog-page__doctor-copy">
-                    <div className="catalog-page__doctor-name">{doctor.full_name}</div>
-                    <div className="catalog-page__doctor-meta">
-                      {doctor.specialty_name} · {doctor.phone || "Chưa cập nhật SĐT"}
-                    </div>
-                    <div className="catalog-page__doctor-count">
-                      {doctor.is_active ? "Đang nhận lịch" : "Tạm dừng nhận lịch"}
-                    </div>
-                  </div>
-                  <Badge variant={doctor.is_active ? "success" : "neutral"}>
-                    {doctor.is_active ? "Hoạt động" : "Tạm ngưng"}
-                  </Badge>
-                  <div className="catalog-page__doctor-actions">
-                    <button
-                      className="dash-action-btn dash-action-btn--sm"
-                      type="button"
-                      onClick={() => handleEditDoctor(doctor)}
-                    >
-                      Sửa
-                    </button>
-                    <button
-                      className="dash-action-btn dash-action-btn--sm"
-                      type="button"
-                      onClick={() => handleToggleDoctor(doctor)}
-                    >
-                      {doctor.is_active ? "Tắt" : "Bật"}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+          {filteredDoctors.length === 0 ? (
+            <div className="cat-empty">Không có bác sĩ nào.</div>
+          ) : (
+            <div className="cat-list">
+              {filteredDoctors.map((d) => (
+                <DoctorCard
+                  key={d.id}
+                  item={d}
+                  saving={saving}
+                  onDelete={handleDeleteDoctor}
+                  onResetPassword={(item) => openResetPw(item, "doctor")}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
 
-      {activeTab === "facility" && (
-        <div className="branch-card catalog-page__facility-card">
-          <div className="catalog-page__facility-header">
-            <div className="catalog-page__facility-icon">
-              <Building2 className="mc-icon mc-icon--lg" />
-            </div>
-            <div className="catalog-page__facility-copy">
-              <h3 className="catalog-page__facility-title">MediCare Clinic - Cơ sở Hải Châu</h3>
-              <p className="catalog-page__facility-subtitle">
-                123 Nguyễn Văn Linh, Hải Châu, Đà Nẵng
-              </p>
-            </div>
-            <Badge variant="success">Đang hoạt động</Badge>
+      {/* ─── VISIT TYPE TAB ─── */}
+      {activeTab === "visitTypes" && (
+        <div>
+          <div className="dash-filter-bar">
+            <input
+              className="dash-search-input"
+              placeholder="Tìm loại khám..."
+              value={visitTypeSearch}
+              onChange={(e) => setVisitTypeSearch(e.target.value)}
+            />
           </div>
-
-          <div className="catalog-page__facility-stats">
-            {facilityStats.map((item) => (
-              <div key={item.label} className="catalog-page__facility-stat">
-                <div className="catalog-page__facility-stat-icon">
-                  {React.createElement(item.icon, { className: "mc-icon mc-icon--md" })}
-                </div>
-                <div className="catalog-page__facility-stat-value">{item.value}</div>
-                <div className="catalog-page__facility-stat-label">{item.label}</div>
-              </div>
-            ))}
-          </div>
-
-          <div className="catalog-page__facility-meta">
-            <div className="catalog-page__facility-meta-section">
-              <div className="catalog-page__facility-meta-title">Giờ làm việc</div>
-              <div className="catalog-page__facility-meta-copy">Thứ 2-6: 08:00 - 11:30 & 13:30 - 17:00</div>
-              <div className="catalog-page__facility-meta-copy">Thứ 7: 08:00 - 11:30</div>
+          {filteredVisitTypes.length === 0 ? (
+            <div className="cat-empty">Không có loại khám nào.</div>
+          ) : (
+            <div className="cat-list">
+              {filteredVisitTypes.map((v) => (
+                <VisitTypeCard
+                  key={v.id}
+                  item={v}
+                  saving={saving}
+                  onEdit={(item) => setVisitTypeModal({ open: true, item: { ...item } })}
+                  onDelete={handleDeleteVisitType}
+                />
+              ))}
             </div>
-            <div className="catalog-page__facility-meta-section">
-              <div className="catalog-page__facility-meta-title">Liên hệ</div>
-              <div className="catalog-page__facility-meta-copy">Hotline: 1900 1234</div>
-              <div className="catalog-page__facility-meta-copy">Email: haichau@medicare.vn</div>
-            </div>
-          </div>
+          )}
         </div>
       )}
+
+      {/* ─── RECEPTIONIST TAB ─── */}
+      {activeTab === "receptionists" && (
+        <div>
+          <div className="dash-filter-bar">
+            <input
+              className="dash-search-input"
+              placeholder="Tìm lễ tân, tên đăng nhập..."
+              value={receptionistSearch}
+              onChange={(e) => setReceptionistSearch(e.target.value)}
+            />
+            <Button size="sm" onClick={() => { window.location.href = "/app/admin/catalog/receptionists/create"; }}>
+              <Plus className="mc-icon mc-icon--xs" style={{ marginRight: 4 }} />
+              Thêm lễ tân
+            </Button>
+          </div>
+          {filteredReceptionists.length === 0 ? (
+            <div className="cat-empty">Không có lễ tân nào.</div>
+          ) : (
+            <div className="cat-list">
+              {filteredReceptionists.map((r) => (
+                <ReceptionistCard
+                  key={r.id}
+                  item={r}
+                  saving={saving}
+                  onDelete={handleDeleteReceptionist}
+                  onResetPassword={(item) => openResetPw(item, "receptionist")}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ─── MODALS ─── */}
+
+      {/* Specialty Edit Modal */}
+      <Modal
+        open={specialtyModal.open}
+        title="Sửa khoa"
+        onClose={() => setSpecialtyModal({ open: false, item: null })}
+        footer={
+          <>
+            <Button variant="secondary" size="sm" onClick={() => setSpecialtyModal({ open: false, item: null })} disabled={saving}>Hủy</Button>
+            <Button size="sm" onClick={handleSaveSpecialty} disabled={saving}>Lưu</Button>
+          </>
+        }
+      >
+        {specialtyModal.item && (
+          <div className="cat-modal-form">
+            <Input
+              label="Tên khoa"
+              value={specialtyModal.item.name || ""}
+              onChange={(e) => setSpecialtyModal((m) => ({ ...m, item: { ...m.item, name: e.target.value } }))}
+            />
+            <Input
+              label="Mô tả"
+              value={specialtyModal.item.description || ""}
+              onChange={(e) => setSpecialtyModal((m) => ({ ...m, item: { ...m.item, description: e.target.value } }))}
+            />
+          </div>
+        )}
+      </Modal>
+
+      {/* VisitType Edit Modal */}
+      <Modal
+        open={visitTypeModal.open}
+        title="Sửa loại khám"
+        onClose={() => setVisitTypeModal({ open: false, item: null })}
+        footer={
+          <>
+            <Button variant="secondary" size="sm" onClick={() => setVisitTypeModal({ open: false, item: null })} disabled={saving}>Hủy</Button>
+            <Button size="sm" onClick={handleSaveVisitType} disabled={saving}>Lưu</Button>
+          </>
+        }
+      >
+        {visitTypeModal.item && (
+          <div className="cat-modal-form">
+            <Input
+              label="Tên loại khám"
+              value={visitTypeModal.item.name || ""}
+              onChange={(e) => setVisitTypeModal((m) => ({ ...m, item: { ...m.item, name: e.target.value } }))}
+            />
+            <div className="cat-modal-form__row">
+              <Input
+                label="Thời lượng (phút)"
+                type="number"
+                value={visitTypeModal.item.duration_minutes || ""}
+                onChange={(e) => setVisitTypeModal((m) => ({ ...m, item: { ...m.item, duration_minutes: e.target.value } }))}
+              />
+              <Input
+                label="Giá (VNĐ)"
+                type="number"
+                value={visitTypeModal.item.price || ""}
+                onChange={(e) => setVisitTypeModal((m) => ({ ...m, item: { ...m.item, price: e.target.value } }))}
+              />
+            </div>
+            <Input
+              label="Mô tả"
+              value={visitTypeModal.item.description || ""}
+              onChange={(e) => setVisitTypeModal((m) => ({ ...m, item: { ...m.item, description: e.target.value } }))}
+            />
+          </div>
+        )}
+      </Modal>
+
+      {/* Reset Password Modal */}
+      <Modal
+        open={resetPwModal.open}
+        title="Đặt lại mật khẩu"
+        description={
+          resetPwModal.item
+            ? resetPwModal.type === "doctor"
+              ? `${resetPwModal.item.full_name} (@${resetPwModal.item.linked_username})`
+              : `${resetPwModal.item.full_name} (@${resetPwModal.item.username})`
+            : ""
+        }
+        onClose={closeResetPw}
+        footer={
+          <>
+            <Button variant="secondary" size="sm" onClick={closeResetPw} disabled={saving}>Hủy</Button>
+            <Button size="sm" onClick={handleResetPassword} disabled={saving}>Xác nhận</Button>
+          </>
+        }
+      >
+        <div className="cat-modal-form">
+          {resetPwError && (
+            <div className="cat-modal-error">{resetPwError}</div>
+          )}
+          <Input
+            label="Mật khẩu mới"
+            type="password"
+            value={resetPwForm.new_password}
+            onChange={(e) => setResetPwForm((f) => ({ ...f, new_password: e.target.value }))}
+            placeholder="Ít nhất 6 ký tự"
+          />
+          <Input
+            label="Xác nhận mật khẩu mới"
+            type="password"
+            value={resetPwForm.confirm_password}
+            onChange={(e) => setResetPwForm((f) => ({ ...f, confirm_password: e.target.value }))}
+            placeholder="Nhập lại mật khẩu mới"
+          />
+        </div>
+      </Modal>
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        open={confirmModal.open}
+        title={confirmModal.title}
+        body={confirmModal.body}
+        confirmLabel={confirmModal.confirmLabel}
+        confirmVariant={confirmModal.confirmVariant}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal({ open: false })}
+        saving={saving}
+      />
     </div>
   );
 }
-
