@@ -3,7 +3,9 @@ import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import {
   CalendarCheck2,
   HeartPulse,
+  LayoutDashboard,
   LogIn,
+  LogOut,
   MapPin,
   PhoneCall,
   Search,
@@ -11,33 +13,37 @@ import {
   Sparkles,
   Star,
   Stethoscope,
+  UserRound,
   Users,
 } from "lucide-react";
 import Button from "../../components/Button/Button";
+import { ROLE_ROUTES, useAuth } from "../../services/authService";
 import "./PublicLayout.css";
 import "./AuthPanel.css";
 
 const NAV_ITEMS = [
-  { label: "Trang chủ", to: "/" },
-  { label: "Dịch vụ", to: "#services", icon: Stethoscope },
-  { label: "Đội ngũ bác sĩ", to: "#team", icon: Users },
-  { label: "Tra cứu lịch hẹn", to: "/lookup", icon: Search },
-  { label: "Liên hệ", to: "#contact", icon: PhoneCall },
+  { label: "Trang chủ",        to: "/" },
+  { label: "Dịch vụ",          to: "#services",  icon: Stethoscope },
+  { label: "Đội ngũ bác sĩ",   to: "#team",      icon: Users       },
+  { label: "Tra cứu lịch hẹn", to: "/lookup",    icon: Search      },
+  { label: "Liên hệ",          to: "#contact",   icon: PhoneCall   },
 ];
 
 const AUTH_HIGHLIGHTS = [
   { icon: CalendarCheck2, text: "Đặt lịch nhanh và theo dõi trạng thái theo thời gian thực" },
-  { icon: ShieldCheck, text: "Hồ sơ bệnh nhân được quản lý tập trung và bảo mật" },
-  { icon: HeartPulse, text: "Kết nối thuận tiện với bác sĩ và lịch sử khám" },
+  { icon: ShieldCheck,    text: "Hồ sơ bệnh nhân được quản lý tập trung và bảo mật"         },
+  { icon: HeartPulse,     text: "Kết nối thuận tiện với bác sĩ và lịch sử khám"              },
 ];
 
 export default function PublicLayout({ variant = "default" }) {
-  const location = useLocation();
-  const navigate = useNavigate();
+  const location  = useLocation();
+  const navigate  = useNavigate();
+  const { isAuthenticated, role, user, logout } = useAuth();
 
   const isActive = (path) =>
     location.pathname === path || location.pathname.startsWith(path + "/");
 
+  // ── Auth variant (trang login / register) ──────────────────────────────
   if (variant === "auth") {
     return (
       <div className="layout-auth-new">
@@ -60,7 +66,8 @@ export default function PublicLayout({ variant = "default" }) {
               <span className="auth-left-accent">toàn diện, tinh gọn và đáng tin cậy</span>
             </h2>
             <p className="auth-left-sub">
-              Một không gian số để bệnh nhân đặt lịch, liên kết hồ sơ và theo dõi hành trình chăm sóc tại MediCare Clinic.
+              Một không gian số để bệnh nhân đặt lịch, liên kết hồ sơ và theo dõi hành trình
+              chăm sóc tại MediCare Clinic.
             </p>
 
             <div className="auth-highlight-list">
@@ -83,11 +90,13 @@ export default function PublicLayout({ variant = "default" }) {
               </div>
               <div>
                 <div className="auth-social-stars">
-                  {Array.from({ length: 5 }).map((_, index) => (
-                    <Star key={index} className="mc-icon mc-icon--sm" fill="currentColor" />
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star key={i} className="mc-icon mc-icon--sm" fill="currentColor" />
                   ))}
                 </div>
-                <div className="auth-social-text">Được tin dùng bởi hơn 20.000 bệnh nhân tại Đà Nẵng</div>
+                <div className="auth-social-text">
+                  Được tin dùng bởi hơn 20.000 bệnh nhân tại Đà Nẵng
+                </div>
               </div>
             </div>
           </div>
@@ -112,10 +121,12 @@ export default function PublicLayout({ variant = "default" }) {
     );
   }
 
+  // ── Default variant (public pages: landing, /book, /lookup …) ─────────
   return (
     <div className="layout layout-public">
       <header className="public-header">
         <div className="public-header__inner">
+          {/* Brand */}
           <div className="public-header__lead">
             <Link to="/" className="brand">
               <div className="brand__logo" aria-hidden="true">
@@ -133,6 +144,7 @@ export default function PublicLayout({ variant = "default" }) {
             </div>
           </div>
 
+          {/* Nav */}
           <nav className="public-nav" aria-label="Điều hướng chính">
             {NAV_ITEMS.map((item) => {
               const content = (
@@ -141,7 +153,6 @@ export default function PublicLayout({ variant = "default" }) {
                   <span>{item.label}</span>
                 </>
               );
-
               if (item.to.startsWith("#")) {
                 return (
                   <a key={item.label} className="nav-link" href={item.to}>
@@ -149,7 +160,6 @@ export default function PublicLayout({ variant = "default" }) {
                   </a>
                 );
               }
-
               return (
                 <Link
                   key={item.label}
@@ -161,15 +171,42 @@ export default function PublicLayout({ variant = "default" }) {
               );
             })}
 
-            <Button
-              variant="secondary"
-              size="sm"
-              className="public-nav__login-btn"
-              onClick={() => navigate("/patient/login")}
-            >
-              <LogIn className="mc-icon mc-icon--sm" />
-              Đăng nhập
-            </Button>
+            {/* ── Auth buttons: thay đổi theo trạng thái đăng nhập ── */}
+            {isAuthenticated ? (
+              <div className="public-nav__user-group">
+                {/* Nút vào cổng tương ứng role */}
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="public-nav__portal-btn"
+                  onClick={() => navigate(ROLE_ROUTES[role] || "/app/patient")}
+                >
+                  <LayoutDashboard className="mc-icon mc-icon--sm" />
+                  {user?.name || user?.fullName || "Cổng của tôi"}
+                </Button>
+
+                {/* Đăng xuất */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="public-nav__logout-btn"
+                  onClick={() => { logout(); navigate("/login"); }}
+                >
+                  <LogOut className="mc-icon mc-icon--sm" />
+                  Đăng xuất
+                </Button>
+              </div>
+            ) : (
+              <Button
+                variant="secondary"
+                size="sm"
+                className="public-nav__login-btn"
+                onClick={() => navigate("/login")}
+              >
+                <LogIn className="mc-icon mc-icon--sm" />
+                Đăng nhập
+              </Button>
+            )}
           </nav>
         </div>
       </header>
@@ -187,10 +224,14 @@ export default function PublicLayout({ variant = "default" }) {
               </div>
               <div>
                 <div className="public-footer__title">MediCare Clinic</div>
-                <div className="public-footer__subtitle">Nền tảng đặt lịch và quản lý chăm sóc sức khỏe</div>
+                <div className="public-footer__subtitle">
+                  Nền tảng đặt lịch và quản lý chăm sóc sức khỏe
+                </div>
               </div>
             </div>
-            <div className="public-footer__copyright">© {new Date().getFullYear()} MediCare Clinic. Bảo lưu mọi quyền.</div>
+            <div className="public-footer__copyright">
+              © {new Date().getFullYear()} MediCare Clinic. Bảo lưu mọi quyền.
+            </div>
           </div>
 
           <div className="public-footer__meta-grid">

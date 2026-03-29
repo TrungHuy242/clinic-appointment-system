@@ -14,19 +14,17 @@ from .views import (
     PatientAppointmentsAPIView,
     PatientChangePasswordAPIView,
     PatientClaimProfileAPIView,
-    PatientLoginAPIView,
     PatientNotificationDetailAPIView,
     PatientNotificationsAPIView,
     PatientNotificationsMarkAllReadAPIView,
     PatientRecordDetailAPIView,
     PatientRegisterAPIView,
     ReceptionPatientsAPIView,
-    StaffLoginAPIView,
+    LoginAPIView,
 )
 
 urlpatterns = [
-    path('staff/auth/login/', StaffLoginAPIView.as_view(), name='staff-auth-login'),
-    path('patient/auth/login/', PatientLoginAPIView.as_view(), name='patient-auth-login'),
+    path('auth/login/', LoginAPIView.as_view(), name='auth-login'),
     path('patient/auth/register/', PatientRegisterAPIView.as_view(), name='patient-auth-register'),
     path('patient/profile/', CurrentPatientProfileAPIView.as_view(), name='patient-profile'),
     path('patient/account/', CurrentPatientAccountAPIView.as_view(), name='patient-account'),

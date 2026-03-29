@@ -47,7 +47,7 @@ export default function RegisterPage() {
         password: form.password,
         confirmPassword: form.confirm,
       });
-      navigate("/app/patient/appointments");
+      navigate("/login");
     } catch (error) {
       setSubmitError(error.message || "Không thể đăng ký tài khoản.");
     } finally {
@@ -110,7 +110,11 @@ export default function RegisterPage() {
               </div>
               <div className="auth-field-group">
                 <label className="auth-field-label">Giới tính</label>
-                <select className="auth-field-input" value={form.gender} onChange={(event) => handleChange("gender", event.target.value)}>
+                <select
+                  className="auth-field-input"
+                  value={form.gender}
+                  onChange={(event) => handleChange("gender", event.target.value)}
+                >
                   <option value="">-- Chọn --</option>
                   <option value="male">Nam</option>
                   <option value="female">Nữ</option>
@@ -170,13 +174,14 @@ export default function RegisterPage() {
 
       <p className="auth-switch register-switch">
         Đã có tài khoản?{" "}
-        <button type="button" className="auth-forgot-link" onClick={() => navigate("/patient/login") }>
+        <button
+          type="button"
+          className="auth-forgot-link"
+          onClick={() => navigate("/login")}
+        >
           Đăng nhập ngay
         </button>
       </p>
     </div>
   );
 }
-
-
-
