@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import LoadingSpinner from "../../../components/LoadingSpinner/LoadingSpinner";
-import { lookupAppointment, lookupAppointmentsByPhone } from "../../../services/bookingApi";
+import { lookupAppointment, lookupAppointmentsByPhone, expirePA1} from "../../../services/bookingApi";
 import "./LookupPage.css";
 
 const STATUS_CONFIG = {
@@ -38,6 +38,10 @@ export default function LookupPage() {
   const [results, setResults] = useState([]);
   const [errors, setErrors] = useState({});
   const [hasSearched, setHasSearched] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelSuccess, setCancelSuccess] = useState(false);
+
+
 
   // Check if we came from patient appointments (has code in URL)
   const hasCodeParam = searchParams.get("code");
@@ -87,6 +91,18 @@ export default function LookupPage() {
     }
   }, [handleLookupInternal, searchParams]);
 
+  // ✅ Auto hide toast sau 1s
+useEffect(() => {
+  if (cancelSuccess) {
+    const timer = setTimeout(() => {
+      setCancelSuccess(false);
+    }, 1000); // 1 giây
+
+    return () => clearTimeout(timer);
+  }
+}, [cancelSuccess]);
+
+
   function validate() {
     const nextErrors = {};
     if (!/^0\d{9}$/.test(phone.trim())) {
@@ -101,6 +117,39 @@ export default function LookupPage() {
     if (!validate()) return;
     await handleLookupInternal(code.trim(), phone.trim());
   }
+
+
+  
+  async function handleCancelAppointment() {
+  try {
+    setLoading(true);
+
+    const updated = await expirePA1(result.code);
+
+    // ✅ update chi tiết
+    setResult(updated);
+
+    // ✅ update list
+    setResults((prev) =>
+      prev.map((item) =>
+        item.code === result.code
+          ? { ...item, status: "CANCELLED" }
+          : item
+      )
+    );
+
+    setCancelSuccess(true);
+    setShowCancelModal(false);
+  } catch (error) {
+    console.log(error);
+  } finally {
+    setLoading(false);
+  }
+}
+
+
+
+
 
   const handleBack = () => {
     // Go back to patient appointments with current tab
@@ -303,6 +352,17 @@ export default function LookupPage() {
                     Xem chi tiết
                   </button>
                 )}
+                 {/* ✅ THÊM NÚT HỦY Ở ĐÂY */}
+                  {(result.status === "CONFIRMED" || isPending) && (
+                                                <button
+                          className="lk-btn-danger"
+                          onClick={() => setShowCancelModal(true)}  // ✅ MỞ MODAL
+                        >
+                          <XCircle size={18} />
+                          Hủy lịch hẹn
+                        </button>
+                  )}
+
                 {result.status === "CANCELLED" && (
                   <button className="lk-btn-primary" onClick={() => navigate("/book")}>
                     <RefreshCcw size={18} />
@@ -329,6 +389,39 @@ export default function LookupPage() {
           </div>
         </div>
       )}
+
+        {/* Cancel Modal */}
+{showCancelModal && (
+  <div className="lk-modal-overlay">
+    <div className="lk-modal">
+      <h3>Bạn có muốn hủy lịch hẹn?</h3>
+      <p>Hành động này không thể hoàn tác.</p>
+
+      <div className="lk-modal-actions">
+        <button
+          className="lk-btn-secondary"
+          onClick={() => setShowCancelModal(false)}
+        >
+          Không
+        </button>
+
+        <button
+          className="lk-btn-danger"
+          onClick={handleCancelAppointment}
+        >
+          Có, hủy lịch
+        </button>
+      </div>
+    </div>
+  </div>
+  
+)}
+{cancelSuccess && (
+  <div className="lk-success-toast">
+    ✅ Hủy lịch hẹn thành công!
+  </div>
+)}
+
 
       {/* Help Text - Hide when came from patient appointments */}
       {!cameFromPatientAppointments && !hasSearched && !loading && !result && results.length === 0 && (

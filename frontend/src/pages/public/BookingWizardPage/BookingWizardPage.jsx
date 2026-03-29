@@ -11,6 +11,7 @@ import {
   Lock,
   Sparkles,
   Stethoscope,
+ 
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Button from "../../../components/Button/Button";
@@ -21,6 +22,7 @@ import {
   getDoctorsBySpecialty,
   getSlots,
   getSpecialties,
+  lookupAppointmentsByPhone,
 } from "../../../services/bookingApi";
 import { appointmentApi } from "../../../services/patientApi";
 import { useAuth } from "../../../services/authService";
@@ -127,7 +129,20 @@ export default function BookingWizardPage() {
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   }
+const checkPhoneExists = async (phone) => {
+  try {
+    const res = await lookupAppointmentsByPhone(phone);
 
+    if (res.length > 0) {
+      setErrors((prev) => ({
+        ...prev,
+        phone: "Số điện thoại đã có lịch hẹn, vui lòng nhập số khác!"
+      }));
+    }
+  } catch (err) {
+    console.log(err);
+  }
+};
   function isLockedBySelected(slot) {
     if (!selectedSlot || selectedSlot.occupies !== 2) return false;
     if (slot.id === selectedSlot.id) return false;
@@ -338,13 +353,28 @@ export default function BookingWizardPage() {
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               error={errors.name}
             />
-            <Input
-              label="Số điện thoại *"
-              placeholder="0901234567"
-              value={form.phone}
-              onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              error={errors.phone}
-            />
+                          <Input
+                  label="Số điện thoại *"
+                  placeholder="0901234567"
+                  value={form.phone}
+                  onChange={(event) => {
+                    const value = event.target.value;
+
+                    // chỉ cho nhập số
+                    if (!/^\d*$/.test(value)) return;
+
+                    setForm({ ...form, phone: value });
+
+                    // reset lỗi
+                    setErrors((prev) => ({ ...prev, phone: "" }));
+
+                    // 🔥 check khi đủ 10 số
+                    if (/^0\d{9}$/.test(value)) {
+                      checkPhoneExists(value);
+                    }
+                  }}
+                  error={errors.phone}
+                />
             <Input
               label="Ngày sinh *"
               type="date"
