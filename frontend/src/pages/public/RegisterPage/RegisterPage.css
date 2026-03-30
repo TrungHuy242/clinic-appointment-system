@@ -76,3 +76,10 @@
     grid-template-columns: 1fr;
   }
 }
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+.spinning {
+    animation: spin 0.7s linear infinite;
+}

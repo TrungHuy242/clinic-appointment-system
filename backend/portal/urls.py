@@ -21,6 +21,7 @@ from .views import (
     PatientRegisterAPIView,
     ReceptionPatientsAPIView,
     LoginAPIView,
+    PatientVerifyOTPAPIView, 
 )
 
 urlpatterns = [
@@ -44,4 +45,5 @@ urlpatterns = [
     path('reception/patients/', ReceptionPatientsAPIView.as_view(), name='reception-patients'),
     path('admin/audit-logs/', AdminAuditLogsAPIView.as_view(), name='admin-audit-logs'),
     path('admin/reports/', AdminReportsAPIView.as_view(), name='admin-reports'),
+    path('patient/auth/verify-otp/', PatientVerifyOTPAPIView.as_view(), name='patient-verify-otp'),
 ]

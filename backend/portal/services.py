@@ -1,4 +1,6 @@
 import re
+import random
+import time
 from datetime import date, timedelta
 
 from django.db import transaction
@@ -14,6 +16,8 @@ from catalog.models import Doctor, Specialty
 from .models import MedicalRecord, PatientNotification, PatientProfile, User
 
 
+_OTP_STORE = {}
+OTP_TTL_SECONDS = 300
 BRANCH_NAME = 'Cơ sở Hải Châu'
 DEFAULT_LOCATION = 'Cơ sở Hải Châu - P.204'
 WEEKDAY_LABELS = {
@@ -206,6 +210,27 @@ def unified_login(payload, request=None):
  
     # Sai thông tin ────────────────────────────────────────────────────
     raise ValidationError({'non_field_errors': 'Thông tin đăng nhập không hợp lệ.'})
+
+def generate_otp(phone: str) -> str:
+    otp = str(random.randint(100000, 999999))
+    _OTP_STORE[phone] = {
+        'otp': otp,
+        'expires': time.time() + OTP_TTL_SECONDS,
+    }
+    return otp
+
+def verify_registration_otp(phone: str, otp: str):
+    entry = _OTP_STORE.get(phone)
+    if not entry:
+        raise ValidationError({'otp': 'Mã OTP không hợp lệ hoặc đã hết hạn.'})
+    if time.time() > entry['expires']:
+        _OTP_STORE.pop(phone, None)
+        raise ValidationError({'otp': 'Mã OTP đã hết hạn. Vui lòng đăng ký lại.'})
+    if entry['otp'] != str(otp).strip():
+        raise ValidationError({'otp': 'Mã OTP không đúng.'})
+    _OTP_STORE.pop(phone, None)
+    return True
+
 @transaction.atomic
 def register_patient_account(payload):
     full_name = str(payload.get('name') or payload.get('fullName') or '').strip()
@@ -246,9 +271,12 @@ def register_patient_account(payload):
         profile.save()
 
     set_current_profile(profile)
+    otp = generate_otp(profile.phone)
     return {
         'success': True,
         'account': get_account_info(profile),
+        'otp': otp,
+        'phone': profile.phone,
     }
 
 

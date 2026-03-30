@@ -30,6 +30,7 @@ from .services import (
     save_visit_draft,
     update_account_info,
     update_health_profile,
+    verify_registration_otp, 
 )
 
 class LoginAPIView(APIView):
@@ -157,3 +158,14 @@ class AdminAuditLogsAPIView(APIView):
 class AdminReportsAPIView(APIView):
     def get(self, request, *args, **kwargs):
         return Response(get_reports_data(request.query_params.get('period', 'year')))
+
+class PatientVerifyOTPAPIView(APIView):
+    def post(self, request, *args, **kwargs):
+        phone = str(request.data.get('phone') or '').strip()
+        otp   = str(request.data.get('otp')   or '').strip()
+        if not phone:
+            raise ValidationError({'phone': 'phone is required.'})
+        if not otp:
+            raise ValidationError({'otp': 'otp is required.'})
+        verify_registration_otp(phone, otp)
+        return Response({'success': True})

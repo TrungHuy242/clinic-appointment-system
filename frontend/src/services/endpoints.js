@@ -22,6 +22,7 @@ export const ENDPOINTS = {
     login:      `${API_PREFIX}/auth/login/`,
     register: `${API_PREFIX}/patient/auth/register/`,
     claimProfile: `${API_PREFIX}/patient/claim-profile/`,
+    verifyOtp: `${API_PREFIX}/patient/auth/verify-otp/`,  // ← thêm dòng này
     profile: `${API_PREFIX}/patient/profile/`,
     account: `${API_PREFIX}/patient/account/`,
     changePassword: `${API_PREFIX}/patient/change-password/`,
