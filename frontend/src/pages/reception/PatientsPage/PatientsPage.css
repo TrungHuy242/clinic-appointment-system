@@ -1,0 +1,60 @@
+.reception-patients__code {
+  color: var(--color-primary);
+  font-family: monospace;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.reception-patients__person {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.reception-patients__avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--color-primary-light);
+  flex-shrink: 0;
+  font-size: 16px;
+}
+
+.reception-patients__name {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.reception-patients__phone {
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.reception-patients__visits {
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.reception-patients__actions {
+  display: flex;
+  gap: 6px;
+}
+
+.reception-patients__stat-card--sky {
+  background: #e0f2fe;
+}
+
+.reception-patients__stat-card--green {
+  background: #dcfce7;
+}
+
+.reception-patients__stat-card--yellow {
+  background: #fef3c7;
+}
+
+.reception-patients__stat-card--violet {
+  background: #ede9fe;
+}

@@ -1,0 +1,196 @@
+.booking-page {
+  gap: 20px;
+}
+
+.bw-loading-panel {
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.booking-page-title {
+  font-size: 26px;
+}
+
+.bw-card__avatar {
+  display: grid;
+  place-items: center;
+}
+
+.bw-card__avatar--large {
+  width: 52px;
+  height: 52px;
+  font-size: 24px;
+}
+
+.bw-card__avatar-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.bw-card__avatar-initials {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(14, 165, 163, 0.14), rgba(59, 130, 246, 0.1));
+  color: var(--color-primary-dark);
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.bw-empty-note {
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.bw-date-input {
+  width: auto;
+  min-width: 160px;
+}
+
+.bw-panel-title--spaced {
+  margin-bottom: 10px;
+}
+
+.bw-step__dot-icon {
+  color: currentColor;
+}
+
+.bw-slot-legend {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.bw-legend-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.bw-legend-swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+}
+
+.bw-legend-swatch--available {
+  background: rgba(14, 165, 163, 0.24);
+}
+
+.bw-legend-swatch--selected {
+  background: var(--color-primary);
+}
+
+.bw-legend-swatch--conflict {
+  background: var(--color-danger);
+}
+
+.bw-slot-legend__selected {
+  color: var(--color-primary-dark);
+  font-weight: 700;
+}
+
+.bw-slot-legend__conflict {
+  color: var(--color-danger);
+}
+
+.bw-slot-legend__locked {
+  color: var(--color-text-secondary);
+}
+
+.bw-summary__tip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(219, 234, 254, 0.46);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.bw-card.selected.bw-card--nhi {
+  background: #e0f2fe;
+  border-color: var(--color-primary);
+}
+
+.bw-card.selected.bw-card--da-lieu {
+  background: #fce7f3;
+  border-color: var(--color-primary);
+}
+
+.bw-card.selected.bw-card--tai-mui-hong {
+  background: #fef3c7;
+  border-color: var(--color-primary);
+}
+
+.bw-card.selected.bw-card--tong-quat {
+  background: #f0fdf4;
+  border-color: var(--color-primary);
+}
+
+.bw-card.selected.bw-card--mat {
+  background: #f0f9ff;
+  border-color: var(--color-primary);
+}
+
+.bw-visit-type-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.bw-visit-type {
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: rgba(248, 252, 255, 0.84);
+  text-align: left;
+}
+
+.bw-visit-type.selected {
+  border-color: var(--color-primary);
+  background: rgba(14, 165, 163, 0.1);
+}
+
+.bw-visit-type__title {
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.bw-visit-type__meta {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.bw-empty-note--spaced {
+  margin: -2px 0 10px;
+}
+
+.bw-slot__time {
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.bw-slot__sub {
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+
+@media (max-width: 640px) {
+  .bw-visit-type-grid {
+    grid-template-columns: 1fr;
+  }
+}

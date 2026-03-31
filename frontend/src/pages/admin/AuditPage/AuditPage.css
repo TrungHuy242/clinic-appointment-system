@@ -1,0 +1,50 @@
+.audit-logs-page__time,
+.audit-logs-page__ip {
+  font-family: monospace;
+}
+
+.audit-logs-page__time {
+  font-size: 13px;
+}
+
+.audit-logs-page__actor-name {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.audit-logs-page__actor-role {
+  color: var(--color-text-muted);
+  font-size: 11px;
+}
+
+.audit-logs-page__resource {
+  color: var(--color-primary);
+  font-family: monospace;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.audit-logs-page__detail {
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.audit-logs-page__ip {
+  font-size: 12px;
+}
+
+.audit-logs-page__stat-card--sky {
+  background: #e0f2fe;
+}
+
+.audit-logs-page__stat-card--green {
+  background: #dcfce7;
+}
+
+.audit-logs-page__stat-card--blue {
+  background: #eff6ff;
+}
+
+.audit-logs-page__stat-card--red {
+  background: #fee2e2;
+}

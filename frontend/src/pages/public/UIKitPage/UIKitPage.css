@@ -1,0 +1,9 @@
+.ui-kit-page__actions-cell {
+  text-align: right;
+}
+
+.ui-kit-page__detail-link {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}

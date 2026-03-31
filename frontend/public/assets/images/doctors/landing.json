@@ -1,0 +1,38 @@
+{
+  "hero": {
+    "background": "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=1920&h=1080&fit=crop&q=80",
+    "doctor": "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=600&h=800&fit=crop&q=80",
+    "clinic": "https://images.unsplash.com/photo-1586773860418-d37222d8fce3?w=1920&h=1080&fit=crop&q=80",
+    "medical": "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=1920&h=1080&fit=crop&q=80"
+  },
+  "doctors": [
+    {
+      "id": 1,
+      "name": "BS. Nguyễn Thị Hương",
+      "specialty": "Nhi khoa",
+      "image": "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&h=500&fit=crop&q=80"
+    },
+    {
+      "id": 2,
+      "name": "BS. Trần Văn Minh",
+      "specialty": "Tim mạch",
+      "image": "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=400&h=500&fit=crop&q=80"
+    },
+    {
+      "id": 3,
+      "name": "BS. Lê Thị Lan",
+      "specialty": "Da liễu",
+      "image": "https://images.unsplash.com/photo-1594824476967-48c8b964273f?w=400&h=500&fit=crop&q=80"
+    },
+    {
+      "id": 4,
+      "name": "BS. Phạm Ngọc Khoa",
+      "specialty": "Tai mũi họng",
+      "image": "https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=400&h=500&fit=crop&q=80"
+    }
+  ],
+  "clinic": {
+    "name": "Medicare Clinic",
+    "tagline": "Chăm sóc sức khỏe tận tâm"
+  }
+}

@@ -1,0 +1,6 @@
+.account-logout-button {
+  color: #ef4444;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
