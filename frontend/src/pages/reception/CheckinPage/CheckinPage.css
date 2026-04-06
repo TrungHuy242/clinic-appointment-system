@@ -38,6 +38,21 @@
   font-size: 13px;
   font-weight: 500;
 }
+.ci-result__message.valid {
+  color: green;
+}
+
+.ci-result__message.early {
+  color: orange;
+}
+
+.ci-result__message.late {
+  color: red;
+}
+
+.ci-result__message.not_found {
+  color: red;
+}
 .ci-result__message.VALID {
   color: green;
 }

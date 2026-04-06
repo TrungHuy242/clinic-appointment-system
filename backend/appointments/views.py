@@ -15,6 +15,7 @@ from .services import (
     get_appointment_by_id_or_code,
     get_appointments_by_phone,
     lookup_appointment_for_checkin,
+    set_appointment_status,
     soft_delete_appointment,
 )
 
@@ -185,10 +186,17 @@ class ReceptionCheckinLookupAPIView(APIView):
             })
 
         #  CHỈ CHECK-IN khi hợp lệ
-        if state == "VALID":
+        if state == "valid":
             if appointment.status != AppointmentStatus.CHECKED_IN:
                 appointment.status = AppointmentStatus.CHECKED_IN
                 appointment.save()
+
+        if state == "valid":
+            return Response({
+                'state': state,
+                'message': 'Check-in thÃ nh cÃ´ng',
+                'appointment': AppointmentSerializer(appointment).data
+            })
 
         #  TRẢ VỀ đầy đủ (GIỮ CODE CŨ + thêm message)
         return Response({
@@ -208,8 +216,7 @@ class ReceptionMoveToWaitingAPIView(APIView):#Chuyển sang bác sĩ
             raise ValidationError("Chỉ chuyển khi đã check-in")
 
         # Đổi trạng thái
-        appointment.status = AppointmentStatus.WAITING
-        appointment.save()
+        set_appointment_status(appointment, AppointmentStatus.WAITING)
 
         return Response({
             "message": "Đã chuyển sang bác sĩ",

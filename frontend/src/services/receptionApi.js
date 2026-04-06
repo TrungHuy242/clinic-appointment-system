@@ -48,7 +48,7 @@ export const receptionApi = {
 
   // THÊM ĐÂY
   moveToWaiting: (id) =>
-   apiClient.patch(`/appointments/reception/move-to-waiting/${id}/`),
+   apiClient.patch(`/api/v1/reception/move-to-waiting/${id}/`),
 };
 
 export const listTodayAppointments = (date) => receptionApi.listAppointments(date);

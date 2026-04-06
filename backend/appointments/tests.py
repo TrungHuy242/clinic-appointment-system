@@ -217,10 +217,22 @@ class AppointmentServiceTests(TestCase):
         self.assertIsNotNone(ok_response.json()['expires_at'])
         self.assertEqual(missing_response.status_code, 404)
 
+    def test_reception_can_move_checked_in_appointment_to_waiting(self):
+        appointment = self.create_appointment(phone='+84987650008')
+        set_appointment_status(appointment, AppointmentStatus.CHECKED_IN)
+
+        move_response = self.client.patch(
+            f'/api/v1/reception/move-to-waiting/{appointment.id}/',
+            {},
+            format='json',
+        )
+        self.assertEqual(move_response.status_code, 200)
+        self.assertEqual(move_response.json()['appointment']['status'], AppointmentStatus.WAITING)
+
     def test_search_by_phone_returns_multiple_appointments_and_supports_optional_code_filter(self):
         first = self.create_appointment(phone='+84987651111')
         second = self.create_appointment(start_hour=8, start_minute=25, phone='+84987651111')
-        other_phone = self.create_appointment(phone='+84987652222')
+        other_phone = self.create_appointment(start_hour=8, start_minute=50, phone='+84987652222')
 
         base_url = '/api/v1/public/appointments/search-by-phone/'
 

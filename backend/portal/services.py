@@ -38,6 +38,7 @@ SCHEDULE_STATUS_MAP = {
     AppointmentStatus.PENDING: 'waiting',
     AppointmentStatus.CONFIRMED: 'waiting',
     AppointmentStatus.CHECKED_IN: 'checked_in',
+    AppointmentStatus.WAITING: 'waiting',
     AppointmentStatus.IN_PROGRESS: 'in_progress',
     AppointmentStatus.COMPLETED: 'done',
 }
@@ -45,6 +46,7 @@ QUEUE_STATUS_MAP = {
     AppointmentStatus.PENDING: 'waiting',
     AppointmentStatus.CONFIRMED: 'waiting',
     AppointmentStatus.CHECKED_IN: 'waiting',
+    AppointmentStatus.WAITING: 'waiting',
     AppointmentStatus.IN_PROGRESS: 'in_progress',
     AppointmentStatus.COMPLETED: 'done',
 }
@@ -454,6 +456,7 @@ def build_default_timeline(record):
     if appointment.status in {
         AppointmentStatus.CONFIRMED,
         AppointmentStatus.CHECKED_IN,
+        AppointmentStatus.WAITING,
         AppointmentStatus.IN_PROGRESS,
         AppointmentStatus.COMPLETED,
     }:
@@ -469,6 +472,7 @@ def build_default_timeline(record):
 
     if appointment.status in {
         AppointmentStatus.CHECKED_IN,
+        AppointmentStatus.WAITING,
         AppointmentStatus.IN_PROGRESS,
         AppointmentStatus.COMPLETED,
     }:
@@ -713,7 +717,12 @@ def save_visit_draft(code, payload, doctor=None):
     }
     record.save(update_fields=['draft', 'updated_at'])
 
-    if appointment.status in {AppointmentStatus.CONFIRMED, AppointmentStatus.CHECKED_IN, AppointmentStatus.PENDING}:
+    if appointment.status in {
+        AppointmentStatus.CONFIRMED,
+        AppointmentStatus.CHECKED_IN,
+        AppointmentStatus.WAITING,
+        AppointmentStatus.PENDING,
+    }:
         set_appointment_status(appointment, AppointmentStatus.IN_PROGRESS)
 
     return {'ok': True}
@@ -789,7 +798,12 @@ def get_reception_patients_data():
         total_visits += completed_count
         is_active = any(
             timezone.localtime(item.scheduled_start).date() >= timezone.localdate()
-            or item.status in {AppointmentStatus.CONFIRMED, AppointmentStatus.CHECKED_IN, AppointmentStatus.IN_PROGRESS}
+            or item.status in {
+                AppointmentStatus.CONFIRMED,
+                AppointmentStatus.CHECKED_IN,
+                AppointmentStatus.WAITING,
+                AppointmentStatus.IN_PROGRESS,
+            }
             for item in appointments
         )
 
@@ -880,7 +894,12 @@ def get_audit_logs_data():
         )
         log_id += 1
 
-        if appointment.status in {AppointmentStatus.CHECKED_IN, AppointmentStatus.IN_PROGRESS, AppointmentStatus.COMPLETED}:
+        if appointment.status in {
+            AppointmentStatus.CHECKED_IN,
+            AppointmentStatus.WAITING,
+            AppointmentStatus.IN_PROGRESS,
+            AppointmentStatus.COMPLETED,
+        }:
             items.append(
                 _build_log_item(
                     log_id,
