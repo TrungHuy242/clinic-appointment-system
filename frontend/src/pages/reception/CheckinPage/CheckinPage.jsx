@@ -5,56 +5,45 @@ import Button from "../../../components/Button/Button";
 import Input from "../../../components/Input/Input";
 import LoadingSpinner from "../../../components/LoadingSpinner/LoadingSpinner";
 import Table from "../../../components/Table/Table";
-//import { checkinLookup, listTodayAppointments } from "../../../services/receptionApi";
 import "./CheckinPage.css";
 import { checkinLookup, listTodayAppointments, receptionApi } from "../../../services/receptionApi";
+
 const STATE_CONFIG = {
   early: {
     icon: Clock3,
     cls: "early",
-    title: "Đến sớm",
-    sub: "Chưa đến cửa sổ check-in. Chỉ nhận check-in từ 15 phút trước giờ hẹn.",
+    title: "Den som",
+    sub: "Chua den cua so check-in. Chi nhan check-in tu 15 phut truoc gio hen.",
     badge: "info",
   },
   valid: {
     icon: CircleCheck,
     cls: "valid",
-    title: "Hợp lý - Check-in thành công",
-    sub: "Bệnh nhân đã được ghi nhận vào hàng đợi khám.",
+    title: "Hop le - Check-in thanh cong",
+    sub: "Benh nhan da duoc ghi nhan vao hang doi kham.",
     badge: "success",
   },
   late: {
     icon: TriangleAlert,
     cls: "late",
-    title: "Đến muộn",
-    sub: "Đã quá cửa sổ check-in (+10 phút). Cần xử lý theo quy trình no-show hoặc dời lịch.",
+    title: "Den muon",
+    sub: "Da qua cua so check-in (+10 phut). Can xu ly theo quy trinh no-show hoac doi lich.",
     badge: "danger",
   },
   not_found: {
     icon: CircleX,
     cls: "late",
-    title: "Không tìm thấy",
-    sub: "Mã hoặc số điện thoại không khớp với lịch hẹn hôm nay.",
+    title: "Khong tim thay",
+    sub: "Ma hoac so dien thoai khong khop voi lich hen hom nay.",
     badge: "danger",
   },
 };
 
-// const RECENT_COLUMNS = [
-//   { key: "code", title: "Mã lịch", dataIndex: "code" },
-//   { key: "patientName", title: "Bệnh nhân", dataIndex: "patientName" },
-//   { key: "slot", title: "Giờ hẹn", dataIndex: "slot" },
-//   { key: "checkinAt", title: "Check-in lúc", dataIndex: "checkinAt" },
-//   {
-//     key: "status",
-//     title: "Trạng thái",
-//     render: (row) => (
-//       <Badge variant={row.status === "CHECKED_IN" ? "success" : "neutral"}>
-//         {row.status === "CHECKED_IN" ? "Đã check-in" : row.status}
-//       </Badge>
-//     ),
-//   },
-// ];
-
+const APPOINTMENT_STATUS_CONFIG = {
+  CHECKED_IN: { label: "Da check-in", variant: "success" },
+  WAITING: { label: "Dang cho bac si", variant: "warning" },
+  CONFIRMED: { label: "Da xac nhan", variant: "neutral" },
+};
 
 export default function CheckinPage() {
   const [query, setQuery] = useState("");
@@ -88,73 +77,53 @@ export default function CheckinPage() {
       setLoading(false);
     }
   }
-  
+
   async function handleMoveToDoctor(id) {
-  try {
-    await receptionApi.moveToWaiting(id);
-    const refreshedList = await listTodayAppointments(today);
-    setTodayList(refreshedList);
-    alert("Đã chuyển bệnh nhân sang bác sĩ");
-  } catch (error) {
-    alert("Lỗi khi chuyển bệnh nhân");
+    try {
+      await receptionApi.moveToWaiting(id);
+      const refreshedList = await listTodayAppointments(today);
+      setTodayList(refreshedList);
+      alert("Da chuyen benh nhan sang bac si");
+    } catch {
+      alert("Loi khi chuyen benh nhan");
+    }
   }
-}
-  const RECENT_COLUMNS = [
-    { key: "code", title: "Mã lịch", dataIndex: "code" },
-    { key: "patientName", title: "Bệnh nhân", dataIndex: "patientName" },
-    { key: "slot", title: "Giờ hẹn", dataIndex: "slot" },
-    { key: "checkinAt", title: "Check-in lúc", dataIndex: "checkinAt" },
-    // {
-    //   key: "status",
-    //   title: "Trạng thái",
-    //   render: (row) => (
-    //     <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-          
-    //       <Badge variant={row.status === "CHECKED_IN" ? "success" : "neutral"}>
-    //         {row.status === "CHECKED_IN" ? "Đã check-in" : row.status}
-    //       </Badge>
 
-    //       {row.status === "CHECKED_IN" && (
-    //         <Button size="sm" onClick={() => handleMoveToDoctor(row.id)}>
-    //           Chuyển
-    //         </Button>
-    //       )}
-    //     </div>
-    //   )
-    // }
+  const recentColumns = [
+    { key: "code", title: "Ma lich", dataIndex: "code" },
+    { key: "patientName", title: "Benh nhan", dataIndex: "patientName" },
+    { key: "slot", title: "Gio hen", dataIndex: "slot" },
+    { key: "checkinAt", title: "Check-in luc", dataIndex: "checkinAt" },
     {
-    key: "status",
-    title: "Trạng thái",
-    render: (row) => (
-      <Badge variant={row.status === "CHECKED_IN" ? "success" : "neutral"}>
-        {row.status === "CHECKED_IN" ? "Đã check-in" : row.status}
-      </Badge>
-    ),
-  },
-
-  // ✅ Cột chuyển sang bác sĩ
-  {
-    key: "action",
-    title: "Chuyển sang bác sĩ",
-    render: (row) =>
-      row.status === "CHECKED_IN" ? (
-        <Button size="sm" onClick={() => handleMoveToDoctor(row.id)}>
-          Chuyển
-        </Button>
-      ) : null,
-  },
+      key: "status",
+      title: "Trang thai",
+      render: (row) => {
+        const cfg = APPOINTMENT_STATUS_CONFIG[row.status] ?? { label: row.status, variant: "neutral" };
+        return <Badge variant={cfg.variant}>{cfg.label}</Badge>;
+      },
+    },
+    {
+      key: "action",
+      title: "Chuyen sang bac si",
+      render: (row) =>
+        row.status === "CHECKED_IN" ? (
+          <Button size="sm" onClick={() => handleMoveToDoctor(row.id)}>
+            Chuyen
+          </Button>
+        ) : null,
+    },
   ];
- //const cfg = checkinResult ? STATE_CONFIG[checkinResult.state] : null;
- const stateKey = checkinResult?.state?.toLowerCase();
- const cfg = stateKey ? STATE_CONFIG[stateKey] : null;
- const ResultIcon = cfg?.icon;
+
+  const stateKey = checkinResult?.state?.toLowerCase();
+  const cfg = stateKey ? STATE_CONFIG[stateKey] : null;
+  const ResultIcon = cfg?.icon;
 
   return (
     <div className="mc-stack-lg checkin-page">
       <div>
         <h1 className="home-hero-title checkin-page__title">Check-in PA4</h1>
         <p className="home-hero-sub">
-          Tra cứu bằng mã lịch hẹn hoặc số điện thoại của số check-in: [giờ hẹn - 15p, giờ hẹn + 10p]
+          Tra cuu bang ma lich hen hoac so dien thoai trong cua so check-in: [gio hen - 15p, gio hen + 10p]
         </p>
       </div>
 
@@ -163,15 +132,15 @@ export default function CheckinPage() {
           <div className="ci-panel">
             <form onSubmit={handleCheckin} className="mc-stack-md">
               <Input
-                label="Mã lịch hẹn hoặc Số điện thoại"
-                placeholder="APT-2026-0001 hoặc 0901234567"
+                label="Ma lich hen hoac so dien thoai"
+                placeholder="APT-2026-0001 hoac 0901234567"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                hint="Nhập mã hoặc số điện thoại của bệnh nhân"
+                hint="Nhap ma hoac so dien thoai cua benh nhan"
               />
               <Button type="submit" disabled={loading || !query.trim()}>
                 <Search className="mc-icon mc-icon--sm" />
-                {loading ? "Đang tìm..." : "Check-in"}
+                {loading ? "Dang tim..." : "Check-in"}
               </Button>
             </form>
 
@@ -194,10 +163,10 @@ export default function CheckinPage() {
                 {checkinResult.appointment && (
                   <div className="ci-result__name">{checkinResult.appointment.patientName}</div>
                 )}
-                {checkinResult.message && (//thêm hiển thị thông báo checkin thành côbg
-                 <div className={`ci-result__message ${checkinResult.state}`}>
-                  {checkinResult.message}
-                </div>
+                {checkinResult.message && (
+                  <div className={`ci-result__message ${checkinResult.state}`}>
+                    {checkinResult.message}
+                  </div>
                 )}
                 {checkinResult.appointment && (
                   <div className="checkin-page__result-meta">
@@ -209,45 +178,29 @@ export default function CheckinPage() {
           </div>
 
           <div className="mc-surface checkin-page__note-card">
-            <strong>Dữ liệu lấy trực tiếp từ backend:</strong>
+            <strong>Du lieu lay truc tiep tu backend:</strong>
             <ul className="checkin-page__note-list">
-              <li>Dùng mã lịch hẹn hoặc Số điện thoại của lịch đã xác nhận trong ngày.</li>
-              <li>Check-in hợp lệ trong khoảng từ 15 phút trước đến 10 phút sau giờ hẹn.</li>
-              <li>Sau khi check-in hợp lệ, trạng thái sẽ được cập nhật thành <code>CHECKED_IN</code>.</li>
+              <li>Nhap ma lich hen hoac so dien thoai cua lich da xac nhan trong ngay.</li>
+              <li>Check-in hop le trong khoang tu 15 phut truoc den 10 phut sau gio hen.</li>
+              <li>Sau khi check-in hop le, trang thai se duoc cap nhat thanh <code>CHECKED_IN</code>.</li>
+              <li>Nut Chuyen se doi trang thai sang <code>WAITING</code> de ban giao cho bac si.</li>
             </ul>
           </div>
         </div>
 
         <div className="mc-stack-md">
-          <div className="ci-recent-title">Lịch hẹn hôm nay</div>
+          <div className="ci-recent-title">Lich hen hom nay</div>
           {listLoading ? (
             <LoadingSpinner />
           ) : (
-            <>
-              <Table
-                columns={RECENT_COLUMNS}
-                data={todayList}
-                emptyMessage="Chưa có lịch hẹn hôm nay."
-              />
-
-              {/* NÚT CHUYỂN SANG BÁC SĨ */}
-              {/* <div style={{ marginTop: "10px" }}>
-                  {todayList
-                  .filter(item => item.status === "CHECKED_IN")
-                  .map(item => (
-                    <Button
-                      key={item.id}
-                      onClick={() => handleMoveToDoctor(item.id)}
-                    >
-                      Chuyển {item.patientName} sang bác sĩ
-                    </Button>
-                  ))}
-              </div> */}
-            </>
+            <Table
+              columns={recentColumns}
+              data={todayList}
+              emptyMessage="Chua co lich hen hom nay."
+            />
           )}
         </div>
       </div>
     </div>
   );
 }
-
