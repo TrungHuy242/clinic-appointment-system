@@ -13,6 +13,7 @@ const STATUS_CONFIG = {
   PENDING: { label: "Chờ xác nhận", variant: "warning" },
   PENDING_PA1: { label: "Chờ xác nhận", variant: "warning" },
   CHECKED_IN: { label: "Đã check-in", variant: "info" },
+  WAITING: { label: "Đang chờ bác sĩ", variant: "warning" },
   CANCELLED: { label: "Đã hủy", variant: "danger" },
   COMPLETED: { label: "Hoàn tất", variant: "neutral" },
 };
