@@ -10,6 +10,7 @@ class AppointmentStatus(models.TextChoices):
     PENDING = 'PENDING', 'Pending'
     CONFIRMED = 'CONFIRMED', 'Confirmed'
     CHECKED_IN = 'CHECKED_IN', 'Checked in'
+    WAITING = 'WAITING', 'Waiting'
     IN_PROGRESS = 'IN_PROGRESS', 'In progress'
     COMPLETED = 'COMPLETED', 'Completed'
     CANCELLED = 'CANCELLED', 'Cancelled'
