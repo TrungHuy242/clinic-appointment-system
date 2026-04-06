@@ -1,0 +1,46 @@
+{
+  "doctors": [
+    {
+      "id": 1,
+      "name": "BS. Nguyễn Thị Sarah",
+      "specialty": "Nhi khoa",
+      "image": "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&h=400&fit=crop&crop=face",
+      "thumbnail": "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&h=150&fit=crop&crop=face"
+    },
+    {
+      "id": 2,
+      "name": "BS. Trần Ngọc Emily",
+      "specialty": "Da liễu",
+      "image": "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=400&h=400&fit=crop&crop=face",
+      "thumbnail": "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=150&h=150&fit=crop&crop=face"
+    },
+    {
+      "id": 3,
+      "name": "BS. Lê Hoàng Minh",
+      "specialty": "Tai mũi họng",
+      "image": "https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=400&h=400&fit=crop&crop=face",
+      "thumbnail": "https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=150&h=150&fit=crop&crop=face"
+    },
+    {
+      "id": 4,
+      "name": "BS. Phạm Thị Hương",
+      "specialty": "Nha khoa",
+      "image": "https://images.unsplash.com/photo-1594824476967-48c8b964273f?w=400&h=400&fit=crop&crop=face",
+      "thumbnail": "https://images.unsplash.com/photo-1594824476967-48c8b964273f?w=150&h=150&fit=crop&crop=face"
+    },
+    {
+      "id": 5,
+      "name": "BS. Nguyễn Văn A",
+      "specialty": "Tim mạch",
+      "image": "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=400&h=400&fit=crop&crop=face",
+      "thumbnail": "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&h=150&fit=crop&crop=face"
+    }
+  ],
+  "clinic": {
+    "name": "Medicare Clinic",
+    "tagline": "Chăm sóc sức khỏe tận tâm",
+    "hero": "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=800&h=600&fit=crop",
+    "building": "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=600&h=400&fit=crop",
+    "interior": "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=400&h=300&fit=crop"
+  }
+}

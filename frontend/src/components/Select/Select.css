@@ -1,0 +1,23 @@
+.mc-select {
+  width: 100%;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-subtle);
+  padding: 8px 12px;
+  font-size: 14px;
+  background: var(--color-surface);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.mc-select:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary-light);
+}
+
+.mc-select-error {
+  border-color: var(--color-danger);
+}
+
+.mc-select-error:focus {
+  box-shadow: 0 0 0 1px var(--color-danger-soft);
+}

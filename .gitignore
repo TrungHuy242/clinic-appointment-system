@@ -1,0 +1,23 @@
+﻿# Python
+__pycache__/
+*.py[cod]
+*.sqlite3
+
+# Local environment
+.env
+backend/.env
+
+# Logs
+*.log
+*.pid
+frontend/.codex*
+frontend/.edge*
+frontend/.edge-profile/
+
+# Frontend build
+frontend/build/
+frontend/node_modules/
+
+# OS/editor
+.DS_Store
+Thumbs.db

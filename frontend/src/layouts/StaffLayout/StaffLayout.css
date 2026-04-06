@@ -1,0 +1,219 @@
+.staff-layout {
+  min-height: 100vh;
+}
+
+.staff-header {
+  position: sticky;
+  top: 0;
+  z-index: 24;
+  background: rgba(248, 252, 255, 0.86);
+  backdrop-filter: blur(18px);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.staff-header-inner {
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: 12px 20px;
+  min-height: var(--header-height);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.staff-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.staff-brand__logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #0f172a 0%, #0f766e 100%);
+  color: #f8fafc;
+  display: grid;
+  place-items: center;
+}
+
+.staff-brand__title {
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.staff-brand__subtitle {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+
+.staff-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  flex-wrap: wrap;
+}
+
+.staff-nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.staff-nav-link:hover {
+  background: rgba(14, 165, 163, 0.08);
+  color: var(--color-primary-dark);
+}
+
+.staff-nav-link.active {
+  background: linear-gradient(135deg, rgba(14, 165, 163, 0.12), rgba(59, 130, 246, 0.08));
+  color: var(--color-primary-dark);
+  box-shadow: inset 0 0 0 1px rgba(14, 165, 163, 0.16);
+}
+
+.staff-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.staff-avatar-trigger {
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--color-text-main);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.staff-avatar-trigger:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+  border-color: rgba(14, 165, 163, 0.22);
+}
+
+.staff-content {
+  padding: 20px 0 44px;
+}
+
+.staff-content-inner {
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* User Menu Dropdown */
+.staff-user-menu {
+  position: relative;
+}
+
+.staff-user-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 180px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  padding: 6px;
+  display: none;
+  z-index: 100;
+}
+
+.staff-user-menu:hover .staff-user-dropdown,
+.staff-user-menu:focus-within .staff-user-dropdown {
+  display: block;
+}
+
+.staff-user-info {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.staff-user-info strong {
+  font-size: 13px;
+  color: var(--color-text-main);
+}
+
+.staff-user-info span {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.staff-user-dropdown hr {
+  border: none;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  margin: 6px 0;
+}
+
+.staff-logout-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border: none;
+  background: transparent;
+  color: var(--color-danger);
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.staff-logout-btn:hover {
+  background: rgba(239, 68, 68, 0.08);
+}
+
+/* Reception specific */
+.staff-layout--reception .staff-brand__subtitle {
+  color: #0891b2;
+}
+
+/* Doctor specific */
+.staff-layout--doctor .staff-brand__subtitle {
+  color: #7c3aed;
+}
+
+/* Admin specific */
+.staff-layout--admin .staff-brand__subtitle {
+  color: #dc2626;
+}
+
+@media (max-width: 960px) {
+  .staff-header-inner {
+    flex-wrap: wrap;
+    justify-content: space-between;
+  }
+
+  .staff-nav {
+    order: 3;
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .staff-content-inner,
+  .staff-header-inner {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}

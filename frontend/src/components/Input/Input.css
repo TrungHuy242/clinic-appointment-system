@@ -1,0 +1,46 @@
+.mc-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mc-field-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-main);
+}
+
+.mc-input {
+  width: 100%;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-subtle);
+  padding: 7px 10px;
+  font-size: 13px;
+  background: var(--color-surface);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.mc-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary-light);
+}
+
+.mc-input-error {
+  border-color: var(--color-danger);
+}
+
+.mc-input-error:focus {
+  box-shadow: 0 0 0 1px var(--color-danger-soft);
+}
+
+.mc-field-error {
+  font-size: 11px;
+  color: var(--color-danger);
+}
+
+.mc-field-hint {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}

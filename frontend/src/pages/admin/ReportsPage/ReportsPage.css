@@ -1,0 +1,149 @@
+.report-page__header-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.report-page__period-tabs {
+  margin: 0;
+}
+
+.report-page__stats-grid {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.report-page__stat-card--sky {
+  background: #e0f2fe;
+}
+
+.report-page__stat-card--green {
+  background: #dcfce7;
+}
+
+.report-page__stat-card--yellow {
+  background: #fef3c7;
+}
+
+.report-page__stat-card--violet {
+  background: #ede9fe;
+}
+
+.report-page__stat-trend {
+  margin-top: 4px;
+  color: #16a34a;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.report-page__bar--apt {
+  background: var(--color-primary);
+}
+
+.report-page__bar--revenue {
+  background: #8b5cf6;
+}
+
+.report-page__bar--apt-1 { height: 41.38%; }
+.report-page__bar--apt-2 { height: 50%; }
+.report-page__bar--apt-3 { height: 55.17%; }
+.report-page__bar--apt-4 { height: 60.35%; }
+.report-page__bar--apt-5 { height: 48.28%; }
+.report-page__bar--apt-6 { height: 67.24%; }
+.report-page__bar--apt-7 { height: 75.86%; }
+.report-page__bar--apt-8 { height: 63.79%; }
+.report-page__bar--apt-9 { height: 79.31%; }
+.report-page__bar--apt-10 { height: 93.1%; }
+.report-page__bar--apt-11 { height: 74.14%; }
+.report-page__bar--apt-12 { height: 100%; }
+
+.report-page__bar--revenue-1 { height: 35%; }
+.report-page__bar--revenue-2 { height: 48.33%; }
+.report-page__bar--revenue-3 { height: 54.17%; }
+.report-page__bar--revenue-4 { height: 58.33%; }
+.report-page__bar--revenue-5 { height: 45.83%; }
+.report-page__bar--revenue-6 { height: 66.67%; }
+.report-page__bar--revenue-7 { height: 75%; }
+.report-page__bar--revenue-8 { height: 62.5%; }
+.report-page__bar--revenue-9 { height: 79.17%; }
+.report-page__bar--revenue-10 { height: 91.67%; }
+.report-page__bar--revenue-11 { height: 73.33%; }
+.report-page__bar--revenue-12 { height: 100%; }
+
+.report-page__specialty-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.report-page__specialty-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.report-page__specialty-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.report-page__specialty-meta {
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.report-page__progress-track {
+  overflow: hidden;
+  border-radius: 99px;
+  background: var(--color-border-subtle);
+  height: 8px;
+}
+
+.report-page__progress-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.5s;
+}
+
+.report-page__progress-fill--1 { width: 30%; background: #13c8ec; }
+.report-page__progress-fill--2 { width: 21%; background: #06b6d4; }
+.report-page__progress-fill--3 { width: 16%; background: #0ea5e9; }
+.report-page__progress-fill--4 { width: 14%; background: #3b82f6; }
+.report-page__progress-fill--5 { width: 12%; background: #8b5cf6; }
+.report-page__progress-fill--6 { width: 7%; background: #ec4899; }
+
+.report-page__summary-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.report-page__summary-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-border-subtle);
+  font-size: 14px;
+}
+
+.report-page__summary-label {
+  color: var(--color-text-muted);
+}
+
+.report-page__summary-value {
+  font-weight: 700;
+}
+
+@media (max-width: 1100px) {
+  .report-page__header-actions {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .report-page__stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .report-page__stats-grid {
+    grid-template-columns: 1fr;
+  }
+}

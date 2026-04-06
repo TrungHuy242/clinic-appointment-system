@@ -1,0 +1,42 @@
+.mc-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+}
+
+.mc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.mc-table thead {
+  background: var(--color-bg-soft);
+  color: var(--color-text-muted);
+}
+
+.mc-table-head-cell {
+  padding: 10px 14px;
+  text-align: left;
+  font-weight: 600;
+}
+
+.mc-table-body-row + .mc-table-body-row {
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.mc-table-body-row:hover {
+  background: var(--color-bg-soft);
+}
+
+.mc-table-body-cell {
+  padding: 10px 14px;
+  vertical-align: top;
+}
+
+.mc-table-empty {
+  padding: 20px 14px;
+  text-align: center;
+  color: var(--color-text-muted);
+}

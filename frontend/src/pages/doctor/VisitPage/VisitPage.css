@@ -1,0 +1,80 @@
+.visit-page__queue-empty {
+  padding: 0 16px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.visit-page__loading {
+  padding-top: 60px;
+  text-align: center;
+}
+
+.visit-page__empty-state {
+  padding-top: 80px;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.visit-page__empty-icon {
+  margin-bottom: 12px;
+  font-size: 40px;
+}
+
+.visit-page__patient-main {
+  flex: 1;
+}
+
+.visit-page__patient-meta-extra {
+  margin-top: 4px;
+}
+
+.visit-page__complaint {
+  margin-top: 8px;
+  border-radius: var(--radius-md);
+  background: var(--color-warning-soft);
+  padding: 8px 12px;
+  color: var(--color-warning);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.visit-page__history-doctor {
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.visit-page__notes-input {
+  resize: vertical;
+}
+
+.visit-page__rx-head--drug {
+  width: 25%;
+}
+
+.visit-page__rx-head--dose {
+  width: 12%;
+}
+
+.visit-page__rx-head--unit {
+  width: 10%;
+}
+
+.visit-page__rx-head--freq {
+  width: 18%;
+}
+
+.visit-page__rx-head--days {
+  width: 8%;
+}
+
+.visit-page__rx-head--note {
+  width: 20%;
+}
+
+.visit-page__rx-head--actions {
+  width: 7%;
+}
+
+.visit-page__add-rx {
+  font-size: 13px;
+}

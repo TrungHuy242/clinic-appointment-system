@@ -1,0 +1,57 @@
+.reception-appointments__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.reception-appointments__date-input {
+  border: 1.5px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 8px 12px;
+  font-size: 14px;
+}
+
+.reception-appointments__code {
+  color: var(--color-primary-dark);
+  font-family: monospace;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.reception-appointments__slot {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.reception-appointments__actions {
+  display: flex;
+  gap: 6px;
+}
+
+.reception-appointments__stat-text {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.reception-appointments__stat-card--sky {
+  background: #e0f2fe;
+}
+
+.reception-appointments__stat-card--green {
+  background: #dcfce7;
+}
+
+.reception-appointments__stat-card--blue {
+  background: #eff6ff;
+}
+
+.reception-appointments__stat-card--red {
+  background: #fee2e2;
+}
+
+.reception-appointments__loading {
+  padding: 40px;
+  text-align: center;
+}

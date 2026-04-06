@@ -1,0 +1,82 @@
+.my-schedule-page__doctor-chip {
+  border-radius: 10px;
+  background: var(--color-primary-light);
+  padding: 8px 16px;
+  color: var(--color-primary-dark);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.my-schedule-page__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.my-schedule-page__date-input {
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid #d0d7de;
+  border-radius: 10px;
+  background: #fff;
+  color: #1f2937;
+}
+
+.my-schedule-page__stat-text {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.my-schedule-page__stat-card--sky {
+  background: #e0f2fe;
+}
+
+.my-schedule-page__stat-card--yellow {
+  background: #fef3c7;
+}
+
+.my-schedule-page__stat-card--blue {
+  background: #eff6ff;
+}
+
+.my-schedule-page__stat-card--green {
+  background: #dcfce7;
+}
+
+.my-schedule-page__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.my-schedule-page__patient-name {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.my-schedule-page__patient-meta {
+  margin-top: 2px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.my-schedule-page__patient-service {
+  margin-top: 4px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.my-schedule-page__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.my-schedule-page__start-btn {
+  padding: 6px 14px;
+  font-size: 13px;
+}
