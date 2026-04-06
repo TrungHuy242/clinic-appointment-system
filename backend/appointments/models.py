@@ -115,6 +115,7 @@ class AppointmentHistory(models.Model):
         ('CONFIRM', 'Xác nhận'),
         ('CANCEL', 'Hủy lịch'),
         ('CHECKIN', 'Check-in'),
+        ('MOVE_TO_DOCTOR', 'Chuyển sang bác sĩ'),
         ('NO_SHOW', 'No-show'),
         ('RESCHEDULE', 'Dời lịch'),
         ('COMPLETE', 'Hoàn tất khám'),

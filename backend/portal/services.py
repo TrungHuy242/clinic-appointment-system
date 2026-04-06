@@ -40,6 +40,7 @@ SCHEDULE_STATUS_MAP = {
     AppointmentStatus.PENDING: 'waiting',
     AppointmentStatus.CONFIRMED: 'waiting',
     AppointmentStatus.CHECKED_IN: 'checked_in',
+    AppointmentStatus.WAITING: 'waiting',
     AppointmentStatus.IN_PROGRESS: 'in_progress',
     AppointmentStatus.COMPLETED: 'done',
 }
@@ -47,6 +48,7 @@ QUEUE_STATUS_MAP = {
     AppointmentStatus.PENDING: 'waiting',
     AppointmentStatus.CONFIRMED: 'waiting',
     AppointmentStatus.CHECKED_IN: 'waiting',
+    AppointmentStatus.WAITING: 'waiting',
     AppointmentStatus.IN_PROGRESS: 'in_progress',
     AppointmentStatus.COMPLETED: 'done',
 }

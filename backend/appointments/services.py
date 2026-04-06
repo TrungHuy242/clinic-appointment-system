@@ -337,6 +337,7 @@ def _status_to_history_action(status):
         AppointmentStatus.CONFIRMED: 'CONFIRM',
         AppointmentStatus.CANCELLED: 'CANCEL',
         AppointmentStatus.CHECKED_IN: 'CHECKIN',
+        AppointmentStatus.WAITING: 'MOVE_TO_DOCTOR',
         AppointmentStatus.NO_SHOW: 'NO_SHOW',
         AppointmentStatus.IN_PROGRESS: 'IN_PROGRESS',
         AppointmentStatus.COMPLETED: 'COMPLETE',
@@ -351,6 +352,21 @@ def _record_history(appointment, action, changed_by='', changed_by_role='', note
         changed_by=changed_by or 'Hệ thống',
         changed_by_role=changed_by_role,
         note=note,
+    )
+
+
+def move_appointment_to_waiting(appointment, changed_by='', changed_by_role=''):
+    """Chuyển appointment từ CHECKED_IN sang WAITING để bác sĩ thấy trong danh sách khám."""
+    if appointment.status not in (AppointmentStatus.CHECKED_IN, AppointmentStatus.CONFIRMED):
+        raise ValidationError({
+            'status': f'Chỉ có thể chuyển lịch hẹn ở trạng thái Đã check-in hoặc Đã xác nhận. Trạng thái hiện tại: {appointment.status}'
+        })
+    return set_appointment_status(
+        appointment,
+        AppointmentStatus.WAITING,
+        changed_by=changed_by,
+        changed_by_role=changed_by_role,
+        note='Receptionist chuyển bệnh nhân sang bác sĩ.',
     )
 
 

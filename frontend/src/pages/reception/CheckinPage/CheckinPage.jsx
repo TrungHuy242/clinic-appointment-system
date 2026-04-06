@@ -6,7 +6,7 @@ import Button from "../../../components/Button/Button";
 import Input from "../../../components/Input/Input";
 import LoadingSpinner from "../../../components/LoadingSpinner/LoadingSpinner";
 import Table from "../../../components/Table/Table";
-import { checkinLookup, listTodayAppointments } from "../../../services/receptionApi";
+import { checkinLookup, listTodayAppointments, receptionApi } from "../../../services/receptionApi";
 import "./CheckinPage.css";
 
 const STATE_CONFIG = {
@@ -40,7 +40,7 @@ const STATE_CONFIG = {
   },
 };
 
-const RECENT_COLUMNS = [
+const RECENT_COLUMNS = (onMoveToDoctor) => [
   { key: "code", title: "Mã lịch", dataIndex: "code" },
   { key: "patientName", title: "Bệnh nhân", dataIndex: "patientName" },
   { key: "slot", title: "Giờ hẹn", dataIndex: "slot" },
@@ -48,11 +48,19 @@ const RECENT_COLUMNS = [
   {
     key: "status",
     title: "Trạng thái",
-    render: (row) => (
-      <Badge variant={row.status === "CHECKED_IN" ? "success" : "neutral"}>
-        {row.status === "CHECKED_IN" ? "Đã check-in" : row.status}
-      </Badge>
-    ),
+    render: (row) => {
+      const variant = row.status === "WAITING" ? "warning" : row.status === "CHECKED_IN" ? "success" : "neutral";
+      const label = row.status === "WAITING" ? "Đang chờ bác sĩ" : row.status === "CHECKED_IN" ? "Đã check-in" : row.status;
+      return <Badge variant={variant}>{label}</Badge>;
+    },
+  },
+  {
+    key: "action",
+    title: "",
+    render: (row) =>
+      row.status === "CHECKED_IN" ? (
+        <Button size="sm" onClick={() => onMoveToDoctor(row.id)}>Chuyển</Button>
+      ) : null,
   },
 ];
 
@@ -179,6 +187,20 @@ export default function CheckinPage() {
     }
   }
 
+  async function handleMoveToDoctor(id) {
+    const appointmentId = id ?? checkinResult?.appointment?.id;
+    if (!appointmentId) return;
+    try {
+      await receptionApi.moveToWaiting(appointmentId);
+      const refreshedList = await listTodayAppointments(today);
+      setTodayList(refreshedList);
+      if (!id) setCheckinResult(null);
+      alert("Đã chuyển bệnh nhân sang danh sách khám của bác sĩ.");
+    } catch {
+      alert("Lỗi khi chuyển bệnh nhân. Vui lòng thử lại.");
+    }
+  }
+
   async function handleManualSubmit(event) {
     event.preventDefault();
     if (!query.trim()) return;
@@ -299,6 +321,11 @@ export default function CheckinPage() {
                     {checkinResult.appointment.slot}
                   </div>
                 )}
+                {checkinResult.state === "valid" && checkinResult.appointment && (
+                  <Button size="sm" onClick={handleMoveToDoctor} style={{ marginTop: "8px" }}>
+                    Chuyển sang bác sĩ
+                  </Button>
+                )}
               </div>
             )}
           </div>
@@ -313,7 +340,8 @@ export default function CheckinPage() {
                 <strong>Quét QR:</strong> đưa mã QR (trên thẻ hoặc tin nhắn của bệnh nhân) vào khung hình.
               </li>
               <li>Check-in hợp lệ trong khoảng từ 15 phút trước đến 10 phút sau giờ hẹn.</li>
-              <li>Sau khi check-in hợp lệ, trạng thái sẽ được cập nhật thành <code>CHECKED_IN</code>.</li>
+              <li>Sau khi check-in thành công, nhấn <strong>Chuyển sang bác sĩ</strong> để bệnh nhân xuất hiện trong danh sách khám.</li>
+              <li>Nút <strong>Chuyển</strong> ở bảng bên dưới cho phép chuyển bệnh nhân đã check-in sang danh sách bác sĩ.</li>
             </ul>
           </div>
         </div>
@@ -324,7 +352,7 @@ export default function CheckinPage() {
             <LoadingSpinner />
           ) : (
             <Table
-              columns={RECENT_COLUMNS}
+              columns={RECENT_COLUMNS(handleMoveToDoctor)}
               data={todayList}
               emptyMessage="Chưa có lịch hẹn hôm nay."
             />

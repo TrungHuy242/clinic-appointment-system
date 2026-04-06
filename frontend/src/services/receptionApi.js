@@ -46,7 +46,7 @@ export const receptionApi = {
     })),
   getPatients: () => apiClient.get(ENDPOINTS.portal.receptionPatients),
   moveToWaiting: (id) =>
-    apiClient.patch(`/api/v1/reception/move-to-waiting/${id}/`),
+    apiClient.patch(`${ENDPOINTS.appointments.reception}${id}/move-to-waiting/`),
 };
 
 export const listTodayAppointments = (date) => receptionApi.listAppointments(date);

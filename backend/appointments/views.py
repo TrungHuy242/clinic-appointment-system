@@ -20,6 +20,7 @@ from .services import (
     get_appointment_by_id_or_code,
     get_appointments_by_phone,
     lookup_appointment_for_checkin,
+    move_appointment_to_waiting,
     reschedule_appointment,
     set_appointment_status,
     soft_delete_appointment,
@@ -76,6 +77,20 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         soft_delete_appointment(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=True, methods=['patch'], url_path='move-to-waiting')
+    def move_to_waiting(self, request, pk=None):
+        """
+        Chuyển lịch hẹn từ CHECKED_IN sang WAITING để bác sĩ thấy trong danh sách khám.
+        """
+        instance = self.get_object()
+        actor_name, actor_role, ip = _admin_actor(request)
+        updated = move_appointment_to_waiting(
+            instance,
+            changed_by=actor_name,
+            changed_by_role=actor_role,
+        )
+        return Response(AppointmentSerializer(updated).data)
 
 
 class AdminAppointmentViewSet(viewsets.ModelViewSet):
