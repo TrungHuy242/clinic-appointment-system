@@ -1,6 +1,7 @@
 from django.contrib.auth.hashers import make_password
 from rest_framework import filters, serializers, viewsets
 from rest_framework.decorators import action
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from common.auth import IsAdmin
@@ -20,10 +21,11 @@ def _admin_actor(request):
 # ── Specialty ───────────────────────────────────────────────────────────────────
 
 class SpecialtyViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAdmin]
+    permission_classes = [AllowAny]
     serializer_class = SpecialtySerializer
     filter_backends = [filters.SearchFilter]
     search_fields = ['name']
+    http_method_names = ['get', 'post', 'put', 'patch', 'delete', 'head', 'options']
 
     def get_queryset(self):
         queryset = Specialty.objects.all().order_by('name')
@@ -31,6 +33,11 @@ class SpecialtyViewSet(viewsets.ModelViewSet):
         if is_active in {'true', 'false'}:
             queryset = queryset.filter(is_active=is_active == 'true')
         return queryset
+
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve']:
+            return [AllowAny()]
+        return [IsAdmin()]
 
     def perform_create(self, serializer):
         instance = serializer.save()
@@ -67,10 +74,11 @@ class SpecialtyViewSet(viewsets.ModelViewSet):
 # ── Doctor ─────────────────────────────────────────────────────────────────────
 
 class DoctorViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAdmin]
+    permission_classes = [AllowAny]
     serializer_class = DoctorSerializer
     filter_backends = [filters.SearchFilter]
     search_fields = ['full_name']
+    http_method_names = ['get', 'post', 'put', 'patch', 'delete', 'head', 'options']
 
     def get_queryset(self):
         queryset = Doctor.objects.select_related('specialty').all().order_by('full_name')
@@ -81,6 +89,11 @@ class DoctorViewSet(viewsets.ModelViewSet):
         if is_active in {'true', 'false'}:
             queryset = queryset.filter(is_active=is_active == 'true')
         return queryset
+
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve']:
+            return [AllowAny()]
+        return [IsAdmin()]
 
     def create(self, request, *args, **kwargs):
         data = request.data
