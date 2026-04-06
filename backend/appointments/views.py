@@ -8,6 +8,7 @@ from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from common.auth import IsAdmin, IsAuthenticated, IsReceptionist
 from portal.services import log_admin_action
 
 from .models import Appointment, AppointmentHistory, AppointmentStatus
@@ -32,7 +33,14 @@ def _admin_actor(request):
     return request.data.get('changed_by', 'Admin'), request.data.get('changed_by_role', 'admin'), request.META.get('REMOTE_ADDR')
 
 
+# ── Reception & Admin Appointment Management ────────────────────────────────────
+
 class AppointmentViewSet(viewsets.ModelViewSet):
+    """
+    Receptionist view of today's appointments and quick check-in actions.
+    Accessible by receptionists and admins.
+    """
+    permission_classes = [IsAuthenticated]
     serializer_class = AppointmentSerializer
 
     def get_queryset(self):
@@ -73,6 +81,7 @@ class AppointmentViewSet(viewsets.ModelViewSet):
 class AdminAppointmentViewSet(viewsets.ModelViewSet):
     """Admin-level appointment management — list, retrieve, status updates, delete."""
 
+    permission_classes = [IsAdmin]
     serializer_class = AppointmentSerializer
 
     def get_queryset(self):
@@ -308,6 +317,10 @@ class PublicAppointmentStatusAPIView(APIView):
 
 
 class ReceptionCheckinLookupAPIView(APIView):
+    """Reception-only check-in lookup endpoint."""
+
+    permission_classes = [IsAuthenticated]
+
     def post(self, request, *args, **kwargs):
         appointment_date = parse_date(request.data.get('date') or '') or timezone.localdate()
         if request.data.get('date') and appointment_date is None:

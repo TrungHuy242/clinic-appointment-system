@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { CalendarDays, CircleCheck, Clock3, Play, ScanLine } from "lucide-react";
 import Badge from "../../../components/Badge/Badge";
 import { getDoctorSchedule } from "../../../services/doctorApi";
+import { startVisit } from "../../../services/doctorApi";
 import "./SchedulePage.css";
 
 const STATUS_MAP = {
@@ -174,7 +175,16 @@ export default function SchedulePage() {
                         <button
                           className="dash-action-btn dash-action-btn--primary my-schedule-page__start-btn"
                           type="button"
-                          onClick={() => navigate(`/app/doctor/visit/${item.code}`)}
+                          onClick={async () => {
+                            if (item.status !== "in_progress") {
+                              try {
+                                await startVisit(item.code);
+                              } catch {
+                                // Non-fatal: allow navigate even if transition fails
+                              }
+                            }
+                            navigate(`/app/doctor/visit/${item.code}`);
+                          }}
                         >
                           {item.status === "in_progress" ? "Tiếp tục khám" : "Bắt đầu khám"}
                         </button>

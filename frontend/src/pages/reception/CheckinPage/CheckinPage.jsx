@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
-import { CircleCheck, CircleX, Clock3, Search, TriangleAlert } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { Html5Qrcode, Html5QrcodeScannerState } from "html5-qrcode";
+import { CircleCheck, CircleX, Clock3, QrCode, Search, Square, TriangleAlert } from "lucide-react";
 import Badge from "../../../components/Badge/Badge";
 import Button from "../../../components/Button/Button";
 import Input from "../../../components/Input/Input";
@@ -19,7 +20,7 @@ const STATE_CONFIG = {
   valid: {
     icon: CircleCheck,
     cls: "valid",
-    title: "Hợp lý - Check-in thành công",
+    title: "Hợp lệ - Check-in thành công",
     sub: "Bệnh nhân đã được ghi nhận vào hàng đợi khám.",
     badge: "success",
   },
@@ -34,7 +35,7 @@ const STATE_CONFIG = {
     icon: CircleX,
     cls: "late",
     title: "Không tìm thấy",
-    sub: "Mã hoặc số điện thoại không khớp với lịch hẹn hôm nay.",
+    sub: "Mã lịch hẹn không khớp với lịch hẹn hôm nay.",
     badge: "danger",
   },
 };
@@ -55,14 +56,35 @@ const RECENT_COLUMNS = [
   },
 ];
 
+/** Extract appointment code from a scanned QR string.
+ *  Expected QR format: MEDICARE|<code>|<phone>|<timestamp>
+ *  Falls back to the raw string if it doesn't match the pipe format. */
+function extractCodeFromQR(qrString) {
+  if (!qrString) return null;
+  const trimmed = qrString.trim();
+  const parts = trimmed.split("|");
+  if (parts.length >= 2) {
+    return parts[1].trim();
+  }
+  return trimmed;
+}
+
 export default function CheckinPage() {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [checkinResult, setCheckinResult] = useState(null);
   const [todayList, setTodayList] = useState([]);
   const [listLoading, setListLoading] = useState(true);
+
+  // QR scan state
+  const [scanMode, setScanMode] = useState("manual"); // "manual" | "qr"
+  const [scannerError, setScannerError] = useState("");
+  const qrScannerRef = useRef(null); // holds Html5Qrcode instance
+  const scannerDivRef = useRef(null); // DOM ref for scanner container
+
   const today = new Date().toISOString().slice(0, 10);
 
+  // Refresh today's list on mount
   useEffect(() => {
     setListLoading(true);
     listTodayAppointments(today)
@@ -70,14 +92,83 @@ export default function CheckinPage() {
       .finally(() => setListLoading(false));
   }, [today]);
 
-  async function handleCheckin(event) {
-    event.preventDefault();
-    if (!query.trim()) return;
+  // Cleanup scanner on unmount or mode switch
+  const stopScanner = async () => {
+    if (qrScannerRef.current) {
+      try {
+        const state = qrScannerRef.current.getState();
+        if (state === Html5QrcodeScannerState.SCANNING ||
+            state === Html5QrcodeScannerState.PAUSED) {
+          await qrScannerRef.current.stop();
+        }
+      } catch {
+        // ignore
+      }
+      qrScannerRef.current.clear();
+      qrScannerRef.current = null;
+    }
+  };
 
+  useEffect(() => {
+    return () => {
+      stopScanner();
+    };
+  }, []);
+
+  // Start camera when switching to QR mode
+  useEffect(() => {
+    if (scanMode !== "qr") return;
+    if (qrScannerRef.current) return; // already started
+
+    const SCANNER_ID = "qr-reader";
+
+    const initScanner = async () => {
+      setScannerError("");
+      try {
+        const scanner = new Html5Qrcode(SCANNER_ID);
+        qrScannerRef.current = scanner;
+
+        await scanner.start(
+          { facingMode: "environment" },
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.0,
+          },
+          (decodedText) => {
+            // On successful scan: stop scanner, extract code, check-in
+            stopScanner();
+            setScanMode("manual");
+            const code = extractCodeFromQR(decodedText);
+            if (code) {
+              performCheckin(code);
+            }
+          },
+          () => {
+            // QR detection error — ignore, keep scanning
+          }
+        );
+      } catch (err) {
+        setScannerError(
+          "Không truy cập được camera. Vui lòng cho phép truy cập camera hoặc dùng nhập tay."
+        );
+        setScanMode("manual");
+      }
+    };
+
+    // Small delay to ensure the div is rendered
+    const timer = setTimeout(initScanner, 150);
+    return () => {
+      clearTimeout(timer);
+      stopScanner();
+    };
+  }, [scanMode]);
+
+  async function performCheckin(code) {
     setLoading(true);
     setCheckinResult(null);
     try {
-      const result = await checkinLookup(query.trim(), today);
+      const result = await checkinLookup(code, today);
       setCheckinResult(result);
       const refreshedList = await listTodayAppointments(today);
       setTodayList(refreshedList);
@@ -85,6 +176,23 @@ export default function CheckinPage() {
       setCheckinResult({ state: "not_found", appointment: null });
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleManualSubmit(event) {
+    event.preventDefault();
+    if (!query.trim()) return;
+    await performCheckin(query.trim());
+  }
+
+  function handleQrScanToggle() {
+    if (scanMode === "qr") {
+      stopScanner();
+      setScanMode("manual");
+      setScannerError("");
+    } else {
+      setCheckinResult(null);
+      setScanMode("qr");
     }
   }
 
@@ -96,26 +204,73 @@ export default function CheckinPage() {
       <div>
         <h1 className="home-hero-title checkin-page__title">Check-in PA4</h1>
         <p className="home-hero-sub">
-          Tra cứu bằng mã lịch hẹn hoặc số điện thoại của số check-in: [giờ hẹn - 15p, giờ hẹn + 10p]
+          Tra cứu bằng mã lịch hẹn, số điện thoại hoặc quét QR: [giờ hẹn - 15p, giờ hẹn + 10p]
         </p>
       </div>
 
       <div className="ci-layout">
         <div className="mc-stack-md">
           <div className="ci-panel">
-            <form onSubmit={handleCheckin} className="mc-stack-md">
-              <Input
-                label="Mã lịch hẹn hoặc Số điện thoại"
-                placeholder="APT-2026-0001 hoặc 0901234567"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                hint="Nhập mã hoặc số điện thoại của bệnh nhân"
-              />
-              <Button type="submit" disabled={loading || !query.trim()}>
-                <Search className="mc-icon mc-icon--sm" />
-                {loading ? "Đang tìm..." : "Check-in"}
-              </Button>
-            </form>
+
+            {/* ── Mode toggle ─────────────────────────────────────── */}
+            <div className="ci-mode-toggle">
+              <button
+                className={`ci-mode-btn ${scanMode === "manual" ? "active" : ""}`}
+                onClick={() => scanMode !== "manual" && handleQrScanToggle()}
+                type="button"
+              >
+                <Search size={14} />
+                Nhập tay
+              </button>
+              <button
+                className={`ci-mode-btn ${scanMode === "qr" ? "active" : ""}`}
+                onClick={() => scanMode !== "qr" && handleQrScanToggle()}
+                type="button"
+              >
+                <QrCode size={14} />
+                Quét QR
+              </button>
+            </div>
+
+            {/* ── QR Scanner ───────────────────────────────────────── */}
+            {scanMode === "qr" && (
+              <div className="mc-stack-md">
+                {scannerError ? (
+                  <div className="ci-scanner-error">{scannerError}</div>
+                ) : (
+                  <>
+                    <div id="qr-reader" ref={scannerDivRef} className="ci-qr-viewport" />
+                    <div className="ci-scanner-hint">
+                      Đưa mã QR vào khung hình để quét. Hệ thống sẽ tự động check-in khi tìm thấy lịch hẹn hợp lệ.
+                    </div>
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      onClick={() => { stopScanner(); setScanMode("manual"); }}
+                    >
+                      <Square size={12} /> Dừng quét
+                    </Button>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* ── Manual input form ───────────────────────────────── */}
+            {scanMode === "manual" && (
+              <form onSubmit={handleManualSubmit} className="mc-stack-md">
+                <Input
+                  label="Mã lịch hẹn hoặc Số điện thoại"
+                  placeholder="APT-2026-0001 hoặc 0901234567"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  hint="Nhập mã hoặc số điện thoại của bệnh nhân"
+                />
+                <Button type="submit" disabled={loading || !query.trim()}>
+                  <Search className="mc-icon mc-icon--sm" />
+                  {loading ? "Đang tìm..." : "Check-in"}
+                </Button>
+              </form>
+            )}
 
             {loading && (
               <div className="checkin-page__loading">
@@ -125,7 +280,9 @@ export default function CheckinPage() {
 
             {checkinResult && cfg && (
               <div className={`ci-result ${cfg.cls}`}>
-                <div className="ci-result__emoji">{ResultIcon ? <ResultIcon size={28} /> : null}</div>
+                <div className="ci-result__emoji">
+                  {ResultIcon ? <ResultIcon size={28} /> : null}
+                </div>
                 <div className="ci-result__title">
                   {cfg.title}
                   <Badge className="checkin-page__state-badge" variant={cfg.badge}>
@@ -138,7 +295,8 @@ export default function CheckinPage() {
                 )}
                 {checkinResult.appointment && (
                   <div className="checkin-page__result-meta">
-                    {checkinResult.appointment.specialty} · {checkinResult.appointment.doctor} · {checkinResult.appointment.slot}
+                    {checkinResult.appointment.specialty} · {checkinResult.appointment.doctor} ·{" "}
+                    {checkinResult.appointment.slot}
                   </div>
                 )}
               </div>
@@ -148,7 +306,12 @@ export default function CheckinPage() {
           <div className="mc-surface checkin-page__note-card">
             <strong>Dữ liệu lấy trực tiếp từ backend:</strong>
             <ul className="checkin-page__note-list">
-              <li>Dùng mã lịch hẹn hoặc Số điện thoại của lịch đã xác nhận trong ngày.</li>
+              <li>
+                <strong>Nhập tay:</strong> dùng mã lịch hẹn hoặc SĐT của lịch đã xác nhận trong ngày.
+              </li>
+              <li>
+                <strong>Quét QR:</strong> đưa mã QR (trên thẻ hoặc tin nhắn của bệnh nhân) vào khung hình.
+              </li>
               <li>Check-in hợp lệ trong khoảng từ 15 phút trước đến 10 phút sau giờ hẹn.</li>
               <li>Sau khi check-in hợp lệ, trạng thái sẽ được cập nhật thành <code>CHECKED_IN</code>.</li>
             </ul>
@@ -160,11 +323,14 @@ export default function CheckinPage() {
           {listLoading ? (
             <LoadingSpinner />
           ) : (
-            <Table columns={RECENT_COLUMNS} data={todayList} emptyMessage="Chưa có lịch hẹn hôm nay." />
+            <Table
+              columns={RECENT_COLUMNS}
+              data={todayList}
+              emptyMessage="Chưa có lịch hẹn hôm nay."
+            />
           )}
         </div>
       </div>
     </div>
   );
 }
-

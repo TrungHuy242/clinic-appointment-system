@@ -18,7 +18,9 @@ from .views import (
     DoctorVisitCompleteAPIView,
     DoctorVisitDetailAPIView,
     DoctorVisitDraftAPIView,
+    DoctorVisitStartAPIView,
     DoctorVisitsAPIView,
+    LogoutAPIView,
     PatientAppointmentsAPIView,
     PatientChangePasswordAPIView,
     PatientClaimProfileAPIView,
@@ -33,6 +35,7 @@ from .views import (
 
 urlpatterns = [
     path('auth/login/', LoginAPIView.as_view(), name='auth-login'),
+    path('auth/logout/', LogoutAPIView.as_view(), name='auth-logout'),
     path('patient/auth/register/', PatientRegisterAPIView.as_view(), name='patient-auth-register'),
     path('patient/profile/', CurrentPatientProfileAPIView.as_view(), name='patient-profile'),
     path('patient/account/', CurrentPatientAccountAPIView.as_view(), name='patient-account'),
@@ -47,6 +50,7 @@ urlpatterns = [
     path('doctor/queue/', DoctorQueueAPIView.as_view(), name='doctor-queue'),
     path('doctor/visits/', DoctorVisitsAPIView.as_view(), name='doctor-visits'),
     path('doctor/visits/<str:code>/', DoctorVisitDetailAPIView.as_view(), name='doctor-visit-detail'),
+    path('doctor/visits/<str:code>/start/', DoctorVisitStartAPIView.as_view(), name='doctor-visit-start'),
     path('doctor/visits/<str:code>/draft/', DoctorVisitDraftAPIView.as_view(), name='doctor-visit-draft'),
     path('doctor/visits/<str:code>/complete/', DoctorVisitCompleteAPIView.as_view(), name='doctor-visit-complete'),
     path('reception/patients/', ReceptionPatientsAPIView.as_view(), name='reception-patients'),

@@ -3,6 +3,7 @@ from rest_framework import filters, serializers, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from common.auth import IsAdmin
 from portal.models import User
 from portal.services import log_admin_action
 from .models import Doctor, Specialty, VisitType
@@ -19,6 +20,7 @@ def _admin_actor(request):
 # ── Specialty ───────────────────────────────────────────────────────────────────
 
 class SpecialtyViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAdmin]
     serializer_class = SpecialtySerializer
     filter_backends = [filters.SearchFilter]
     search_fields = ['name']
@@ -65,6 +67,7 @@ class SpecialtyViewSet(viewsets.ModelViewSet):
 # ── Doctor ─────────────────────────────────────────────────────────────────────
 
 class DoctorViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAdmin]
     serializer_class = DoctorSerializer
     filter_backends = [filters.SearchFilter]
     search_fields = ['full_name']
@@ -193,6 +196,7 @@ class DoctorViewSet(viewsets.ModelViewSet):
 # ── VisitType ───────────────────────────────────────────────────────────────────
 
 class VisitTypeViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAdmin]
     serializer_class = VisitTypeSerializer
     filter_backends = [filters.SearchFilter]
     search_fields = ['name']

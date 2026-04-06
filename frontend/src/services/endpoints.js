@@ -43,6 +43,7 @@ export const ENDPOINTS = {
     doctorQueue: `${API_PREFIX}/doctor/queue/`,
     doctorVisits: `${API_PREFIX}/doctor/visits/`,
     doctorVisit: (code) => `${API_PREFIX}/doctor/visits/${code}/`,
+    doctorVisitStart: (code) => `${API_PREFIX}/doctor/visits/${code}/start/`,
     doctorVisitDraft: (code) => `${API_PREFIX}/doctor/visits/${code}/draft/`,
     doctorVisitComplete: (code) => `${API_PREFIX}/doctor/visits/${code}/complete/`,
     receptionPatients: `${API_PREFIX}/reception/patients/`,

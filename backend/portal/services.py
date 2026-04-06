@@ -7,6 +7,8 @@ from django.utils import timezone
 from django.utils.dateparse import parse_date
 from rest_framework.exceptions import ValidationError
 
+from common.auth import SESSION_USER_KEY
+
 from appointments.models import Appointment, AppointmentStatus
 from appointments.services import get_active_appointments_queryset, set_appointment_status
 from catalog.models import Doctor, Specialty
@@ -209,7 +211,21 @@ def unified_login(payload, request=None):
                 doctor_id = matched_doctor.id
                 # Cập nhật luôn vào DB để lần sau khỏi tra lại
                 User.objects.filter(pk=staff.pk).update(doctor_id=doctor_id)
- 
+
+        user_payload = {
+            'id': staff.id,
+            'username': staff.username,
+            'full_name': staff.full_name,
+            'role': staff.role,
+            'doctor_id': doctor_id,
+            'is_active': staff.is_active,
+        }
+
+        # Store in session so SessionUserAuthentication can read it on subsequent requests
+        if request and hasattr(request, 'session'):
+            request.session[SESSION_USER_KEY] = user_payload
+            request.session.modified = True
+
         return {
             'success': True,
             'role': staff.role,   # 'admin' | 'receptionist' | 'doctor'
