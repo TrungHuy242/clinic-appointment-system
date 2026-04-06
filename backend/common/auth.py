@@ -84,6 +84,9 @@ class IsAuthenticated(BaseAuthentication):
             and getattr(user, "is_active", True) is True
         )
 
+    def has_object_permission(self, request, view, obj):
+        return True  # Authenticated users can access any object (role check is at view level)
+
 
 # ── Role-based permission classes ──────────────────────────────────────────────
 
@@ -97,6 +100,9 @@ class IsAdmin(BasePermission):
             and getattr(user, "role", "") == "admin"
         )
 
+    def has_object_permission(self, request, view, obj):
+        return True
+
 
 class IsReceptionist(BasePermission):
     """Allows access to receptionists AND admins (receptionists share some admin views)."""
@@ -107,6 +113,9 @@ class IsReceptionist(BasePermission):
             getattr(user, "is_authenticated", False) is True
             and getattr(user, "role", "") in {"admin", "receptionist"}
         )
+
+    def has_object_permission(self, request, view, obj):
+        return True
 
 
 class IsDoctor(BasePermission):
@@ -119,6 +128,9 @@ class IsDoctor(BasePermission):
             and getattr(user, "role", "") in {"admin", "doctor"}
         )
 
+    def has_object_permission(self, request, view, obj):
+        return True
+
 
 class IsPatient(BasePermission):
     """Allows access only to patient accounts."""
@@ -129,3 +141,6 @@ class IsPatient(BasePermission):
             getattr(user, "is_authenticated", False) is True
             and getattr(user, "role", "") == "patient"
         )
+
+    def has_object_permission(self, request, view, obj):
+        return True
