@@ -53,7 +53,8 @@ class _PortalUser:
     classes and audit-log helpers.  Never hits the database.
     """
 
-    __slots__ = ("role", "doctor_id", "full_name", "id", "is_authenticated", "is_active")
+    __slots__ = ("role", "doctor_id", "full_name", "id", "is_authenticated", "is_active",
+                "username", "email", "phone", "notes")
 
     def __init__(self, data):
         self.role = data.get("role") or ""
@@ -62,6 +63,10 @@ class _PortalUser:
         self.id = data.get("id")
         self.is_authenticated = True
         self.is_active = data.get("is_active", True)
+        self.username = data.get("username") or ""
+        self.email = data.get("email") or ""
+        self.phone = data.get("phone") or ""
+        self.notes = data.get("notes") or ""
 
     def __str__(self):
         return self.full_name
