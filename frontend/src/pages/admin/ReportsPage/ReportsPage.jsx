@@ -1,7 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { BarChart3, CalendarDays, CircleCheck, Download, Users } from "lucide-react";
+import LoadingSpinner from "../../../components/LoadingSpinner/LoadingSpinner";
 import { getReports } from "../../../services/adminApi";
 import "./ReportsPage.css";
+
+function stripHtml(raw) {
+  if (typeof raw !== "string") return "";
+  return raw.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() || "Đã xảy ra lỗi.";
+}
 
 const KPI_CARDS = [
   { key: "appointments", label: "Tổng lịch hẹn", icon: CalendarDays, tone: "sky" },
@@ -92,7 +98,7 @@ export default function ReportsPage() {
         }
       } catch (loadError) {
         if (mounted) {
-          setError(loadError.message || "Không tải được báo cáo.");
+          setError(stripHtml(loadError.message) || "Không tải được báo cáo.");
         }
       } finally {
         if (mounted) {
@@ -140,8 +146,15 @@ export default function ReportsPage() {
         ))}
       </div>
 
-      {loading ? <div className="dash-page-sub">Đang tải báo cáo...</div> : null}
-      {error ? <div className="dash-page-sub">{error}</div> : null}
+      {loading ? (
+        <div style={{ padding: "40px", textAlign: "center" }}><LoadingSpinner /></div>
+      ) : null}
+      {error && !loading ? (
+        <div className="report-page__error">
+          {error}
+          <button type="button" className="report-page__error-close" onClick={() => setError("")}>×</button>
+        </div>
+      ) : null}
 
       {!loading && !error && (
         <div className="report-charts-grid">

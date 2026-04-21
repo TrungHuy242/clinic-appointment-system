@@ -1,3 +1,36 @@
+.report-page__error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  border-radius: var(--radius-md);
+  color: #dc2626;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.report-page__error-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: #dc2626;
+  font-size: 16px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.report-page__error-close:hover {
+  background: rgba(220, 38, 38, 0.1);
+}
+
 .report-page__header-actions {
   display: flex;
   gap: 10px;

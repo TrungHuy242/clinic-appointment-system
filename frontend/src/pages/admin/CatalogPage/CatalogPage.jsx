@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Baby,
   Building2,
@@ -35,6 +36,11 @@ import {
   updateVisitType,
 } from "../../../services/adminApi";
 import "./CatalogPage.css";
+
+function stripHtml(raw) {
+  if (typeof raw !== "string") return "";
+  return raw.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() || "Đã xảy ra lỗi.";
+}
 
 const SPECIALTY_ICONS = {
   "Nhi khoa": Baby,
@@ -111,7 +117,7 @@ function SpecialtyCard({ item, saving, onEdit, onDelete }) {
 
 // ── Doctor Card ──────────────────────────────────────────────────────────────
 
-function DoctorCard({ item, saving, onDelete, onResetPassword }) {
+function DoctorCard({ item, saving, onDelete, onResetPassword, navigate }) {
   return (
     <div className={`cat-card cat-card--doctor ${!item.is_active ? "cat-card--inactive" : ""}`}>
       <div className="cat-card__icon">
@@ -138,7 +144,7 @@ function DoctorCard({ item, saving, onDelete, onResetPassword }) {
         <IconBtn
           icon={Pencil}
           label="Sửa"
-          onClick={() => { window.location.href = `/app/admin/catalog/doctors/${item.id}`; }}
+          onClick={() => { navigate(`/app/admin/catalog/doctors/${item.id}`); }}
           disabled={saving}
         />
         {item.has_account && (
@@ -188,7 +194,7 @@ function VisitTypeCard({ item, saving, onEdit, onDelete }) {
 
 // ── Receptionist Card ──────────────────────────────────────────────────────────
 
-function ReceptionistCard({ item, saving, onDelete, onResetPassword }) {
+function ReceptionistCard({ item, saving, onDelete, onResetPassword, navigate }) {
   return (
     <div className={`cat-card cat-card--receptionist ${!item.is_active ? "cat-card--inactive" : ""}`}>
       <div className="cat-card__icon cat-card__icon--teal">
@@ -209,7 +215,7 @@ function ReceptionistCard({ item, saving, onDelete, onResetPassword }) {
         <IconBtn
           icon={Pencil}
           label="Sửa"
-          onClick={() => { window.location.href = `/app/admin/catalog/receptionists/${item.id}`; }}
+          onClick={() => { navigate(`/app/admin/catalog/receptionists/${item.id}`); }}
           disabled={saving}
         />
         <IconBtn
@@ -233,6 +239,7 @@ function ReceptionistCard({ item, saving, onDelete, onResetPassword }) {
 // ── Main CatalogPage ─────────────────────────────────────────────────────────
 
 export default function CatalogPage() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("specialties");
 
   // ── Specialty ──────────────────────────────────────────────────────────────
@@ -278,7 +285,7 @@ export default function CatalogPage() {
       setVisitTypes(nextVisitTypes);
       setReceptionists(nextReceptionists);
     } catch (err) {
-      setError(err.message || "Không tải được danh mục.");
+      setError(stripHtml(err.message) || "Không tải được danh mục.");
     } finally {
       setLoading(false);
     }
@@ -322,7 +329,7 @@ export default function CatalogPage() {
       setSpecialtyModal({ open: false, item: null });
       await loadCatalog();
     } catch (err) {
-      setError(err.message || "Không sửa được khoa.");
+      setError(stripHtml(err.message) || "Không sửa được khoa.");
     } finally {
       setSaving(false);
     }
@@ -343,7 +350,7 @@ export default function CatalogPage() {
           await deleteSpecialty(item.id);
           await loadCatalog();
         } catch (err) {
-          setError(err.message || "Không xóa được khoa.");
+          setError(stripHtml(err.message) || "Không xóa được khoa.");
         } finally {
           setSaving(false);
         }
@@ -367,7 +374,7 @@ export default function CatalogPage() {
           await deleteDoctor(item.id);
           await loadCatalog();
         } catch (err) {
-          setError(err.message || "Không xóa được bác sĩ.");
+          setError(stripHtml(err.message) || "Không xóa được bác sĩ.");
         } finally {
           setSaving(false);
         }
@@ -391,7 +398,7 @@ export default function CatalogPage() {
       setVisitTypeModal({ open: false, item: null });
       await loadCatalog();
     } catch (err) {
-      setError(err.message || "Không sửa được loại khám.");
+      setError(stripHtml(err.message) || "Không sửa được loại khám.");
     } finally {
       setSaving(false);
     }
@@ -412,7 +419,7 @@ export default function CatalogPage() {
           await deleteVisitType(item.id);
           await loadCatalog();
         } catch (err) {
-          setError(err.message || "Không xóa được loại khám.");
+          setError(stripHtml(err.message) || "Không xóa được loại khám.");
         } finally {
           setSaving(false);
         }
@@ -436,7 +443,7 @@ export default function CatalogPage() {
           await deleteReceptionistProfile(item.id);
           await loadCatalog();
         } catch (err) {
-          setError(err.message || "Không xóa được lễ tân.");
+          setError(stripHtml(err.message) || "Không xóa được lễ tân.");
         } finally {
           setSaving(false);
         }
@@ -570,7 +577,7 @@ export default function CatalogPage() {
               value={doctorSearch}
               onChange={(e) => setDoctorSearch(e.target.value)}
             />
-            <Button size="sm" onClick={() => { window.location.href = "/app/admin/catalog/doctors/create"; }}>
+            <Button size="sm" onClick={() => { navigate("/app/admin/catalog/doctors/create"); }}>
               <Plus className="mc-icon mc-icon--xs" style={{ marginRight: 4 }} />
               Thêm bác sĩ
             </Button>
@@ -586,6 +593,7 @@ export default function CatalogPage() {
                   saving={saving}
                   onDelete={handleDeleteDoctor}
                   onResetPassword={(item) => openResetPw(item, "doctor")}
+                  navigate={navigate}
                 />
               ))}
             </div>
@@ -632,7 +640,7 @@ export default function CatalogPage() {
               value={receptionistSearch}
               onChange={(e) => setReceptionistSearch(e.target.value)}
             />
-            <Button size="sm" onClick={() => { window.location.href = "/app/admin/catalog/receptionists/create"; }}>
+            <Button size="sm" onClick={() => { navigate("/app/admin/catalog/receptionists/create"); }}>
               <Plus className="mc-icon mc-icon--xs" style={{ marginRight: 4 }} />
               Thêm lễ tân
             </Button>
@@ -648,6 +656,7 @@ export default function CatalogPage() {
                   saving={saving}
                   onDelete={handleDeleteReceptionist}
                   onResetPassword={(item) => openResetPw(item, "receptionist")}
+                  navigate={navigate}
                 />
               ))}
             </div>
