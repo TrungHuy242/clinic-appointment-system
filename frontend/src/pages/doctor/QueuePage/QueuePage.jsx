@@ -1,12 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Users, Clock, Play } from "lucide-react";
+import { CalendarCheck, Clock, Play, RefreshCw, Users } from "lucide-react";
 import { doctorApi } from "../../../services/doctorApi";
 import "./QueuePage.css";
+
+function stripHtml(raw) {
+  if (typeof raw !== "string") return "";
+  return raw.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() || "Đã xảy ra lỗi.";
+}
 
 export default function QueuePage() {
   const [queue, setQueue] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -17,12 +23,13 @@ export default function QueuePage() {
 
   async function loadQueue() {
     setLoading(true);
+    setError("");
     try {
       const data = await doctorApi.getQueue();
-      // Backend returns array directly
       setQueue(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Failed to load queue:", error);
+      setError(stripHtml(error.message) || "Không tải được hàng đợi.");
       setQueue([]);
     } finally {
       setLoading(false);
@@ -42,11 +49,28 @@ export default function QueuePage() {
 
       <div className="queue-content">
         {loading ? (
-          <div className="loading">Đang tải...</div>
+          <div className="loading">
+            <RefreshCw size={20} className="queue-loading-icon" />
+            Đang tải hàng đợi...
+          </div>
+        ) : error ? (
+          <div className="queue-error-state">
+            <div className="queue-empty-icon"><Users size={40} /></div>
+            <p className="queue-empty-title">Không tải được hàng đợi</p>
+            <p className="queue-empty-hint">{error}</p>
+            <button className="refresh-btn" onClick={loadQueue}>Thử lại</button>
+          </div>
         ) : queue.length === 0 ? (
-          <div className="empty-state">
-            <Users size={48} />
-            <p>Không có bệnh nhân trong hàng đợi</p>
+          <div className="queue-empty-state">
+            <div className="queue-empty-icon"><Users size={40} /></div>
+            <p className="queue-empty-title">Chưa có bệnh nhân trong hàng đợi</p>
+            <p className="queue-empty-hint">
+              Hàng đợi sẽ tự động cập nhật khi lễ tân check-in bệnh nhân.<br />
+              Bạn cũng có thể xem <button type="button" className="queue-empty-link" onClick={() => navigate("/app/doctor/schedule")}>lịch làm việc</button> để biết lịch hẹn hôm nay.
+            </p>
+            <button className="refresh-btn" onClick={loadQueue}>
+              <RefreshCw size={13} /> Làm mới
+            </button>
           </div>
         ) : (
           <div className="queue-list">

@@ -146,7 +146,13 @@ export default function VisitPage() {
 
       <aside className="vt-queue">
         <div className="vt-queue__title">Hàng đợi hôm nay</div>
-        {queue.length === 0 && <div className="visit-page__queue-empty">Chưa có bệnh nhân.</div>}
+        {queue.length === 0 && (
+          <div className="visit-page__queue-empty">
+            <div className="visit-page__queue-empty-icon"><UserRound size={20} /></div>
+            <p>Chưa có bệnh nhân nào được check-in hôm nay.</p>
+            <p>Lễ tân sẽ check-in bệnh nhân để họ xuất hiện tại đây.</p>
+          </div>
+        )}
         {queue.map((item) => (
           <div
             key={item.code}
@@ -173,8 +179,12 @@ export default function VisitPage() {
 
         {!activeCode && !loadingDetail && (
           <div className="visit-page__empty-state">
-            <div className="visit-page__empty-icon"><UserRound size={26} /></div>
-            <div>Chọn bệnh nhân từ danh sách bên trái để bắt đầu khám.</div>
+            <div className="visit-page__empty-icon"><Stethoscope size={28} /></div>
+            <div className="visit-page__empty-title">Chưa chọn bệnh nhân</div>
+            <div className="visit-page__empty-hint">
+              Chọn bệnh nhân từ danh sách bên trái để bắt đầu khám.<br />
+              Nếu chưa có ai trong danh sách, hãy chờ lễ tân check-in bệnh nhân.
+            </div>
           </div>
         )}
 

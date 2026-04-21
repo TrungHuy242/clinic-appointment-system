@@ -1,7 +1,29 @@
 .visit-page__queue-empty {
-  padding: 0 16px;
+  padding: 16px;
   color: var(--color-text-muted);
   font-size: 13px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.visit-page__queue-empty-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--color-bg-soft);
+  display: grid;
+  place-items: center;
+  color: var(--color-text-muted);
+}
+
+.visit-page__queue-empty p {
+  margin: 0;
+  line-height: 1.5;
+  max-width: 180px;
+  font-size: 12px;
 }
 
 .visit-page__loading {
@@ -13,11 +35,34 @@
   padding-top: 80px;
   color: var(--color-text-muted);
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
 }
 
 .visit-page__empty-icon {
-  margin-bottom: 12px;
-  font-size: 40px;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--color-bg-soft);
+  display: grid;
+  place-items: center;
+  color: var(--color-text-muted);
+  margin-bottom: 4px;
+}
+
+.visit-page__empty-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text-main);
+}
+
+.visit-page__empty-hint {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+  max-width: 340px;
 }
 
 .visit-page__patient-main {
