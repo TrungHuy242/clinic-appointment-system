@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { KeyRound, Trash2, UserRound } from "lucide-react";
-import Badge from "../../../components/Badge/Badge";
+import { KeyRound, Mail, Phone, Trash2, UserRound } from "lucide-react";
 import Button from "../../../components/Button/Button";
 import LoadingSpinner from "../../../components/LoadingSpinner/LoadingSpinner";
 import Modal from "../../../components/Modal/Modal";
@@ -10,6 +9,11 @@ import {
   resetPatientPassword,
 } from "../../../services/adminApi";
 import "./UsersPage.css";
+
+function stripHtml(raw) {
+  if (typeof raw !== "string") return "";
+  return raw.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() || "Đã xảy ra lỗi.";
+}
 
 // ── Icon button ──────────────────────────────────────────────────────────────
 function IconBtn({ icon: Icon, label, onClick, variant = "default", disabled = false }) {
@@ -57,18 +61,42 @@ function PatientRow({ item, saving, onDelete, onResetPassword }) {
         <UserRound className="mc-icon mc-icon--md" />
       </div>
       <div className="users-page__row-info">
-        <div className="users-page__row-name">{item.full_name || "—"}</div>
+        <div className="users-page__row-name">
+          {item.full_name || "—"}
+          {item.is_guest && (
+            <span className="users-page__guest-badge">Khách vãng lai</span>
+          )}
+        </div>
         <div className="users-page__row-meta">
-          {item.phone ? `📞 ${item.phone}` : ""}
-          {item.account_email && ` · ✉️ ${item.account_email}`}
+          {item.phone && (
+            <span className="users-page__meta-item">
+              <Phone size={12} />
+              {item.phone}
+            </span>
+          )}
+          {item.account_email && (
+            <span className="users-page__meta-item">
+              <Mail size={12} />
+              {item.account_email}
+            </span>
+          )}
         </div>
         <div className="users-page__row-meta users-page__row-meta--account">
           Tài khoản: @{item.account_username}
         </div>
+        {item.appointment_count > 0 && (
+          <div className="users-page__row-meta users-page__row-meta--stats">
+            <span className="users-page__stat-pill">
+              {item.appointment_count} lịch hẹn
+            </span>
+            {item.completed_count > 0 && (
+              <span className="users-page__stat-pill users-page__stat-pill--success">
+                {item.completed_count} đã khám
+              </span>
+            )}
+          </div>
+        )}
       </div>
-      <Badge variant={item.is_current ? "success" : "neutral"}>
-        {item.is_current ? "Hiện tại" : "Chưa dùng"}
-      </Badge>
       <div className="users-page__row-actions">
         <IconBtn
           icon={KeyRound}
@@ -112,7 +140,7 @@ export default function UsersPage() {
       const data = await listPatientProfiles();
       setPatients(Array.isArray(data) ? data : []);
     } catch (err) {
-      setError(err.message || "Không tải được danh sách bệnh nhân.");
+      setError(stripHtml(err.message) || "Không tải được danh sách bệnh nhân.");
       setPatients([]);
     } finally {
       setLoading(false);
@@ -145,7 +173,7 @@ export default function UsersPage() {
       setDeleteModal({ open: false, item: null });
       await loadPatients();
     } catch (err) {
-      setError(err.message || "Không xóa được bệnh nhân.");
+      setError(stripHtml(err.message) || "Không xóa được bệnh nhân.");
     } finally {
       setSaving(false);
     }

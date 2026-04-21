@@ -9,7 +9,6 @@ import LandingPage from "./pages/public/LandingPage/LandingPage";
 import BookingWizardPage from "./pages/public/BookingWizardPage/BookingWizardPage";
 import BookingSuccessPage from "./pages/public/BookingSuccessPage/BookingSuccessPage";
 import LookupPage from "./pages/public/LookupPage/LookupPage";
-import UIKitPage from "./pages/public/UIKitPage/UIKitPage";
 import LoginPage from "./pages/public/LoginPage/LoginPage";
 import RegisterPage from "./pages/public/RegisterPage/RegisterPage";
 import ClaimProfilePage from "./pages/public/ClaimProfilePage/ClaimProfilePage";
@@ -22,10 +21,13 @@ import RecordDetailPage from "./pages/patient/RecordDetailPage/RecordDetailPage"
 import ReceptionPatientsPage from "./pages/reception/PatientsPage/PatientsPage";
 import ReceptionAppointmentsPage from "./pages/reception/AppointmentsPage/AppointmentsPage";
 import ReceptionCheckinPage from "./pages/reception/CheckinPage/CheckinPage";
+import ReceptionDashboardPage from "./pages/reception/DashboardPage/DashboardPage";
+import ReceptionistProfilePage from "./pages/reception/ProfilePage/ProfilePage";
 import DoctorSchedulePage from "./pages/doctor/SchedulePage/SchedulePage";
 import DoctorQueuePage from "./pages/doctor/QueuePage/QueuePage";
 import DoctorVisitsPage from "./pages/doctor/VisitsPage/VisitsPage";
 import DoctorVisitPage from "./pages/doctor/VisitPage/VisitPage";
+import DoctorProfilePage from "./pages/doctor/ProfilePage/ProfilePage";
 import AdminDashboardPage from "./pages/admin/DashboardPage/DashboardPage";
 import AdminDoctorDetailPage from "./pages/admin/DoctorDetailPage/DoctorDetailPage";
 import AdminReceptionistDetailPage from "./pages/admin/ReceptionistDetailPage/ReceptionistDetailPage";
@@ -57,7 +59,6 @@ export default function AppRouter() {
         <Route path="/book" element={<BookingWizardPage />} />
         <Route path="/booking-success/:code" element={<BookingSuccessPage />} />
         <Route path="/lookup" element={<LookupPage />} />
-        <Route path="/ui-kit" element={<UIKitPage />} />
       </Route>
 
       <Route element={<AuthOutlet />}>
@@ -93,10 +94,12 @@ export default function AppRouter() {
           </RequireRole>
         }
       >
-        <Route index element={<Navigate replace to="/app/reception/patients" />} />
+        <Route index element={<Navigate replace to="/app/reception/dashboard" />} />
+        <Route path="dashboard" element={<ReceptionDashboardPage />} />
         <Route path="patients" element={<ReceptionPatientsPage />} />
         <Route path="appointments" element={<ReceptionAppointmentsPage />} />
         <Route path="checkin" element={<ReceptionCheckinPage />} />
+        <Route path="profile" element={<ReceptionistProfilePage />} />
       </Route>
 
       <Route
@@ -111,6 +114,7 @@ export default function AppRouter() {
         <Route path="schedule" element={<DoctorSchedulePage />} />
         <Route path="queue" element={<DoctorQueuePage />} />
         <Route path="visits" element={<DoctorVisitsPage />} />
+        <Route path="profile" element={<DoctorProfilePage />} />
         <Route path="visit" element={<DoctorVisitPage />} />
         <Route path="visit/:code" element={<DoctorVisitPage />} />
       </Route>

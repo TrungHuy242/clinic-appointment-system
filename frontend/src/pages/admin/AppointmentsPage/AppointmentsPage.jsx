@@ -4,17 +4,13 @@ import Button from "../../../components/Button/Button";
 import LoadingSpinner from "../../../components/LoadingSpinner/LoadingSpinner";
 import Modal from "../../../components/Modal/Modal";
 import { listAppointments, updateAppointmentStatus, rescheduleAppointment, getAppointmentHistory } from "../../../services/adminApi";
+import { getStatusLabel, statusToClass } from "../../../services/formatters";
 import "./AppointmentsPage.css";
 
-const STATUS_LABELS = {
-  PENDING:    "Chờ xác nhận",
-  CONFIRMED:   "Đã xác nhận",
-  CHECKED_IN:  "Đã check-in",
-  IN_PROGRESS: "Đang khám",
-  COMPLETED:   "Đã hoàn thành",
-  CANCELLED:   "Đã hủy",
-  NO_SHOW:     "No-show",
-};
+function stripHtml(raw) {
+  if (typeof raw !== "string") return "";
+  return raw.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() || "Đã xảy ra lỗi.";
+}
 
 function todayStr() {
   return new Date().toISOString().split('T')[0];
@@ -31,7 +27,7 @@ export default function AppointmentsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [dateFilter, setDateFilter] = useState(todayStr());
-  const [showAllDays, setShowAllDays] = useState(false);
+  const [showAllDays, setShowAllDays] = useState(true);
 
   // Summary
   const [summary, setSummary] = useState({
@@ -72,7 +68,7 @@ export default function AppointmentsPage() {
       setRows(list);
       setSummary(sm);
     } catch (err) {
-      setError(err.message || "Không tải được lịch hẹn.");
+      setError(stripHtml(err.message) || "Không tải được lịch hẹn.");
       setRows([]);
     } finally {
       setLoading(false);
@@ -133,7 +129,7 @@ export default function AppointmentsPage() {
       await loadData();
       setSelectedId(null);
     } catch (err) {
-      setError(err.message || "Cập nhật trạng thái thất bại.");
+      setError(stripHtml(err.message) || "Cập nhật trạng thái thất bại.");
     } finally {
       setSaving(false);
     }
@@ -148,7 +144,7 @@ export default function AppointmentsPage() {
       setRescheduleModal({ open: false, appointment: null });
       setSelectedId(null);
     } catch (err) {
-      setError(err.message || "Dời lịch thất bại.");
+      setError(stripHtml(err.message) || "Dời lịch thất bại.");
     } finally {
       setSaving(false);
     }
@@ -192,7 +188,7 @@ export default function AppointmentsPage() {
       {error && (
         <div className="appt-page__error">
           {error}
-          <button onClick={() => setError("")}>×</button>
+          <button type="button" className="appt-page__error-btn" onClick={() => setError("")}>×</button>
         </div>
       )}
 
@@ -263,10 +259,12 @@ export default function AppointmentsPage() {
       <div className="appt-page__summary">
         {[
           { key: "total",      label: "Tổng lịch hẹn",   value: summary.total },
-          { key: "pending",    label: "Chờ xác nhận",      value: summary.pending },
-          { key: "confirmed",  label: "Đã xác nhận",       value: summary.confirmed },
-          { key: "checked_in", label: "Đã check-in",       value: summary.checked_in },
-          { key: "completed",  label: "Đã hoàn thành",     value: summary.completed },
+          { key: "pending",    label: "Chờ xác nhận",     value: summary.pending },
+          { key: "confirmed",  label: "Đã xác nhận",      value: summary.confirmed },
+          { key: "checked_in", label: "Đã check-in",      value: summary.checked_in },
+          { key: "completed",  label: "Hoàn thành",       value: summary.completed },
+          { key: "cancelled",  label: "Đã hủy",           value: summary.cancelled },
+          { key: "no_show",    label: "No-show",          value: summary.no_show },
         ].map((s) => (
           <div key={s.key} className="appt-page__summary-item">
             <div className="appt-page__summary-value">{s.value}</div>
@@ -332,8 +330,8 @@ export default function AppointmentsPage() {
                   <td>{row.doctor_name || "—"}</td>
                   <td>{row.visit_type_label || row.visit_type || "—"}</td>
                   <td>
-                    <span className={`appt-page__badge appt-page__badge--${(row.status || "").toLowerCase()}`}>
-                      {STATUS_LABELS[row.status] || row.status || "—"}
+                    <span className={`appt-page__badge appt-page__badge--${statusToClass(row.status)}`}>
+                      {getStatusLabel(row.status)}
                     </span>
                   </td>
                 </tr>
@@ -411,8 +409,8 @@ export default function AppointmentsPage() {
           </div>
           <div className="appt-modal__row">
             <span className="appt-modal__label">Trạng thái</span>
-            <span className={`appt-page__badge appt-page__badge--${(selectedRow?.status || "").toLowerCase()}`}>
-              {STATUS_LABELS[selectedRow?.status] || selectedRow?.status || "—"}
+            <span className={`appt-page__badge appt-page__badge--${statusToClass(selectedRow?.status)}`}>
+              {getStatusLabel(selectedRow?.status)}
             </span>
           </div>
         </div>

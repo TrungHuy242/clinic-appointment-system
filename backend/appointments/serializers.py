@@ -10,6 +10,7 @@ from .services import (
     VISIT_TYPE_MESSAGE,
     build_appointment_qr_text,
     create_guest_appointment,
+    create_reception_appointment,
     get_pending_expiry,
     get_visit_type_blocks,
     set_appointment_status,
@@ -124,6 +125,7 @@ class AppointmentSerializer(serializers.ModelSerializer):
     )
     specialty_name = serializers.CharField(source='specialty.name', read_only=True)
     doctor_name = serializers.CharField(source='doctor.full_name', read_only=True)
+    doctor_id = serializers.SerializerMethodField()
     visit_type_label = serializers.CharField(source='get_visit_type_display', read_only=True)
     visit_blocks = serializers.SerializerMethodField()
     expires_at = serializers.SerializerMethodField()
@@ -139,6 +141,7 @@ class AppointmentSerializer(serializers.ModelSerializer):
             'specialty',
             'specialty_name',
             'doctor',
+            'doctor_id',
             'doctor_name',
             'scheduled_start',
             'scheduled_end',
@@ -198,6 +201,9 @@ class AppointmentSerializer(serializers.ModelSerializer):
             set_appointment_status(instance, new_status)
 
         return instance
+
+    def get_doctor_id(self, obj):
+        return obj.doctor.id if obj.doctor_id else None
 
     def get_visit_blocks(self, obj):
         return get_visit_type_blocks(obj.visit_type)
@@ -292,6 +298,50 @@ class AppointmentGuestSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         return create_guest_appointment(validated_data)
+
+
+class ReceptionAppointmentSerializer(serializers.ModelSerializer):
+    patient_full_name = serializers.CharField(
+        required=True, allow_blank=False, trim_whitespace=True, max_length=150,
+        error_messages={'blank': 'patient_full_name is required.', 'max_length': 'tối đa 150 ký tự.'},
+    )
+    patient_phone = serializers.CharField(
+        required=True, allow_blank=False, max_length=20,
+        error_messages={'blank': 'patient_phone is required.', 'max_length': 'tối đa 20 ký tự.'},
+    )
+    specialty = ActiveSpecialtyPrimaryKeyRelatedField(
+        queryset=Specialty.objects.filter(is_active=True),
+    )
+    doctor = ActiveDoctorPrimaryKeyRelatedField(
+        queryset=Doctor.objects.filter(is_active=True),
+    )
+    scheduled_start = serializers.DateTimeField(required=True)
+    scheduled_end = serializers.DateTimeField(required=True)
+    visit_type = serializers.ChoiceField(
+        choices=AppointmentVisitType.choices, required=False, default=AppointmentVisitType.VISIT_20,
+    )
+
+    class Meta:
+        model = Appointment
+        fields = ['patient_full_name', 'patient_phone', 'specialty', 'doctor',
+                  'scheduled_start', 'scheduled_end', 'visit_type']
+
+    def validate_patient_full_name(self, value):
+        value = value.strip()
+        if len(value) < 2:
+            raise serializers.ValidationError('Họ tên phải từ 2 ký tự trở lên.')
+        return value
+
+    def validate_patient_phone(self, value):
+        return validate_phone_number(value, 'patient_phone', required=True)
+
+    def validate(self, attrs):
+        validate_doctor_specialty(attrs['doctor'], attrs['specialty'])
+        validate_time_range(attrs['scheduled_start'], attrs['scheduled_end'])
+        return attrs
+
+    def create(self, validated_data):
+        return create_reception_appointment(validated_data)
 
 
 class AppointmentHistorySerializer(serializers.ModelSerializer):

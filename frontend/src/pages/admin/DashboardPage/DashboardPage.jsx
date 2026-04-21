@@ -9,9 +9,15 @@ import {
   UserCheck,
   UserPlus,
 } from "lucide-react";
-import LoadingSpinner from "../../../components/LoadingSpinner/LoadingSpinner";
 import { getDashboard } from "../../../services/adminApi";
+import { getStatusLabel, statusToClass } from "../../../services/formatters";
+import { formatDate, getToday } from "../../../services/formatters";
 import "./DashboardPage.css";
+
+function stripHtml(raw) {
+  if (typeof raw !== "string") return "";
+  return raw.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() || "Đã xảy ra lỗi.";
+}
 
 const TONE_MAP = {
   warning: 'amber',
@@ -20,43 +26,35 @@ const TONE_MAP = {
   success: 'emerald',
 };
 
-const STATUS_LABELS = {
-  PENDING: "Chờ xác nhận",
-  CONFIRMED: "Đã xác nhận",
-  CHECKED_IN: "Đã check-in",
-  IN_PROGRESS: "Đang khám",
-  COMPLETED: "Đã hoàn thành",
-  CANCELLED: "Đã hủy",
-  NO_SHOW: "No-show",
-};
-
-function getToday() {
-  return new Date().toLocaleDateString("vi-VN", {
-    weekday: "long",
-    day: "numeric",
-    month: "numeric",
-    year: "numeric",
-  });
-}
-
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [data, setData] = useState(null);
+
+  const today = formatDate(new Date(), { weekday: "long", day: "numeric", month: "numeric", year: "numeric" });
 
   useEffect(() => {
     setLoading(true);
     setError("");
     getDashboard()
       .then((res) => setData(res))
-      .catch((err) => setError(err.message || "Không tải được dashboard."))
+      .catch((err) => setError(stripHtml(err.message) || "Không tải được dashboard."))
       .finally(() => setLoading(false));
   }, []);
 
   if (loading) {
     return (
       <div className="dash-page dashboard-page">
-        <LoadingSpinner />
+        <div className="dashboard-page__header">
+          <div>
+            <h1 className="dash-page-title">Tổng quan hệ thống</h1>
+            <p className="dash-page-sub">{today}</p>
+          </div>
+        </div>
+        <div className="dashboard-page__loading">
+          <div className="dashboard-page__loading-spinner" />
+          <span>Đang tải dữ liệu...</span>
+        </div>
       </div>
     );
   }
@@ -70,10 +68,17 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {error && (
+      {error && !data && (
         <div className="dashboard-page__error">
           {error}
           <button onClick={() => window.location.reload()}>Tải lại</button>
+        </div>
+      )}
+
+      {error && data && (
+        <div className="dashboard-page__error dashboard-page__error--inline">
+          {error}
+          <button type="button" className="dashboard-page__error-close" onClick={() => setError("")}>×</button>
         </div>
       )}
 
@@ -81,23 +86,33 @@ export default function DashboardPage() {
         <>
           {/* Stat Cards */}
           <div className="dashboard-page__stats-row">
-            {data.statCards.map((card) => (
-              <div
-                key={card.key}
-                className={`dashboard-page__stat-card dashboard-page__stat-card--${card.key === 'pending' ? 'amber' : card.key === 'checked_in' ? 'emerald' : card.key === 'completed' ? 'violet' : 'blue'}`}
-              >
-                <div className="dashboard-page__stat-icon">
-                  {card.key === 'total_today' && <CalendarClock className="mc-icon mc-icon--md" />}
-                  {card.key === 'pending' && <Clock className="mc-icon mc-icon--md" />}
-                  {card.key === 'checked_in' && <UserCheck className="mc-icon mc-icon--md" />}
-                  {card.key === 'in_progress' && <UserPlus className="mc-icon mc-icon--md" />}
-                  {card.key === 'confirmed' && <CheckCircle2 className="mc-icon mc-icon--md" />}
-                  {card.key === 'completed' && <CheckCircle2 className="mc-icon mc-icon--md" />}
+            {data.statCards.map((card) => {
+              const toneClass = {
+                total_today: 'blue',
+                pending: 'amber',
+                checked_in: 'emerald',
+                in_progress: 'violet',
+                confirmed: 'sky',
+                completed: 'teal',
+              }[card.key] || 'blue';
+              return (
+                <div
+                  key={card.key}
+                  className={`dashboard-page__stat-card dashboard-page__stat-card--${toneClass}`}
+                >
+                  <div className="dashboard-page__stat-icon">
+                    {card.key === 'total_today' && <CalendarClock className="mc-icon mc-icon--md" />}
+                    {card.key === 'pending' && <Clock className="mc-icon mc-icon--md" />}
+                    {card.key === 'checked_in' && <UserCheck className="mc-icon mc-icon--md" />}
+                    {card.key === 'in_progress' && <UserPlus className="mc-icon mc-icon--md" />}
+                    {card.key === 'confirmed' && <CheckCircle2 className="mc-icon mc-icon--md" />}
+                    {card.key === 'completed' && <CheckCircle2 className="mc-icon mc-icon--md" />}
+                  </div>
+                  <div className="dashboard-page__stat-value">{card.value}</div>
+                  <div className="dashboard-page__stat-label">{card.label}</div>
                 </div>
-                <div className="dashboard-page__stat-value">{card.value}</div>
-                <div className="dashboard-page__stat-label">{card.label}</div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Lower section: Recent Appointments + Alerts */}
@@ -132,8 +147,8 @@ export default function DashboardPage() {
                           <td>{row.date}</td>
                           <td>{row.time}</td>
                           <td>
-                            <span className={`dashboard-page__badge dashboard-page__badge--${row.status.toLowerCase()}`}>
-                              {STATUS_LABELS[row.status] || row.status}
+                            <span className={`dashboard-page__badge dashboard-page__badge--${statusToClass(row.status)}`}>
+                              {getStatusLabel(row.status)}
                             </span>
                           </td>
                         </tr>

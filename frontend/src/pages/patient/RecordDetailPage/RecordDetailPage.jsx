@@ -5,15 +5,21 @@ import {
   Download,
   FileText,
   Pill,
+  Plus,
   ShieldCheck,
   Stethoscope,
   TimerReset,
   UserRound,
 } from "lucide-react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { appointmentApi } from "../../../services/patientApi";
 import styles from "./RecordDetailPage.module.css";
 import "./RecordDetailPage.css";
+
+function stripHtml(raw) {
+  if (typeof raw !== "string") return "";
+  return raw.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() || "Đã xảy ra lỗi.";
+}
 
 const TIMELINE_ICONS = {
   schedule: TimerReset,
@@ -37,6 +43,7 @@ function DoctorAvatar({ doctor }) {
 
 export default function RecordDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [record, setRecord] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -46,10 +53,10 @@ export default function RecordDetailPage() {
     setLoading(true);
     setError("");
     try {
-      const data = await appointmentApi.getRecordDetail(id || "REC-001");
+      const data = await appointmentApi.getRecordDetail(id);
       setRecord(data);
     } catch (loadError) {
-      setError(loadError.message || "Không tìm thấy bản ghi");
+      setError(stripHtml(loadError.message) || "Không tìm thấy bản ghi");
     } finally {
       setLoading(false);
     }
@@ -137,7 +144,10 @@ export default function RecordDetailPage() {
                   <h4 className={styles["doctor-name"]}>{record.doctor.name}</h4>
                   <p className={styles["doctor-department"]}>{record.doctor.department}</p>
                   <p className={styles["doctor-branch"]}>{record.doctor.branch}</p>
-                  <button className={`${styles["btn-primary"]} ${styles["btn-block"]}`} type="button">Đặt tái khám</button>
+                  <button className={`${styles["btn-primary"]} ${styles["btn-block"]}`} type="button" onClick={() => navigate("/book")}>
+                    <Plus size={16} />
+                    Đặt tái khám
+                  </button>
                 </div>
               </div>
             </aside>

@@ -12,7 +12,12 @@ from common.auth import IsAdmin, IsAuthenticated, IsReceptionist
 from portal.services import log_admin_action
 
 from .models import Appointment, AppointmentHistory, AppointmentStatus
-from .serializers import AppointmentGuestSerializer, AppointmentHistorySerializer, AppointmentSerializer
+from .serializers import (
+    AppointmentGuestSerializer,
+    AppointmentHistorySerializer,
+    AppointmentSerializer,
+    ReceptionAppointmentSerializer,
+)
 from .services import (
     build_doctor_slots,
     get_active_appointments_queryset,
@@ -31,7 +36,7 @@ def _admin_actor(request):
     user = getattr(request, 'user', None)
     if user and hasattr(user, 'full_name'):
         return user.full_name, getattr(user, 'role', 'admin'), request.META.get('REMOTE_ADDR')
-    return request.data.get('changed_by', 'Admin'), request.data.get('changed_by_role', 'admin'), request.META.get('REMOTE_ADDR')
+    return 'System', 'system', request.META.get('REMOTE_ADDR')
 
 
 # ── Reception & Admin Appointment Management ────────────────────────────────────
@@ -41,7 +46,7 @@ class AppointmentViewSet(viewsets.ModelViewSet):
     Receptionist view of today's appointments and quick check-in actions.
     Accessible by receptionists and admins.
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsReceptionist]
     serializer_class = AppointmentSerializer
 
     def get_queryset(self):
@@ -74,11 +79,13 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         return instance
 
     def destroy(self, request, *args, **kwargs):
+        self.check_permissions(request)
         instance = self.get_object()
         soft_delete_appointment(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @action(detail=True, methods=['patch'], url_path='move-to-waiting')
+    @action(detail=True, methods=['patch'], url_path='move-to-waiting',
+           permission_classes=[IsReceptionist])
     def move_to_waiting(self, request, pk=None):
         """
         Chuyển lịch hẹn từ CHECKED_IN sang WAITING để bác sĩ thấy trong danh sách khám.
@@ -91,6 +98,17 @@ class AppointmentViewSet(viewsets.ModelViewSet):
             changed_by_role=actor_role,
         )
         return Response(AppointmentSerializer(updated).data)
+
+    @action(detail=False, methods=['post'], url_path='create')
+    def create_appointment(self, request):
+        """
+        POST /reception/appointments/create/
+        Lễ tân tạo lịch hẹn trực tiếp, status = CONFIRMED.
+        """
+        serializer = ReceptionAppointmentSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        appointment = serializer.save()
+        return Response(AppointmentSerializer(appointment).data, status=status.HTTP_201_CREATED)
 
 
 class AdminAppointmentViewSet(viewsets.ModelViewSet):
@@ -162,12 +180,13 @@ class AdminAppointmentViewSet(viewsets.ModelViewSet):
         new_status = request.data.get('status')
         if not new_status:
             return Response({'detail': 'status is required.'}, status=400)
+        actor_name, actor_role, ip = _admin_actor(request)
         try:
             set_appointment_status(
                 appointment,
                 new_status.upper(),
-                changed_by=request.data.get('changed_by', 'Admin'),
-                changed_by_role=request.data.get('changed_by_role', 'admin'),
+                changed_by=actor_name,
+                changed_by_role=actor_role,
                 note=request.data.get('note', ''),
             )
         except ValidationError as e:
@@ -197,13 +216,14 @@ class AdminAppointmentViewSet(viewsets.ModelViewSet):
                 {'detail': 'scheduled_start and scheduled_end must be valid ISO datetime strings.'},
                 status=400,
             )
+        actor_name, actor_role, ip = _admin_actor(request)
         try:
             reschedule_appointment(
                 appointment,
                 new_scheduled_start=scheduled_start,
                 new_scheduled_end=scheduled_end,
-                changed_by=request.data.get('changed_by', 'Admin'),
-                changed_by_role=request.data.get('changed_by_role', 'admin'),
+                changed_by=actor_name,
+                changed_by_role=actor_role,
                 note=request.data.get('note', ''),
             )
         except ValidationError as e:

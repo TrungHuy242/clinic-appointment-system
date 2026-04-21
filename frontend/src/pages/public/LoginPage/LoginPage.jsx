@@ -6,6 +6,11 @@ import Button from "../../../components/Button/Button";
 import { authApi, ROLE_ROUTES, ROLES, useAuth } from "../../../services/authService";
 import "./LoginPage.css";
 
+function stripHtml(raw) {
+  if (typeof raw !== "string") return "";
+  return raw.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() || "Đã xảy ra lỗi.";
+}
+
 export default function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
@@ -41,7 +46,7 @@ export default function LoginPage() {
         navigate(ROLE_ROUTES[role] || "/");
       }
     } catch (submitError) {
-      setError(submitError.message || "Không thể xử lý yêu cầu.");
+      setError(stripHtml(submitError.message) || "Không thể xử lý yêu cầu.");
     } finally {
       setSubmitting(false);
     }
@@ -103,7 +108,7 @@ export default function LoginPage() {
 
         <Button type="submit" className="auth-submit-btn" disabled={submitting}>
           {submitting ? "Đang xử lý..." : "Đăng nhập"}
-          <ArrowRight className="mc-icon mc-icon--sm" />
+          {!submitting && <ArrowRight className="mc-icon mc-icon--sm" />}
         </Button>
 
         <div className="auth-divider">

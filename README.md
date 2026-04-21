@@ -1,196 +1,220 @@
 # Hệ thống quản lý đặt lịch khám bệnh cho phòng khám (Clinic Appointment System)
 
 ## 1. Thông tin chung
-- **Môn học:** Công nghệ phần mềm  
-- **Nhóm:** Người Nùng  
-## Thành viên nhóm
-- Trương Minh Trung Huy  (SM)
-- Trương Đình Bắc (PO)
-- Trương Thị Kim Ngân (Dev)
-- Từ Nguyễn Huyền Trang (Dev)
-- Nguyễn Ngọc Quyền (Dev)- **Repository:** https://github.com/TrungHuy242/clinic-appointment-system  
-- **Stack dự kiến:** React (JS/HTML/CSS) + Django + PostgreSQL
+- **Môn học:** Công nghệ phần mềm
+- **Nhóm:** Người Nùng
+- **Thành viên nhóm:**
+  - Trương Minh Trung Huy (SM)
+  - Trương Đình Bắc (PO)
+  - Trương Thị Kim Ngân (Dev)
+  - Từ Nguyễn Huyền Trang (Dev)
+  - Nguyễn Ngọc Quyền (Dev)
+- **Repository:** https://github.com/TrungHuy242/clinic-appointment-system
+- **Stack:** React (react-scripts) + Django REST Framework + SQLite (dev) / PostgreSQL (prod)
+- **Trạng thái:** Đã hoàn thành — 35/35 E2E tests PASS, sẵn sàng demo
 
 ---
 
-## 2. Vấn đề cần giải quyết
-Hiện nay nhiều phòng khám quy mô nhỏ và vừa vẫn thực hiện đặt lịch khám thông qua điện thoại hoặc ghi chép thủ công, dẫn đến các vấn đề như: quá tải khâu tiếp nhận, dễ nhầm lẫn lịch khám, khó quản lý trạng thái bệnh nhân đến khám và tỷ lệ bệnh nhân không đến (no-show).
+## 2. Cách chạy project
 
-Bệnh nhân cũng gặp bất tiện trong việc theo dõi lịch sử khám bệnh và đơn thuốc, do thông tin thường được lưu trữ rời rạc hoặc dưới dạng giấy tờ. Vì vậy, cần một hệ thống đặt lịch khám trực tuyến đơn giản, dễ sử dụng, phù hợp với mô hình một phòng khám – một chi nhánh, nhưng vẫn đảm bảo đúng nghiệp vụ thực tế.
+### Yêu cầu
+- Python 3.10+
+- Node.js 18+
+- npm
+
+### Backend
+
+```bash
+cd backend
+
+# Tạo virtual environment (khuyến nghị)
+python -m venv venv
+.\venv\Scripts\activate   # Windows
+# source venv/bin/activate  # Linux/Mac
+
+# Cài đặt dependencies
+pip install -r requirements.txt
+
+# Chạy migrations (SQLite mặc định)
+python manage.py migrate
+
+# Seed demo data (tùy chọn)
+python manage.py seed_demo_data
+
+# Chạy server
+python manage.py runserver 8000
+```
+
+> **Lưu ý:** Backend chạy tại `http://localhost:8000`. File `.env` chứa secrets (không commit). Copy `.env.example` → `.env` và điền credentials khi dùng PostgreSQL.
+
+### Frontend
+
+```bash
+cd frontend
+
+# Cài đặt dependencies
+npm install
+
+# Chạy dev server
+npm start
+```
+
+> **Lưu ý:** Frontend chạy tại `http://localhost:3000` và proxy API sang backend `localhost:8000`.
+> File `.env` chứa `VITE_API_BASE_URL=` (trống = dùng proxy, mặc định dev).
+
+### Chạy E2E tests
+
+```bash
+cd backend
+python test_all_flows.py
+```
 
 ---
 
-## 3. Mục tiêu dự án
-Xây dựng một website đặt lịch khám bệnh cho một chi nhánh phòng khám, đáp ứng các mục tiêu sau:
+## 3. Tài khoản demo
 
-- Cho phép bệnh nhân đặt lịch khám không cần tài khoản (guest booking).
-
-- Cung cấp mã lịch hẹn và QR để tra cứu nhanh.
-
-- Yêu cầu bệnh nhân tự xác nhận sẽ đến nhằm giảm lịch hẹn ảo.
-
-- Hỗ trợ Admin quản lý lịch hẹn, check-in, dời/hủy/no-show.
-
-- Hỗ trợ Bác sĩ xem lịch khám, nhập kết quả khám và đơn thuốc.
-
-- Cung cấp “Sổ khám điện tử” cho bệnh nhân có tài khoản để xem lại lịch sử khám và đơn thuốc.
+| Username / SĐT | Password | Vai trò | Ghi chú |
+|---|---|---|---|
+| `admin` | `admin123` | Admin | Quản lý toàn bộ hệ thống |
+| `reception` | `reception123` | Receptionist | Tiếp nhận, check-in bệnh nhân |
+| `doctor1` | `doctor123` | Doctor | BS. Nguyễn Thị Sarah — Nhi khoa |
+| `doctor2` | `doctor123` | Doctor | BS. Trần Ngọc Emily — Da liễu |
+| `doctor3` | `doctor123` | Doctor | BS. Phạm Quốc Hùng — Tai Mũi Họng |
+| `doctor4` | `doctor123` | Doctor | BS. Lê Minh Khoa — Khám tổng quát |
+| `doctor5` | `doctor123` | Doctor | BS. Hoàng Thu Hà — Nhi khoa |
+| `doctor6` | `doctor123` | Doctor | BS. Vũ Ngọc Mai — Da liễu |
+| `0912345678` | `huy0610` | Patient | Trần Thị Bình |
 
 ---
 
-## 4. Đối tượng sử dụng (User Roles)
-- Bệnh nhân (Patient)
+## 4. Flow demo đề xuất
 
-Đặt lịch khám không cần đăng nhập.
+### Admin — `admin / admin123`
+1. Đăng nhập → Dashboard → KPI cards (tổng lịch hẹn, bệnh nhân mới, tỷ lệ hoàn tất)
+2. Biểu đồ: phân bổ theo chuyên khoa, lịch hẹn theo kỳ
+3. Catalog → Bác sĩ (xem / sửa) → Lễ tân (xem / sửa / tạo)
+4. Appointments → Danh sách lịch hẹn (30 items) → Filter theo ngày / trạng thái
+5. Reports → Export CSV báo cáo
+6. Audit → Xem lịch sử thao tác nhân viên
 
-Xác nhận lịch hẹn trong thời gian quy định.
+### Receptionist — `reception / reception123`
+1. Đăng nhập → Dashboard → Stats + 8 lịch hẹn sắp tới trong ngày
+2. Appointments → Danh sách → Check-in bằng mã `APT-2026-1702`
+3. Check-in page → Confirm → Bệnh nhân chuyển sang trạng thái `CHECKED_IN`
+4. Patients → Xem hồ sơ bệnh nhân
+5. Profile → Đổi thông tin cá nhân
 
-Tra cứu lịch hẹn bằng SĐT + mã lịch hẹn.
+### Doctor — `doctor2 / doctor123` (BS. Emily — Da liễu)
+1. Đăng nhập → Queue → Bệnh nhân đang chờ khám
+2. Chọn bệnh nhân → Visit page → Bấm "Bắt đầu khám" → Nhập chẩn đoán → Hoàn tất
+3. Visits → Phiếu khám đã hoàn tất
+4. Schedule → Lịch làm việc theo ngày
+5. Profile → Đổi thông tin bio
 
-Đăng ký tài khoản để:
+### Patient — `0912345678 / huy0610`
+1. Đăng nhập bằng SĐT → Redirect đến Patient Portal
+2. My Appointments → Lịch hẹn sắp tới (tạo mới qua booking wizard nếu cần)
+3. Health Profile → Thông tin sức khỏe, dị ứng
+4. Notifications → Tin nhắn xác nhận lịch hẹn
+5. Refresh page → Session vẫn giữ (đã xác minh 35/35 tests PASS)
 
-Claim hồ sơ khám
-
-Xem “Sổ khám điện tử” (lịch sử khám, đơn thuốc).
-
-- Bác sĩ (Doctor)
-
-Đăng nhập hệ thống.
-
-Xem lịch khám của mình theo ngày.
-
-Cập nhật trạng thái khám.
-
-Nhập kết quả khám và đơn thuốc cho bệnh nhân.
-
-- Admin
-
-- Quản trị toàn bộ hệ thống.
-
-- Quản lý:
-
-Khoa
-
-Bác sĩ
-
-Loại khám
-
-Khung giờ khám
-
-- Quản lý lịch hẹn:
-
-Check-in bệnh nhân
-
-Dời lịch, hủy lịch, đánh dấu no-show
-
-- Theo dõi báo cáo và nhật ký hệ thống (audit log).
----
-
-## 5. Phạm vi chức năng (MVP đề xuất)
-### 5.1 Đặt lịch khám (Public Booking)
-
-- Booking Wizard 4 bước:
-Khoa → Bác sĩ → Thời gian/Slot → Thông tin bệnh nhân
-
-- Sinh mã lịch hẹn + QR
-
-- Trạng thái lịch hẹn:
-
-Pending
-
-Confirmed
-
-Checked-in
-
-In-progress
-
-Completed
-
-Cancelled
-
-No-show
-
-- PA1 – Tự xác nhận sẽ đến:
-
-Bệnh nhân phải xác nhận trong 15 phút
-
-Quá hạn → lịch hẹn tự động Cancelled
-
-- Tra cứu lịch hẹn bằng SĐT + mã lịch hẹn
-
-### 5.2 Quản lý lịch hẹn (Admin)
-
-- Danh sách lịch hẹn theo ngày / bác sĩ / trạng thái
-
-- Check-in theo khung giờ (PA4):
-
-Cho phép check-in trong khoảng:
-(Giờ hẹn - 15 phút) → (Giờ hẹn + 10 phút)
-
-- Dời lịch / hủy lịch / no-show
-
-- Chỉnh sửa thông tin hành chính bệnh nhân (có audit log)
-
-### 5.3 Bác sĩ
-
-- Xem Lịch khám 
-
-- Các trạng thái:
-
-Checked-in
-
-In-progress
-
-Completed
-
-- Nhập kết quả khám:
-
-Chẩn đoán
-
-Hướng điều trị
-
-- Nhập đơn thuốc:
-
-Tên thuốc – liều dùng – số ngày
-
-### 5.4 Patient Portal – “Sổ khám điện tử”
-
-- Đăng ký / đăng nhập bằng SĐT + mật khẩu
-
-- Claim hồ sơ bằng Mã lịch hẹn + Họ tên
-
-- Xem:
-
-Lịch sử khám bệnh
-
-Chi tiết từng lượt khám
-
-Đơn thuốc đã kê
+### Guest Booking (không cần đăng nhập)
+1. Landing page → "Đặt lịch khám ngay" → Booking Wizard
+2. Chọn chuyên khoa → Chọn bác sĩ → Chọn ngày + slot → Nhập thông tin
+3. Booking success → Nhận mã lịch hẹn + QR code
+4. Tra cứu lịch hẹn: `/lookup` → Nhập mã + SĐT
 
 ---
 
-## 6. Ghi chú thiết kế nghiệp vụ (rút gọn)
-- **Slot block:** 25 phút (20’ khám + 5’ buffer)  
-- **Loại khám:** 15’ = 1 block, 20’ = 1 block, 40’ = 2 block (chiếm 2 slot liên tiếp)  
-- **Chống trùng lịch bác sĩ:** trùng theo `doctor_id + time range` kể cả khi bác sĩ thuộc nhiều khoa.
+## 5. Giới hạn hiện tại & Hướng phát triển
+
+### Giới hạn (đã biết)
+
+| Giới hạn | Mức độ | Ghi chú |
+|---|---|---|
+| Landing page: Doctor Cards là mock data | **Thấp** | Không kết nối DB; thay bằng API khi cần |
+| Landing page: Stats là mock data | **Thấp** | Ghi rõ "Demo — giá trị giả lập" |
+| Reports: Revenue/Doanh thu là ước tính | **Trung bình** | Ghi rõ "Lượt khám hoàn tất ước tính" — chưa có bảng Billing |
+| Patient: Chưa có lịch hẹn trong seed data | **Thấp** | Tạo qua booking wizard để test |
+| Patient: Record detail cần có MedicalRecord hợp lệ | **Thấp** | Seed có 6 MedicalRecord gán cho bệnh nhân khác |
+| Doctor queue/visits: Phụ thuộc seed data | **Thấp** | Seed có đủ dữ liệu CHECKED_IN và COMPLETED |
+
+### Hướng phát triển (production)
+
+| Ưu tiên | Tính năng |
+|---|---|
+| Cao | Thêm bảng Billing/Payment để track doanh thu thực |
+| Cao | Thêm xác thực email/SMS cho patient registration |
+| Trung bình | Gửi email/SMS notification khi có thay đổi lịch hẹn |
+| Trung bình | Xem lịch bác sĩ theo tuần (calendar view) |
+| Trung bình | Đổi mật khẩu cho patient account |
+| Thấp | Giao diện mobile responsive đầy đủ |
+| Thấp | Export PDF phiếu khám / đơn thuốc |
 
 ---
 
-## 7. Kế hoạch triển khai (tóm tắt)
-- Tuần 1–2: Setup repository, cấu trúc FE/BE, seed data, UI cơ bản
+## 6. Môi trường & Database
 
-- Tuần 2–4: Chức năng đặt lịch + xác nhận lịch hẹn (PA1)
-
-- Tuần 4–6: Quản lý lịch hẹn (Admin) + chức năng bác sĩ
-
-- Tuần 6+: Patient Portal, audit log, báo cáo
+| Thành phần | Trạng thái |
+|---|---|
+| Database | **SQLite** (`db.sqlite3`) mặc định dev; hỗ trợ PostgreSQL |
+| `.env` backend | Chứa secrets, không commit |
+| `.env` frontend | Chứa `VITE_API_BASE_URL`, đã có `.env.example` |
+| Migrations | Tất cả applied, 0 unapplied |
+| Test suite | **35/35 E2E tests PASS** (`backend/test_all_flows.py`) |
 
 ---
 
-## 8. Run project (sẽ cập nhật)
-- Frontend: `npm install` → `npm start`
-- Backend: `pip install -r requirements.txt` → `python manage.py runserver`
+## 7. Cấu trúc project
 
-## 9. Ghi chú encoding UTF-8
-- Tất cả file chứa tiếng Việt phải được lưu bằng UTF-8.
-- Không copy/paste nội dung từ nguồn làm hỏng dấu hoặc sai encoding.
-- Frontend đã khai báo `<meta charset="UTF-8" />` trong `frontend/public/index.html`; nếu thêm HTML/template mới thì giữ nguyên chuẩn này.
+```
+clinic-appointment-system/
+├── backend/
+│   ├── appointments/      # Models, services, views cho lịch hẹn
+│   ├── catalog/           # Models, services, views cho chuyên khoa, bác sĩ
+│   ├── common/           # Auth, permissions, response helpers
+│   ├── config/           # Django settings, URLs
+│   ├── portal/           # Auth, patient, doctor, receptionist, admin APIs
+│   ├── manage.py
+│   ├── test_all_flows.py # E2E test suite
+│   └── db.sqlite3        # SQLite dev DB
+├── frontend/
+│   ├── src/
+│   │   ├── pages/
+│   │   │   ├── public/        # Landing, Login, Register, Booking
+│   │   │   ├── patient/       # MyAppointments, HealthProfile, Notifications
+│   │   │   ├── doctor/        # Schedule, Queue, Visits, VisitPage
+│   │   │   ├── reception/     # Dashboard, Checkin, Patients
+│   │   │   └── admin/         # Dashboard, Catalog, Reports, Audit
+│   │   ├── layouts/           # PublicLayout, PatientLayout, StaffLayout, AdminLayout
+│   │   ├── services/          # apiClient, authService, endpoints, bookingApi
+│   │   └── router.jsx        # React Router definitions
+│   ├── .env                   # API config
+│   └── package.json
+└── docs/
+    └── PROGRESS.md             # Chi tiết bugs, test results, data sources
+```
+
+---
+
+## 8. Ghi chú kỹ thuật
+
+### Authentication
+- Hệ thống dùng **Django session-based auth** qua `SessionUserAuthentication`.
+- Staff (admin/reception/doctor): login set `SESSION_USER_KEY` vào Django session.
+- Patient: login set cả `SESSION_USER_KEY` và `patient_profile_id`.
+- Frontend lưu user info vào `localStorage` để `AuthContext` render đúng UI.
+
+### API Proxy
+- Frontend dùng `setupProxy.js` (http-proxy-middleware) để proxy API calls sang backend.
+- `apiClient.js` xử lý base URL: nếu `VITE_API_BASE_URL` trống → dùng `window.location.origin` → proxy handle.
+- Production: đặt `VITE_API_BASE_URL=http://localhost:8000` để gọi trực tiếp.
+
+### Session & CORS
+- `credentials: "include"` trong mọi fetch call → gửi session cookie.
+- Django `CORS_ALLOW_ALL_ORIGINS = True` và `CSRF_COOKIE_SAMESITE = None` cho dev.
+
+### Encoding
+- Tất cả file chứa tiếng Việt: UTF-8.
+- Backend settings: `DEFAULT_CHARSET = 'utf-8'`.
+- Windows console: output encoding có thể gây lỗi `charmap codec can't encode` — dùng `sys.stdout.reconfigure(encoding='utf-8')` khi cần.

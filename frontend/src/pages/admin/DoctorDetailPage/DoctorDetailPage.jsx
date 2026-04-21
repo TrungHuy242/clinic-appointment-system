@@ -23,6 +23,11 @@ import {
 } from "../../../services/adminApi";
 import "./DoctorDetailPage.css";
 
+function stripHtml(raw) {
+  if (typeof raw !== "string") return "";
+  return raw.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() || "Đã xảy ra lỗi.";
+}
+
 function ConfirmModal({ open, title, body, confirmLabel, confirmVariant, onConfirm, onCancel, saving }) {
   if (!open) return null;
   return (
@@ -102,7 +107,7 @@ export default function DoctorDetailPage() {
       const data = await getDoctorDetail(doctorId);
       setProfile(data);
     } catch (err) {
-      setError(err.message || "Không tải được thông tin bác sĩ.");
+      setError(stripHtml(err.message) || "Không tải được thông tin bác sĩ.");
     } finally {
       setLoading(false);
     }
@@ -139,7 +144,7 @@ export default function DoctorDetailPage() {
       const created = await createDoctor(payload);
       navigate(`/app/admin/catalog/doctors/${created.id}`);
     } catch (err) {
-      setError(err.message || "Không tạo được bác sĩ.");
+      setError(stripHtml(err.message) || "Không tạo được bác sĩ.");
       setSaving(false);
     }
   }
@@ -182,7 +187,7 @@ export default function DoctorDetailPage() {
       setEditForm(null);
       await loadProfile();
     } catch (err) {
-      setError(err.message || "Không lưu được thông tin bác sĩ.");
+      setError(stripHtml(err.message) || "Không lưu được thông tin bác sĩ.");
       setSaving(false);
     }
   }
@@ -196,7 +201,7 @@ export default function DoctorDetailPage() {
       await updateDoctor(profile.id, { is_active: false });
       navigate("/app/admin/catalog");
     } catch (err) {
-      setError(err.message || "Không xóa được bác sĩ.");
+      setError(stripHtml(err.message) || "Không xóa được bác sĩ.");
       setSaving(false);
     }
   }
@@ -385,7 +390,7 @@ export default function DoctorDetailPage() {
             <TooltipIconBtn icon={Pencil} label="Sửa thông tin" onClick={startEdit} />
             <TooltipIconBtn
               icon={Trash2}
-              label="Xóa bác sĩ"
+              label="Vô hiệu hóa"
               variant="danger"
               onClick={() => setDeleteModal({ open: true })}
             />
@@ -481,9 +486,9 @@ export default function DoctorDetailPage() {
 
         <ConfirmModal
           open={deleteModal.open}
-          title="Xóa bác sĩ?"
-          body={`Bác sĩ "${full_name}" sẽ bị xóa vĩnh viễn. Hành động này không thể hoàn tác. Bạn chắc chắn?`}
-          confirmLabel="Xóa"
+          title="Vô hiệu hóa bác sĩ?"
+          body={`Bác sĩ "${full_name}" sẽ bị tạm ngưng. Bác sĩ sẽ không nhận lịch hẹn mới. Bạn có thể kích hoạt lại sau.`}
+          confirmLabel="Vô hiệu hóa"
           confirmVariant="danger"
           saving={saving}
           onConfirm={handleDelete}

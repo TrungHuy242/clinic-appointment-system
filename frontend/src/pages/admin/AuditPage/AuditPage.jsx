@@ -1,11 +1,17 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Download, FileText, Settings2, ShieldCheck, Trash2 } from "lucide-react";
 import Badge from "../../../components/Badge/Badge";
+import LoadingSpinner from "../../../components/LoadingSpinner/LoadingSpinner";
 import Table from "../../../components/Table/Table";
 import { getAuditLogs } from "../../../services/adminApi";
+import { ROLE_LABELS } from "../../../services/authService";
 import "./AuditPage.css";
 
-const ROLE_MAP = { receptionist: "Lễ tân", doctor: "Bác sĩ", admin: "Quản trị" };
+function stripHtml(raw) {
+  if (typeof raw !== "string") return "";
+  return raw.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() || "Đã xảy ra lỗi.";
+}
+
 const ACTION_LABELS = {
   CREATE: "Tạo mới",
   UPDATE: "Cập nhật",
@@ -20,7 +26,7 @@ function exportCSV(items) {
   const rows = items.map((item) => [
     item.time || "",
     item.actor || "",
-    ROLE_MAP[item.role] || item.role || "",
+    ROLE_LABELS[item.role] || item.role || "",
     ACTION_LABELS[item.action] || item.action || "",
     item.resource || "",
     item.detail || "",
@@ -65,7 +71,7 @@ const COLUMNS = [
     render: (row) => (
       <div>
         <div className="audit-logs-page__actor-name">{row.actor}</div>
-        <div className="audit-logs-page__actor-role">{ROLE_MAP[row.role]}</div>
+        <div className="audit-logs-page__actor-role">{ROLE_LABELS[row.role]}</div>
       </div>
     ),
   },
@@ -103,7 +109,7 @@ export default function AuditPage() {
         }
       } catch (loadError) {
         if (mounted) {
-          setError(loadError.message || "Không tải được nhật ký thao tác.");
+          setError(stripHtml(loadError.message) || "Không tải được nhật ký thao tác.");
         }
       } finally {
         if (mounted) {
@@ -169,8 +175,15 @@ export default function AuditPage() {
         </select>
       </div>
 
-      {loading ? <div className="dash-page-sub">Đang tải nhật ký thao tác...</div> : null}
-      {error ? <div className="dash-page-sub">{error}</div> : null}
+      {loading ? (
+        <div style={{ padding: "40px", textAlign: "center" }}><LoadingSpinner /></div>
+      ) : null}
+      {error && !loading ? (
+        <div className="audit-page__error">
+          {error}
+          <button type="button" className="audit-page__error-close" onClick={() => setError("")}>×</button>
+        </div>
+      ) : null}
       {!loading && !error && <Table columns={COLUMNS} data={filtered} emptyMessage="Không có kết quả." />}
     </div>
   );

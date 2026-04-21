@@ -15,6 +15,7 @@ export function Input({ label, error, hint, className, ...props }) {
           error ? "mc-input-error" : "",
           className
         )}
+        value={props.value == null ? "" : props.value}
         {...props}
       />
       {error ? (

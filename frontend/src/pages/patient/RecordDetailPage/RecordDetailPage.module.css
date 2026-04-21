@@ -77,11 +77,11 @@
 }
 
 .ehealth-tab:hover {
-    color: var(--color-primary, #13c8ec);
+    color: #0ea5a9;
 }
 
 .ehealth-tab.active {
-    color: var(--color-primary, #13c8ec);
+    color: #0ea5a9;
     font-weight: 700;
 }
 
@@ -93,7 +93,7 @@
     right: 100%;
     width: calc(100% - 1rem);
     height: 3px;
-    background: var(--color-primary, #13c8ec);
+    background: #0ea5a9;
 }
 
 .ehealth-main {
@@ -195,8 +195,8 @@
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background: rgba(19, 200, 236, 0.2);
-    color: var(--color-primary, #13c8ec);
+    background: rgba(14, 165, 169, 0.15);
+    color: #0ea5a9;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -206,7 +206,7 @@
 }
 
 .timeline-dot.completed {
-    background: var(--color-primary, #13c8ec);
+    background: #0ea5a9;
     color: white;
 }
 
@@ -221,7 +221,7 @@
     transform: translateX(-50%);
     width: 2px;
     height: calc(100% - 32px);
-    background: rgba(19, 200, 236, 0.2);
+    background: rgba(14, 165, 169, 0.15);
     z-index: 1;
 }
 
@@ -256,7 +256,7 @@
     height: 80px;
     border-radius: 50%;
     overflow: hidden;
-    border: 2px solid var(--color-primary, #13c8ec);
+    border: 2px solid #0ea5a9;
 }
 
 .doctor-avatar-large img {
@@ -280,7 +280,7 @@
 
 .doctor-branch {
     font-size: 0.75rem;
-    color: var(--color-primary, #13c8ec);
+    color: #0ea5a9;
     font-weight: 600;
     margin: 0;
 }
@@ -332,7 +332,7 @@
 .diagnosis-icon {
     display: flex;
     align-items: flex-start;
-    color: var(--color-primary, #13c8ec);
+    color: #0ea5a9;
     flex-shrink: 0;
 }
 
@@ -397,7 +397,7 @@
 }
 
 .notes-signature svg {
-    color: var(--color-primary, #13c8ec);
+    color: #0ea5a9;
     font-size: 1rem;
 }
 
@@ -499,8 +499,8 @@
 
 .btn-primary {
     padding: 0.5rem 1rem;
-    background: var(--color-primary, #13c8ec);
-    color: #0d191b;
+    background: #0ea5a9;
+    color: white;
     font-size: 0.875rem;
     font-weight: 700;
     border: none;
@@ -514,7 +514,7 @@
 }
 
 .btn-primary:hover {
-    background: var(--color-primary-dark, #0db5d6);
+    background: #0d9488;
 }
 
 .btn-small {

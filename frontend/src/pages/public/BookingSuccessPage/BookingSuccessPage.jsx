@@ -1,15 +1,22 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertCircle,
-  CalendarCheck,
+  CalendarCheck2,
   CheckCircle2,
+  ClipboardList,
   Clock,
+  Copy,
+  Info,
   MapPin,
   Phone,
+  QrCode,
+  ShieldCheck,
   Stethoscope,
+  Timer,
   User,
   XCircle,
 } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import LoadingSpinner from "../../../components/LoadingSpinner/LoadingSpinner";
 import { confirmPA1, expirePA1, getBookingByCode } from "../../../services/bookingApi";
@@ -32,7 +39,7 @@ const STATUS_CONFIG = {
   },
   PENDING_PA1: {
     icon: Clock,
-    title: "Chờ xác nhận PA1",
+    title: "Chờ xác nhận",
     subtitle: "Vui lòng xác nhận trong 15 phút để giữ lịch hẹn.",
     color: "warning",
     pill: "Chờ xác nhận",
@@ -56,6 +63,7 @@ export default function BookingSuccessPage() {
   const [status, setStatus] = useState(location.state?.booking?.status ?? null);
   const [secsLeft, setSecsLeft] = useState(null);
   const [copyState, setCopyState] = useState("idle");
+  const [submitFeedback, setSubmitFeedback] = useState(null); // { type: "error"|"info", message: string }
   const expirySyncedRef = useRef(false);
   const isPending = status === "PENDING" || status === "PENDING_PA1";
 
@@ -64,7 +72,6 @@ export default function BookingSuccessPage() {
       setStatus(booking.status);
       return;
     }
-
     setLoading(true);
     getBookingByCode(code)
       .then((data) => {
@@ -109,9 +116,9 @@ export default function BookingSuccessPage() {
         await expirePA1(code).catch(() => {});
         setStatus("CANCELLED");
         setBooking((current) => (current ? { ...current, status: "CANCELLED" } : current));
-        alert("Mã xác nhận đã hết hạn, lịch hẹn đã được hủy.");
+        setSubmitFeedback({ type: "error", message: "Mã xác nhận đã hết hạn, lịch hẹn đã được hủy." });
       } else {
-        alert("Xác nhận thất bại. Vui lòng thử lại.");
+        setSubmitFeedback({ type: "error", message: "Xác nhận thất bại. Vui lòng thử lại." });
       }
     } finally {
       setLoading(false);
@@ -119,11 +126,44 @@ export default function BookingSuccessPage() {
   }, [code]);
 
   const handleCopyCode = useCallback(async () => {
-    if (!booking?.code || !navigator?.clipboard?.writeText) return;
-    await navigator.clipboard.writeText(booking.code);
+    if (!navigator?.clipboard?.writeText) return;
+    const textToCopy = booking.qrText
+      ? `Mã lịch hẹn: ${booking.code}\nMã QR: ${booking.qrText}`
+      : booking.code;
+    await navigator.clipboard.writeText(textToCopy);
     setCopyState("copied");
     window.setTimeout(() => setCopyState("idle"), 2000);
   }, [booking]);
+
+  const statusConfig = STATUS_CONFIG[status] || STATUS_CONFIG.PENDING;
+  const StatusIcon = statusConfig.icon;
+
+  if (loading) {
+    return (
+      <div className="bs-page">
+        <div className="bs-loading">
+          <LoadingSpinner />
+        </div>
+      </div>
+    );
+  }
+
+  if (status === "NOT_FOUND" || !booking) {
+    return (
+      <div className="bs-page">
+        <div className="bs-error-card">
+          <div className="bs-error-icon">
+            <AlertCircle size={40} />
+          </div>
+          <h2>Không tìm thấy lịch hẹn</h2>
+          <p>Mã lịch hẹn <strong>{code}</strong> không tồn tại hoặc đã hết hiệu lực.</p>
+          <button className="bs-btn bs-btn--primary" onClick={() => navigate("/book")}>
+            Đặt lịch mới
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const formatCountdown = () => {
     if (secsLeft === null || secsLeft <= 0) return "00:00";
@@ -132,152 +172,247 @@ export default function BookingSuccessPage() {
     return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
   };
 
-  if (loading) {
-    return (
-      <div className="bs-loading">
-        <LoadingSpinner />
-      </div>
-    );
-  }
-
-  if (status === "NOT_FOUND" || !booking) {
-    return (
-      <div className="bs-modal-overlay">
-        <div className="bs-modal bs-modal--error">
-          <div className="bs-modal-icon bs-modal-icon--error">
-            <AlertCircle size={36} />
-          </div>
-          <h2>Không tìm thấy lịch hẹn</h2>
-          <p>Mã lịch hẹn <strong>{code}</strong> không tồn tại hoặc đã hết hiệu lực.</p>
-          <button className="bs-modal-btn bs-modal-btn--primary" onClick={() => navigate("/book")}>
-            Đặt lịch mới
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  const statusConfig = STATUS_CONFIG[status] || STATUS_CONFIG.PENDING;
-  const StatusIcon = statusConfig.icon;
-
   return (
-    <div className="bs-modal-overlay">
-      <div className="bs-modal">
-        {/* Header */}
-        <div className={`bs-modal-header bs-modal-header--${statusConfig.color}`}>
-          <div className="bs-modal-header-icon">
-            <StatusIcon size={24} />
+    <div className="bs-page">
+
+      {/* ── Status Hero ── */}
+      <div className={`bs-hero bs-hero--${statusConfig.color}`}>
+        <div className="bs-hero-inner">
+          <div className="bs-hero-icon-wrap">
+            <div className="bs-hero-icon-ring" />
+            <div className="bs-hero-icon">
+              <StatusIcon size={36} />
+            </div>
           </div>
-          <div className="bs-modal-header-content">
-            <h2>{statusConfig.title}</h2>
+          <div className="bs-hero-text">
+            <h1>{statusConfig.title}</h1>
             <p>{statusConfig.subtitle}</p>
           </div>
-          <span className={`bs-modal-pill bs-modal-pill--${statusConfig.color}`}>
+          <div className={`bs-status-pill bs-status-pill--${statusConfig.color}`}>
             {statusConfig.pill}
-          </span>
+          </div>
         </div>
 
-        {/* Countdown */}
+        {/* Countdown bar */}
         {isPending && secsLeft !== null && (
-          <div className="bs-modal-countdown">
-            <Clock size={18} />
-            <span>{formatCountdown()}</span>
+          <div className="bs-countdown-bar">
+            <div className="bs-countdown-bar-track">
+              <div
+                className="bs-countdown-bar-fill"
+                style={{ width: `${Math.max(0, (secsLeft / 900) * 100)}%` }}
+              />
+            </div>
+            <div className="bs-countdown-bar-label">
+              <Timer size={14} />
+              <span>Thời gian xác nhận còn lại</span>
+              <strong>{formatCountdown()}</strong>
+            </div>
           </div>
         )}
+      </div>
 
-        {/* Content */}
-        <div className="bs-modal-content">
-          {/* Code */}
-          <div className="bs-modal-code">
-            <span className="bs-modal-code-label">Mã lịch hẹn</span>
-            <div className="bs-modal-code-value">
+      {/* ── Main Content ── */}
+      <div className="bs-content">
+
+        {/* Left — Appointment Details */}
+        <div className="bs-card bs-card--details">
+          <div className="bs-card-header">
+            <div className="bs-card-icon">
+              <ClipboardList size={18} />
+            </div>
+            <h2>Chi tiết lịch hẹn</h2>
+          </div>
+
+          <div className="bs-appointment-code-block">
+            <span className="bs-appointment-code-label">Mã lịch hẹn</span>
+            <div className="bs-appointment-code-value">
               <strong>{booking.code}</strong>
-              <button className="bs-modal-copy" onClick={handleCopyCode}>
-                {copyState === "copied" ? "Đã lưu" : "Sao chép"}
+              <button className="bs-copy-btn" onClick={handleCopyCode}>
+                <Copy size={13} />
+                {copyState === "copied" ? "Đã lưu!" : "Sao chép"}
               </button>
             </div>
           </div>
 
-          {/* Info Grid - Compact */}
-          <div className="bs-modal-grid">
-            <div className="bs-modal-item">
-              <CalendarCheck size={16} />
-              <div>
-                <span>Ngày</span>
+          <div className="bs-detail-grid">
+            <div className="bs-detail-item">
+              <div className="bs-detail-icon">
+                <CalendarCheck2 size={16} />
+              </div>
+              <div className="bs-detail-content">
+                <span className="bs-detail-label">Ngày hẹn</span>
                 <strong>{booking.date}</strong>
               </div>
             </div>
-            <div className="bs-modal-item">
-              <Clock size={16} />
-              <div>
-                <span>Giờ</span>
+            <div className="bs-detail-item">
+              <div className="bs-detail-icon">
+                <Clock size={16} />
+              </div>
+              <div className="bs-detail-content">
+                <span className="bs-detail-label">Giờ hẹn</span>
                 <strong>{booking.slot}</strong>
               </div>
             </div>
-            <div className="bs-modal-item">
-              <Stethoscope size={16} />
-              <div>
-                <span>Bác sĩ</span>
-                <strong>{booking.doctorName || booking.doctor}</strong>
+            <div className="bs-detail-item">
+              <div className="bs-detail-icon">
+                <Stethoscope size={16} />
+              </div>
+              <div className="bs-detail-content">
+                <span className="bs-detail-label">Chuyên khoa</span>
+                <strong>{booking.service || booking.specialty || "—"}</strong>
               </div>
             </div>
-            <div className="bs-modal-item">
-              <User size={16} />
-              <div>
-                <span>Bệnh nhân</span>
-                <strong>{booking.patientName}</strong>
+            <div className="bs-detail-item">
+              <div className="bs-detail-icon">
+                <User size={16} />
+              </div>
+              <div className="bs-detail-content">
+                <span className="bs-detail-label">Bác sĩ</span>
+                <strong>{booking.doctorName || booking.doctor || "—"}</strong>
               </div>
             </div>
-            <div className="bs-modal-item">
-              <Phone size={16} />
-              <div>
-                <span>Điện thoại</span>
+            <div className="bs-detail-item">
+              <div className="bs-detail-icon">
+                <Phone size={16} />
+              </div>
+              <div className="bs-detail-content">
+                <span className="bs-detail-label">Điện thoại liên hệ</span>
                 <strong>{booking.patientPhone}</strong>
               </div>
             </div>
-            <div className="bs-modal-item">
-              <MapPin size={16} />
-              <div>
-                <span>Địa điểm</span>
-                <strong>MediCare</strong>
+            <div className="bs-detail-item">
+              <div className="bs-detail-icon">
+                <MapPin size={16} />
+              </div>
+              <div className="bs-detail-content">
+                <span className="bs-detail-label">Địa điểm</span>
+                <strong>MediCare Clinic — Cơ sở Hải Châu</strong>
               </div>
             </div>
           </div>
+        </div>
 
-          {/* QR */}
-          {booking.qrText && (
-            <div className="bs-modal-qr">
-              <span>QR Check-in</span>
-              <code>{booking.qrText}</code>
+        {/* Right — QR + Actions + Notes */}
+        <div className="bs-sidebar">
+
+          {/* Unified sidebar card */}
+          <div className="bs-sidebar-card">
+
+            {/* QR Section */}
+            {booking.qrText && (
+              <div className="bs-sidebar-section">
+                <div className="bs-sidebar-section-header">
+                  <QrCode size={15} />
+                  <span>Mã QR Check-in</span>
+                </div>
+                <div className="bs-sidebar-qr-wrapper">
+                  <div className="bs-sidebar-qr-frame">
+                    <QRCodeSVG
+                      value={booking.qrText}
+                      size={160}
+                      level="M"
+                      fgColor="#0f766e"
+                      bgColor="#f8fafc"
+                      imageSettings={{
+                        src: "",
+                        excavate: false,
+                        height: 0,
+                        width: 0,
+                      }}
+                    />
+                  </div>
+                  <div className="bs-sidebar-qr-meta">
+                    <code className="bs-sidebar-qr-code-text">{booking.qrText}</code>
+                  </div>
+                </div>
+                <button className="bs-sidebar-copy-btn" onClick={handleCopyCode}>
+                  <Copy size={13} />
+                  {copyState === "copied" ? "Đã lưu!" : "Sao chép mã QR"}
+                </button>
+              </div>
+            )}
+
+            {/* Feedback */}
+            {submitFeedback && (
+              <div className={`bs-sidebar-feedback bs-sidebar-feedback--${submitFeedback.type}`}>
+                <AlertCircle size={14} />
+                {submitFeedback.message}
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="bs-sidebar-section bs-sidebar-section--actions">
+              {isPending && (
+                <button
+                  className="bs-sidebar-btn bs-sidebar-btn--primary"
+                  onClick={handleConfirm}
+                  disabled={loading}
+                >
+                  <CheckCircle2 size={16} />
+                  {loading ? "Đang xác nhận..." : "Xác nhận lịch hẹn"}
+                </button>
+              )}
+              {status === "CONFIRMED" && (
+                <button
+                  className="bs-sidebar-btn bs-sidebar-btn--outline"
+                  onClick={() => navigate("/lookup")}
+                >
+                  <QrCode size={15} />
+                  Tra cứu lịch hẹn
+                </button>
+              )}
+              {status === "CANCELLED" && (
+                <button
+                  className="bs-sidebar-btn bs-sidebar-btn--primary"
+                  onClick={() => navigate("/book")}
+                >
+                  <CalendarCheck2 size={15} />
+                  Đặt lịch mới
+                </button>
+              )}
+              <button
+                className="bs-sidebar-btn bs-sidebar-btn--ghost"
+                onClick={() => navigate("/")}
+              >
+                Về trang chủ
+              </button>
             </div>
-          )}
+
+            {/* Notes */}
+            {status === "CONFIRMED" && (
+              <div className="bs-sidebar-section">
+                <div className="bs-sidebar-section-header">
+                  <Info size={15} />
+                  <span>Lưu ý khi đến khám</span>
+                </div>
+                <ul className="bs-sidebar-notes">
+                  <li>
+                    <span className="bs-sidebar-note-dot" />
+                    Đến trước giờ hẹn <strong>10–15 phút</strong> để làm thủ tục.
+                  </li>
+                  <li>
+                    <span className="bs-sidebar-note-dot" />
+                    Mang theo <strong>CMND/CCCD</strong> hoặc giấy tờ tùy thân.
+                  </li>
+                  <li>
+                    <span className="bs-sidebar-note-dot" />
+                    Nếu cần hủy hoặc dời lịch, thông báo trước <strong>24 giờ</strong>.
+                  </li>
+                </ul>
+              </div>
+            )}
+          </div>
+
+          {/* Brand strip */}
+          <div className="bs-brand-strip">
+            <div className="bs-brand-logo">
+              <ShieldCheck size={14} />
+            </div>
+            <span>MediCare Clinic — Hệ thống chăm sóc sức khỏe</span>
+          </div>
         </div>
 
-        {/* Actions */}
-        <div className="bs-modal-actions">
-          {isPending && (
-            <button className="bs-modal-btn bs-modal-btn--primary" onClick={handleConfirm} disabled={loading}>
-              <CheckCircle2 size={18} />
-              {loading ? "Đang xác nhận..." : "Xác nhận ngay"}
-            </button>
-          )}
-          {status === "CONFIRMED" && (
-            <button className="bs-modal-btn bs-modal-btn--secondary" onClick={() => navigate("/lookup")}>
-              Tra cứu lịch hẹn
-            </button>
-          )}
-          {status === "CANCELLED" && (
-            <button className="bs-modal-btn bs-modal-btn--primary" onClick={() => navigate("/book")}>
-              Đặt lịch mới
-            </button>
-          )}
-          <button className="bs-modal-btn bs-modal-btn--ghost" onClick={() => navigate("/")}>
-            Về trang chủ
-          </button>
-        </div>
       </div>
     </div>
   );
 }
-
-

@@ -67,6 +67,7 @@ export default function BookingWizardPage() {
 
   const [step, setStep]                       = useState(0);
   const [loading, setLoading]                 = useState(false);
+  const [submitError, setSubmitError]           = useState("");
   const [specialties, setSpecialties]         = useState([]);
   const [selectedSpecialty, setSelectedSpecialty] = useState(null);
   const [doctors, setDoctors]                 = useState([]);
@@ -174,7 +175,7 @@ const checkPhoneExists = async (phone) => {
       const booking = await createGuestBooking(payload);
       navigate(`/booking-success/${booking.code}`, { state: { booking } });
     } catch (error) {
-      alert(`Đặt lịch thất bại: ${error.message}`);
+      setSubmitError(`Đặt lịch thất bại: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -431,6 +432,10 @@ const checkPhoneExists = async (phone) => {
               </Button>
             ) : (
               <div />
+            )}
+
+            {submitError && (
+              <div className="bw-submit-error">{submitError}</div>
             )}
 
             {step < STEPS.length - 1 ? (

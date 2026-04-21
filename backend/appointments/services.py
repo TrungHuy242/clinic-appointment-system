@@ -11,6 +11,18 @@ from catalog.models import Doctor, Specialty
 from .models import Appointment, AppointmentBlock, AppointmentHistory, AppointmentStatus, AppointmentVisitType
 
 
+def _generate_guest_username(phone):
+    """Generate unique guest username from phone: guest_0xxxxxx."""
+    base = f"guest_{phone}"
+    candidate = base
+    from portal.models import PatientProfile
+    counter = 0
+    while PatientProfile.objects.filter(account_username=candidate).exists():
+        counter += 1
+        candidate = f"{base}_{counter}"
+    return candidate
+
+
 STATUS_VALUES = [choice for choice, _label in AppointmentStatus.choices]
 STATUS_MESSAGE = f"status must be one of: {', '.join(STATUS_VALUES)}."
 VISIT_TYPE_VALUES = [choice for choice, _label in AppointmentVisitType.choices]
@@ -239,13 +251,25 @@ def sync_appointment_blocks(appointment, block_indexes=None):
 
 
 def create_guest_appointment(data):
+    from portal.models import PatientProfile
+
     patient_full_name = _require_value(data, 'patient_full_name')
     patient_phone = _require_value(data, 'patient_phone')
     specialty = _normalize_specialty(_require_value(data, 'specialty'))
     doctor = _normalize_doctor(_require_value(data, 'doctor'))
-    scheduled_start = _require_value(data, 'scheduled_start')
-    scheduled_end = _require_value(data, 'scheduled_end')
+    raw_start = _require_value(data, 'scheduled_start')
+    raw_end   = _require_value(data, 'scheduled_end')
     visit_type = normalize_visit_type(data.get('visit_type'))
+
+    # Parse naive datetime strings into aware datetimes (Asia/Ho_Chi_Minh)
+    if isinstance(raw_start, str):
+        scheduled_start = timezone.make_aware(datetime.strptime(raw_start, '%Y-%m-%dT%H:%M:%S'))
+    else:
+        scheduled_start = raw_start
+    if isinstance(raw_end, str):
+        scheduled_end = timezone.make_aware(datetime.strptime(raw_end, '%Y-%m-%dT%H:%M:%S'))
+    else:
+        scheduled_end = raw_end
 
     validate_doctor_specialty(doctor, specialty)
     validate_time_range(scheduled_start, scheduled_end)
@@ -263,6 +287,22 @@ def create_guest_appointment(data):
     for attempt in range(3):
         try:
             with transaction.atomic():
+                # Tạo PatientProfile cho khách vãng lai nếu chưa tồn tại
+                profile, created = PatientProfile.objects.get_or_create(
+                    phone=patient_phone,
+                    defaults={
+                        'full_name': patient_full_name,
+                        'account_username': _generate_guest_username(patient_phone),
+                        'account_password': '',
+                        'account_email': '',
+                        'auth_token': '',
+                        'is_current': False,
+                    }
+                )
+                if not created and not profile.full_name:
+                    profile.full_name = patient_full_name
+                    profile.save(update_fields=['full_name', 'updated_at'])
+
                 appointment = Appointment.objects.create(
                     patient_full_name=patient_full_name,
                     patient_phone=patient_phone,
@@ -272,6 +312,87 @@ def create_guest_appointment(data):
                     scheduled_end=normalized_end,
                     visit_type=visit_type,
                     status=AppointmentStatus.PENDING,
+                )
+                sync_appointment_blocks(appointment, block_indexes=reserved_block_indexes)
+            return appointment
+        except IntegrityError as exc:
+            raise ValidationError({'scheduled_start': OVERLAP_MESSAGE}) from exc
+        except OperationalError as exc:
+            if 'database is locked' not in str(exc).lower():
+                raise
+            if AppointmentBlock.objects.filter(
+                doctor=doctor,
+                appointment_date=appointment_date,
+                block_index__in=reserved_block_indexes,
+            ).exists():
+                raise ValidationError({'scheduled_start': OVERLAP_MESSAGE}) from exc
+            if attempt == 2:
+                raise ValidationError({'scheduled_start': OVERLAP_MESSAGE}) from exc
+            sleep(0.05 * (attempt + 1))
+
+    raise ValidationError({'scheduled_start': OVERLAP_MESSAGE})
+
+
+def create_reception_appointment(data):
+    from portal.models import PatientProfile
+
+    patient_full_name = _require_value(data, 'patient_full_name')
+    patient_phone = _require_value(data, 'patient_phone')
+    specialty = _normalize_specialty(_require_value(data, 'specialty'))
+    doctor = _normalize_doctor(_require_value(data, 'doctor'))
+    raw_start = _require_value(data, 'scheduled_start')
+    raw_end = _require_value(data, 'scheduled_end')
+    visit_type = normalize_visit_type(data.get('visit_type'))
+
+    if isinstance(raw_start, str):
+        scheduled_start = timezone.make_aware(datetime.strptime(raw_start, '%Y-%m-%dT%H:%M:%S'))
+    else:
+        scheduled_start = raw_start
+    if isinstance(raw_end, str):
+        scheduled_end = timezone.make_aware(datetime.strptime(raw_end, '%Y-%m-%dT%H:%M:%S'))
+    else:
+        scheduled_end = raw_end
+
+    validate_doctor_specialty(doctor, specialty)
+    validate_time_range(scheduled_start, scheduled_end)
+
+    reserved_block_indexes, normalized_end = get_reserved_block_indexes_for_visit(scheduled_start, visit_type)
+    appointment_date = timezone.localtime(scheduled_start).date()
+
+    if AppointmentBlock.objects.filter(
+        doctor=doctor,
+        appointment_date=appointment_date,
+        block_index__in=reserved_block_indexes,
+    ).exists():
+        raise ValidationError({'scheduled_start': OVERLAP_MESSAGE})
+
+    for attempt in range(3):
+        try:
+            with transaction.atomic():
+                profile, created = PatientProfile.objects.get_or_create(
+                    phone=patient_phone,
+                    defaults={
+                        'full_name': patient_full_name,
+                        'account_username': _generate_guest_username(patient_phone),
+                        'account_password': '',
+                        'account_email': '',
+                        'auth_token': '',
+                        'is_current': False,
+                    }
+                )
+                if not created and not profile.full_name:
+                    profile.full_name = patient_full_name
+                    profile.save(update_fields=['full_name', 'updated_at'])
+
+                appointment = Appointment.objects.create(
+                    patient_full_name=patient_full_name,
+                    patient_phone=patient_phone,
+                    specialty=specialty,
+                    doctor=doctor,
+                    scheduled_start=scheduled_start,
+                    scheduled_end=normalized_end,
+                    visit_type=visit_type,
+                    status=AppointmentStatus.CONFIRMED,
                 )
                 sync_appointment_blocks(appointment, block_indexes=reserved_block_indexes)
             return appointment
@@ -400,13 +521,29 @@ def soft_delete_appointment(appointment):
 
 def reschedule_appointment(appointment, new_scheduled_start, new_scheduled_end,
                             changed_by='', changed_by_role='', note=''):
-    """Đổi giờ hẹn: cập nhật scheduled_start/end, sync blocks, ghi history."""
+    """Đổi giờ hẹn: kiểm tra trùng slot, cập nhật scheduled_start/end, sync blocks, ghi history."""
     CANCELLED = AppointmentStatus.CANCELLED
     if appointment.status == CANCELLED:
         raise ValidationError({'status': 'Không thể dời lịch của lịch hẹn đã hủy.'})
 
     old_start = timezone.localtime(appointment.scheduled_start).strftime('%d/%m/%Y %H:%M')
     old_end = timezone.localtime(appointment.scheduled_end).strftime('%d/%m/%Y %H:%M')
+
+    appointment_date = timezone.localtime(new_scheduled_start).date()
+    visit_type = normalize_visit_type(appointment.visit_type)
+    required_blocks, _ = get_reserved_block_indexes_for_visit(new_scheduled_start, visit_type)
+
+    # Kiem tra trung slot voi lich khac
+    conflicting = AppointmentBlock.objects.filter(
+        doctor=appointment.doctor,
+        appointment_date=appointment_date,
+        block_index__in=required_blocks,
+    ).exclude(appointment=appointment).exists()
+
+    if conflicting:
+        raise ValidationError({
+            'scheduled_start': OVERLAP_MESSAGE
+        })
 
     appointment.scheduled_start = new_scheduled_start
     appointment.scheduled_end = new_scheduled_end

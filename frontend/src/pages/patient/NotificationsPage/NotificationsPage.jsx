@@ -1,7 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { BellOff, CheckCheck, Trash2 } from "lucide-react";
 import { appointmentApi } from "../../../services/patientApi";
+import { formatRelativeDate } from "../../../services/formatters";
 import "./NotificationsPage.css";
+
+function stripHtml(raw) {
+  if (typeof raw !== "string") return "";
+  return raw.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() || "Đã xảy ra lỗi.";
+}
 
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState([]);
@@ -20,7 +26,7 @@ export default function NotificationsPage() {
       const data = await appointmentApi.getNotifications();
       setNotifications(data);
     } catch (loadError) {
-      setError(loadError.message || "Không tải được thông báo.");
+      setError(stripHtml(loadError.message) || "Không tải được thông báo.");
     } finally {
       setLoading(false);
     }
@@ -31,7 +37,7 @@ export default function NotificationsPage() {
       await appointmentApi.markNotificationRead(id);
       setNotifications((prev) => prev.map((item) => (item.id === id ? { ...item, read: true } : item)));
     } catch (markError) {
-      setError(markError.message || "Không thể cập nhật thông báo.");
+      setError(stripHtml(markError.message) || "Không thể cập nhật thông báo.");
     }
   }
 
@@ -40,7 +46,7 @@ export default function NotificationsPage() {
       await appointmentApi.markAllNotificationsRead();
       setNotifications((prev) => prev.map((item) => ({ ...item, read: true })));
     } catch (markError) {
-      setError(markError.message || "Không thể cập nhật thông báo.");
+      setError(stripHtml(markError.message) || "Không thể cập nhật thông báo.");
     }
   }
 
@@ -49,7 +55,7 @@ export default function NotificationsPage() {
       await appointmentApi.deleteNotification(id);
       setNotifications((prev) => prev.filter((item) => item.id !== id));
     } catch (deleteError) {
-      setError(deleteError.message || "Không thể xóa thông báo.");
+      setError(stripHtml(deleteError.message) || "Không thể xóa thông báo.");
     }
   }
 
@@ -124,7 +130,7 @@ export default function NotificationsPage() {
 
                   <div className="notification-content">
                     <h3 className="notification-title">{notification.message}</h3>
-                    <p className="notification-date">{formatDate(notification.date)}</p>
+                    <p className="notification-date">{formatRelativeDate(notification.date)}</p>
                   </div>
 
                   <div className="notification-actions">
@@ -145,21 +151,5 @@ export default function NotificationsPage() {
       </main>
     </div>
   );
-}
-
-function formatDate(dateStr) {
-  if (!dateStr) return "";
-  const date = new Date(dateStr);
-  const today = new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-
-  if (date.toDateString() === today.toDateString()) {
-    return "Hôm nay";
-  }
-  if (date.toDateString() === yesterday.toDateString()) {
-    return "Hôm qua";
-  }
-  return date.toLocaleDateString("vi-VN");
 }
 

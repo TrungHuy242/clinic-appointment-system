@@ -7,14 +7,21 @@ import {
   CheckCircle2,
   ChevronRight,
   Clock,
+  Copy,
   MapPin,
   Plus,
+  QrCode,
   Search,
   Stethoscope,
   User,
 } from "lucide-react";
 import { appointmentApi } from "../../../services/patientApi";
 import "./MyAppointmentsPage.css";
+
+function stripHtml(raw) {
+  if (typeof raw !== "string") return "";
+  return raw.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() || "Đã xảy ra lỗi.";
+}
 
 const TABS = [
   { key: "upcoming",  label: "Sắp tới",        icon: CalendarCheck },
@@ -24,9 +31,9 @@ const TABS = [
 
 const STATUS_CONFIG = {
   confirmed:  { label: "Đã xác nhận", className: "status-confirmed" },
-  pending:    { label: "Chờ xác nhận", className: "status-pending"  },
-  completed:  { label: "Hoàn thành",  className: "status-completed" },
-  cancelled:  { label: "Đã hủy",      className: "status-cancelled" },
+  pending:    { label: "Chờ xác nhận",  className: "status-pending"  },
+  completed:  { label: "Hoàn thành",   className: "status-completed" },
+  cancelled:  { label: "Đã hủy",       className: "status-cancelled" },
 };
 
 function StatusBadge({ status }) {
@@ -36,6 +43,23 @@ function StatusBadge({ status }) {
       {status === "pending" && <Clock size={12} />}
       {config.label}
     </span>
+  );
+}
+
+function CopyCodeButton({ code }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = async (e) => {
+    e.stopPropagation();
+    if (!navigator?.clipboard?.writeText) return;
+    await navigator.clipboard.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  return (
+    <button className="ma-copy-code-btn" onClick={handleCopy} title="Sao chép mã lịch hẹn">
+      <Copy size={11} />
+      {copied ? "Đã lưu!" : code}
+    </button>
   );
 }
 
@@ -57,7 +81,7 @@ export default function MyAppointmentsPage() {
       const data = await appointmentApi.getAppointments(activeTab);
       setAppointments(data);
     } catch (loadError) {
-      setError(loadError.message || "Không tải được danh sách lịch hẹn.");
+      setError(stripHtml(loadError.message) || "Không tải được danh sách lịch hẹn.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -195,7 +219,13 @@ export default function MyAppointmentsPage() {
                   <div className="ma-card-info">
                     <div className="ma-card-header">
                       <StatusBadge status={appointment.status} />
-                      <span className="ma-card-code">{appointment.code}</span>
+                      {appointment.qrText && (
+                        <span className="ma-qr-badge">
+                          <QrCode size={11} />
+                          Có QR
+                        </span>
+                      )}
+                      <CopyCodeButton code={appointment.code} />
                     </div>
 
                     <h3 className="ma-card-service">

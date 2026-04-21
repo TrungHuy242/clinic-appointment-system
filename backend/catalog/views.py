@@ -15,7 +15,7 @@ def _admin_actor(request):
     user = getattr(request, 'user', None)
     if user and hasattr(user, 'full_name'):
         return user.full_name, getattr(user, 'role', 'admin'), request.META.get('REMOTE_ADDR')
-    return 'Admin', 'admin', request.META.get('REMOTE_ADDR')
+    return 'System', 'system', request.META.get('REMOTE_ADDR')
 
 
 # ── Specialty ───────────────────────────────────────────────────────────────────

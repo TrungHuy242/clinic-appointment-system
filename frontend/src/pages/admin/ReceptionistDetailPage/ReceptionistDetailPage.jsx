@@ -21,6 +21,11 @@ import {
 } from "../../../services/adminApi";
 import "./ReceptionistDetailPage.css";
 
+function stripHtml(raw) {
+  if (typeof raw !== "string") return "";
+  return raw.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() || "Đã xảy ra lỗi.";
+}
+
 function ConfirmModal({ open, title, body, confirmLabel, confirmVariant, onConfirm, onCancel, saving }) {
   if (!open) return null;
   return (
@@ -103,7 +108,7 @@ export default function ReceptionistDetailPage() {
       const data = await getReceptionistProfile(receptionistId);
       setProfile(data);
     } catch (err) {
-      setError(err.message || "Không tải được thông tin lễ tân.");
+      setError(stripHtml(err.message) || "Không tải được thông tin lễ tân.");
     } finally {
       setLoading(false);
     }
@@ -138,7 +143,7 @@ export default function ReceptionistDetailPage() {
       });
       navigate(`/app/admin/catalog/receptionists/${created.id}`);
     } catch (err) {
-      setError(err.message || "Không tạo được lễ tân.");
+      setError(stripHtml(err.message) || "Không tạo được lễ tân.");
       setSaving(false);
     }
   }
@@ -178,7 +183,7 @@ export default function ReceptionistDetailPage() {
       setEditForm(null);
       await loadProfile();
     } catch (err) {
-      setError(err.message || "Không lưu được thông tin lễ tân.");
+      setError(stripHtml(err.message) || "Không lưu được thông tin lễ tân.");
       setSaving(false);
     }
   }
@@ -192,7 +197,7 @@ export default function ReceptionistDetailPage() {
       await deleteReceptionistProfile(profile.id);
       navigate("/app/admin/catalog");
     } catch (err) {
-      setError(err.message || "Không xóa được lễ tân.");
+      setError(stripHtml(err.message) || "Không xóa được lễ tân.");
       setSaving(false);
     }
   }

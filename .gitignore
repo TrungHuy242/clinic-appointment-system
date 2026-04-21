@@ -21,3 +21,16 @@ frontend/node_modules/
 # OS/editor
 .DS_Store
 Thumbs.db
+
+# Test / Debug / Utility scripts
+check_*.py
+debug_*.py
+test_*.py
+hash_all_patients.py
+
+# Cursor IDE config
+.cursor/
+agent-transcripts/
+
+# Local DB
+db.sqlite3

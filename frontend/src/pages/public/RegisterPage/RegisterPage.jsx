@@ -5,6 +5,11 @@ import Button from "../../../components/Button/Button";
 import { authApi } from "../../../services/authService";
 import "./RegisterPage.css";
 
+function stripHtml(raw) {
+  if (typeof raw !== "string") return "";
+  return raw.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() || "Đã xảy ra lỗi.";
+}
+
 export default function RegisterPage() {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
@@ -49,7 +54,7 @@ export default function RegisterPage() {
       });
       navigate("/login");
     } catch (error) {
-      setSubmitError(error.message || "Không thể đăng ký tài khoản.");
+      setSubmitError(stripHtml(error.message) || "Không thể đăng ký tài khoản.");
     } finally {
       setSubmitting(false);
     }
