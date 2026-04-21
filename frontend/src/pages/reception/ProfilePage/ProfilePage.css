@@ -1,0 +1,194 @@
+/* ReceptionistProfilePage */
+.rc-profile-page {
+  padding: 24px;
+  max-width: 720px;
+}
+
+.rc-profile-loading,
+.rc-profile-error {
+  text-align: center;
+  padding: 48px;
+  color: var(--color-text-muted);
+  font-size: 15px;
+}
+
+.rc-profile-error {
+  color: var(--color-danger);
+}
+
+.rc-profile-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 20px;
+  background: var(--color-surface);
+  padding: 4px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-subtle);
+  width: fit-content;
+}
+
+.rc-profile-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+}
+
+.rc-profile-card-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text-main);
+  margin: 0 0 16px;
+}
+
+.rc-profile-avatar-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.rc-profile-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--color-primary-light);
+  display: grid;
+  place-items: center;
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.rc-profile-avatar-info {
+  flex: 1;
+}
+
+.rc-profile-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-text-main);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.rc-profile-role {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.rc-profile-edit-btn {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-primary);
+  background: none;
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  padding: 3px 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.rc-profile-edit-btn:hover {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.rc-profile-msg {
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.rc-profile-msg--success {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+}
+
+.rc-profile-msg--error {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+}
+
+.rc-profile-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.rc-profile-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rc-profile-field--full {
+  grid-column: 1 / -1;
+}
+
+.rc-profile-field__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.rc-profile-field__input {
+  padding: 9px 12px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  color: var(--color-text-main);
+  background: var(--color-bg-soft);
+  transition: border-color 0.15s;
+  width: 100%;
+}
+
+.rc-profile-field__input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.rc-profile-field__input:disabled {
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+.rc-profile-field__input--error {
+  border-color: var(--color-danger);
+}
+
+.rc-profile-field__textarea {
+  resize: vertical;
+  min-height: 90px;
+}
+
+.rc-profile-field__error {
+  font-size: 12px;
+  color: var(--color-danger);
+}
+
+.rc-profile-actions {
+  display: flex;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+@media (max-width: 600px) {
+  .rc-profile-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .rc-profile-tabs {
+    width: 100%;
+  }
+}

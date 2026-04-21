@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Html5Qrcode, Html5QrcodeScannerState } from "html5-qrcode";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { CircleCheck, CircleX, Clock3, QrCode, Search, Square, TriangleAlert } from "lucide-react";
 import Badge from "../../../components/Badge/Badge";
 import Button from "../../../components/Button/Button";
@@ -78,11 +79,14 @@ function extractCodeFromQR(qrString) {
 }
 
 export default function CheckinPage() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [checkinResult, setCheckinResult] = useState(null);
   const [todayList, setTodayList] = useState([]);
   const [listLoading, setListLoading] = useState(true);
+  const [feedback, setFeedback] = useState(null); // { type: "success"|"error", message: string }
 
   // QR scan state
   const [scanMode, setScanMode] = useState("manual"); // "manual" | "qr"
@@ -91,6 +95,19 @@ export default function CheckinPage() {
   const scannerDivRef = useRef(null); // DOM ref for scanner container
 
   const today = new Date().toISOString().slice(0, 10);
+
+  // Pre-fill query from ?code= param (e.g. from AppointmentsPage)
+  useEffect(() => {
+    const codeParam = searchParams.get("code");
+    if (codeParam) {
+      setQuery(codeParam.trim().toUpperCase());
+      // Auto-submit check-in after a short delay to let the input render
+      const timer = setTimeout(() => {
+        performCheckin(codeParam.trim().toUpperCase());
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Refresh today's list on mount
   useEffect(() => {
@@ -170,6 +187,7 @@ export default function CheckinPage() {
       clearTimeout(timer);
       stopScanner();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scanMode]);
 
   async function performCheckin(code) {
@@ -195,9 +213,9 @@ export default function CheckinPage() {
       const refreshedList = await listTodayAppointments(today);
       setTodayList(refreshedList);
       if (!id) setCheckinResult(null);
-      alert("Đã chuyển bệnh nhân sang danh sách khám của bác sĩ.");
+      setFeedback({ type: "success", message: "Đã chuyển bệnh nhân sang danh sách khám của bác sĩ." });
     } catch {
-      alert("Lỗi khi chuyển bệnh nhân. Vui lòng thử lại.");
+      setFeedback({ type: "error", message: "Lỗi khi chuyển bệnh nhân. Vui lòng thử lại." });
     }
   }
 
@@ -224,9 +242,9 @@ export default function CheckinPage() {
   return (
     <div className="mc-stack-lg checkin-page">
       <div>
-        <h1 className="home-hero-title checkin-page__title">Check-in PA4</h1>
-        <p className="home-hero-sub">
-          Tra cứu bằng mã lịch hẹn, số điện thoại hoặc quét QR: [giờ hẹn - 15p, giờ hẹn + 10p]
+        <h1 className="dash-page-title">Check-in bệnh nhân</h1>
+        <p className="dash-page-sub">
+          Tra cứu lịch hẹn bằng mã hoặc số điện thoại để check-in. Khoảng thời gian check-in: [giờ hẹn - 15 phút, giờ hẹn + 10 phút].
         </p>
       </div>
 
@@ -344,6 +362,12 @@ export default function CheckinPage() {
               <li>Nút <strong>Chuyển</strong> ở bảng bên dưới cho phép chuyển bệnh nhân đã check-in sang danh sách bác sĩ.</li>
             </ul>
           </div>
+
+          {feedback && (
+            <div className={`ci-feedback ci-feedback--${feedback.type}`}>
+              {feedback.message}
+            </div>
+          )}
         </div>
 
         <div className="mc-stack-md">

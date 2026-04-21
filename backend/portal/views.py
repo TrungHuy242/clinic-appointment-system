@@ -7,7 +7,10 @@ from rest_framework.views import APIView
 from common.auth import IsAdmin, IsAuthenticated, IsDoctor, IsReceptionist, SESSION_USER_KEY
 
 from .services import (
+    _staff_receptionist,
+    change_doctor_password,
     change_password,
+    change_receptionist_password,
     claim_profile,
     complete_visit,
     create_admin_receptionist_profile,
@@ -22,12 +25,15 @@ from .services import (
     get_audit_logs_data,
     get_current_profile,
     get_dashboard_data,
+    get_doctor_profile,
     get_doctor_schedule,
     get_doctor_visits,
     get_health_profile,
     get_notifications,
     get_patient_appointments,
     get_reception_patients_data,
+    get_receptionist_dashboard_data,
+    get_receptionist_profile,
     get_record_detail,
     get_reports_data,
     get_visit_detail,
@@ -42,6 +48,8 @@ from .services import (
     save_visit_draft,
     update_account_info,
     update_admin_receptionist_profile,
+    update_doctor_profile,
+    update_receptionist_profile,
     update_health_profile,
 )
 
@@ -264,13 +272,60 @@ class DoctorVisitCompleteAPIView(APIView):
         return Response(complete_visit(code, request.data, doctor=doctor))
 
 
-# ── Reception ──────────────────────────────────────────────────────────────────
-
-class ReceptionPatientsAPIView(APIView):
+class DoctorProfileAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
+        doctor = _staff_doctor(request)
+        return Response(get_doctor_profile(doctor))
+
+    def patch(self, request, *args, **kwargs):
+        doctor = _staff_doctor(request)
+        return Response(update_doctor_profile(doctor, request.data))
+
+
+class DoctorChangePasswordAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        doctor = _staff_doctor(request)
+        return Response(change_doctor_password(doctor, request.data))
+
+
+# ── Reception ──────────────────────────────────────────────────────────────────
+
+class ReceptionPatientsAPIView(APIView):
+    permission_classes = [IsReceptionist]
+
+    def get(self, request, *args, **kwargs):
         return Response(get_reception_patients_data())
+
+
+class ReceptionDashboardAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        return Response(get_receptionist_dashboard_data())
+
+
+class ReceptionProfileAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = _staff_receptionist(request)
+        return Response(get_receptionist_profile(user))
+
+    def patch(self, request, *args, **kwargs):
+        user = _staff_receptionist(request)
+        return Response(update_receptionist_profile(user, request.data))
+
+
+class ReceptionChangePasswordAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        user = _staff_receptionist(request)
+        return Response(change_receptionist_password(user, request.data))
 
 
 # ── Admin ──────────────────────────────────────────────────────────────────────
@@ -308,9 +363,6 @@ class AdminPatientProfilesAPIView(APIView):
 
     def get(self, request, *args, **kwargs):
         return Response(get_admin_patient_profiles())
-
-    def post(self, request, *args, **kwargs):
-        return Response(get_admin_patient_profiles())  # read-only list
 
 
 class AdminPatientProfileAPIView(APIView):
