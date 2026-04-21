@@ -131,8 +131,7 @@ export default function VisitPage() {
     try {
       await completeVisit(activeCode, { diagnosis, notes, prescription });
       showToast("Đã hoàn tất khám bệnh!");
-      const nextQueue = await getVisitQueue();
-      setQueue(nextQueue);
+      navigate("/app/doctor/queue");
     } catch {
       showToast("Hoàn tất thất bại.", "danger");
     } finally {

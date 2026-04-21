@@ -8,6 +8,7 @@ from common.auth import IsAdmin, IsAuthenticated, IsDoctor, IsReceptionist, SESS
 
 from .services import (
     _staff_receptionist,
+    add_doctor_time_off,
     change_doctor_password,
     change_password,
     change_receptionist_password,
@@ -16,6 +17,7 @@ from .services import (
     create_admin_receptionist_profile,
     delete_admin_patient_profile,
     delete_admin_receptionist_profile,
+    delete_doctor_time_off,
     delete_notification,
     get_account_info,
     get_admin_doctor_detail,
@@ -27,6 +29,7 @@ from .services import (
     get_dashboard_data,
     get_doctor_profile,
     get_doctor_schedule,
+    get_doctor_schedule_config,
     get_doctor_visits,
     get_health_profile,
     get_notifications,
@@ -49,6 +52,7 @@ from .services import (
     update_account_info,
     update_admin_receptionist_profile,
     update_doctor_profile,
+    update_doctor_schedule,
     update_receptionist_profile,
     update_health_profile,
 )
@@ -290,6 +294,33 @@ class DoctorChangePasswordAPIView(APIView):
     def post(self, request, *args, **kwargs):
         doctor = _staff_doctor(request)
         return Response(change_doctor_password(doctor, request.data))
+
+
+class DoctorScheduleConfigAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        doctor = _staff_doctor(request)
+        return Response(get_doctor_schedule_config(doctor=doctor))
+
+    def patch(self, request, *args, **kwargs):
+        doctor = _staff_doctor(request)
+        return Response(update_doctor_schedule(doctor=doctor, payload=request.data))
+
+
+class DoctorTimeOffAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        doctor = _staff_doctor(request)
+        return Response(add_doctor_time_off(doctor=doctor, payload=request.data), status=201)
+
+    def delete(self, request, *args, **kwargs):
+        doctor = _staff_doctor(request)
+        time_off_id = request.query_params.get('id')
+        if not time_off_id:
+            raise ValidationError({'id': 'id is required.'})
+        return Response(delete_doctor_time_off(doctor=doctor, time_off_id=int(time_off_id)))
 
 
 # ── Reception ──────────────────────────────────────────────────────────────────

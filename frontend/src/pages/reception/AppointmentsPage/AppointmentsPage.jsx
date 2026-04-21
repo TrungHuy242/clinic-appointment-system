@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { CalendarDays, CheckCircle2, CircleX, Plus, ScanLine, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Badge from "../../../components/Badge/Badge";
@@ -26,16 +26,16 @@ export default function ReceptionAppointmentsPage() {
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  function refreshAppointments() {
+  const refreshAppointments = useCallback(() => {
     setLoading(true);
     listTodayAppointments(date)
       .then(setAppointments)
       .finally(() => setLoading(false));
-  }
+  }, [date]);
 
   useEffect(() => {
     refreshAppointments();
-  }, [date]);
+  }, [refreshAppointments]);
 
   const filtered = appointments.filter((appointment) => {
     const matchSearch =

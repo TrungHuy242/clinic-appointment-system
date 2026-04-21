@@ -13,14 +13,16 @@ export default function DoctorProfilePage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
 
+  // ── Tab navigation ─────────────────────────────────────────────────────────
+  const [activeTab, setActiveTab] = useState("profile"); // "profile" | "password" | "schedule"
+
   // ── Profile editing ────────────────────────────────────────────────────────
   const [editing, setEditing] = useState(false);
   const [profileForm, setProfileForm] = useState({});
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileMsg, setProfileMsg] = useState({ type: "", text: "" });
 
-  // ── Password ───────────────────────────────────────────────────────────────
-  const [passwordTab, setPasswordTab] = useState(false);
+  // ── Password ─────────────────────────────────────────────────────────────
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
     newPassword: "",
@@ -156,15 +158,15 @@ export default function DoctorProfilePage() {
       {/* ── Tabs ── */}
       <div className="doc-profile-tabs">
         <button
-          className={`dash-filter-tab ${!passwordTab ? "active" : ""}`}
-          onClick={() => { setPasswordTab(false); setProfileMsg({ type: "", text: "" }); }}
+          className={`dash-filter-tab ${activeTab === "profile" ? "active" : ""}`}
+          onClick={() => { setActiveTab("profile"); setProfileMsg({ type: "", text: "" }); }}
           type="button"
         >
           <UserRound className="mc-icon mc-icon--sm" /> Thông tin cá nhân
         </button>
         <button
-          className={`dash-filter-tab ${passwordTab ? "active" : ""}`}
-          onClick={() => { setPasswordTab(true); setPasswordMsg({ type: "", text: "" }); }}
+          className={`dash-filter-tab ${activeTab === "password" ? "active" : ""}`}
+          onClick={() => { setActiveTab("password"); setPasswordMsg({ type: "", text: "" }); }}
           type="button"
         >
           <KeyRound className="mc-icon mc-icon--sm" /> Đổi mật khẩu
@@ -172,7 +174,7 @@ export default function DoctorProfilePage() {
       </div>
 
       {/* ── Tab: Profile ── */}
-      {!passwordTab && (
+      {activeTab === "profile" && (
         <div className="doc-profile-card">
           <div className="doc-profile-avatar-row">
             <div className="doc-profile-avatar">
@@ -233,7 +235,7 @@ export default function DoctorProfilePage() {
                 onChange={(e) => handleField("phone", e.target.value)}
               />
             </div>
-            <div className="doc-profile-field">
+            <div className="doc-profile-field doc-profile-field--full">
               <label className="doc-profile-field__label">Email</label>
               <input
                 className="doc-profile-field__input"
@@ -281,7 +283,7 @@ export default function DoctorProfilePage() {
       )}
 
       {/* ── Tab: Password ── */}
-      {passwordTab && (
+      {activeTab === "password" && (
         <div className="doc-profile-card">
           <h2 className="doc-profile-card-title">Đổi mật khẩu</h2>
 

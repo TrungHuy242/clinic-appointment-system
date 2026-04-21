@@ -7,7 +7,6 @@ import {
   LogOut,
   ShieldCheck,
   UserRound,
-  X,
 } from "lucide-react";
 import { ROLE_LABELS, useAuth } from "../../services/authService";
 import { patientApi } from "../../services/patientApi";

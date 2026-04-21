@@ -21,6 +21,11 @@ export const doctorApi = {
   getProfile: () => apiClient.get(ENDPOINTS.portal.doctorProfile),
   updateProfile: (data) => apiClient.patch(ENDPOINTS.portal.doctorProfile, data),
   changePassword: (data) => apiClient.post(ENDPOINTS.portal.doctorChangePassword, data),
+  // Schedule config
+  getScheduleConfig: () => apiClient.get(ENDPOINTS.portal.doctorScheduleConfig),
+  updateScheduleConfig: (data) => apiClient.patch(ENDPOINTS.portal.doctorScheduleConfig, data),
+  addTimeOff: (data) => apiClient.post(ENDPOINTS.portal.doctorTimeOff, data),
+  deleteTimeOff: (id) => apiClient.delete(ENDPOINTS.portal.doctorTimeOff, { params: { id } }),
 };
 
 export const getDoctorSchedule = (date) => doctorApi.getSchedule(date);

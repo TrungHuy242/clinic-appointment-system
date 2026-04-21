@@ -6,7 +6,6 @@ import {
   Camera,
   CheckCircle2,
   Clock,
-  ImagePlus,
   MapPin,
   Phone,
   QrCode,
@@ -49,7 +48,6 @@ export default function LookupPage() {
   // QR scan state
   const [showQrScanner, setShowQrScanner] = useState(false);
   const [scannerError, setScannerError] = useState("");
-  const scannerRef = useRef(null);
   const fileInputRef = useRef(null);
   const html5QrRef = useRef(null);
 
@@ -202,6 +200,7 @@ export default function LookupPage() {
       stopCameraScanner();
       setShowQrScanner(false);
     } else {
+      startCameraScanner();
       setShowQrScanner(true);
     }
   };

@@ -12,6 +12,7 @@ import Button from "../../../components/Button/Button";
 import Input from "../../../components/Input/Input";
 import LoadingSpinner from "../../../components/LoadingSpinner/LoadingSpinner";
 import Modal from "../../../components/Modal/Modal";
+import Toast from "../../../components/Toast/Toast";
 import {
   createReceptionistProfile,
   deleteReceptionistProfile,
@@ -100,6 +101,13 @@ export default function ReceptionistDetailPage() {
   const [resetPwForm, setResetPwForm] = useState({ password: "" });
   const [resetPwError, setResetPwError] = useState("");
 
+  // Toast
+  const [toast, setToast] = useState(null);
+  function showToast(message, variant = "success") {
+    setToast({ message, variant });
+    setTimeout(() => setToast(null), 2500);
+  }
+
   // ── Load profile ───────────────────────────────────────────────────────
   async function loadProfile() {
     setLoading(true);
@@ -132,7 +140,7 @@ export default function ReceptionistDetailPage() {
     setSaving(true);
     setError("");
     try {
-      const created = await createReceptionistProfile({
+      await createReceptionistProfile({
         username: username.trim(),
         password,
         full_name: full_name.trim(),
@@ -141,7 +149,8 @@ export default function ReceptionistDetailPage() {
         notes: form.notes.trim(),
         is_active: form.is_active,
       });
-      navigate(`/app/admin/catalog/receptionists/${created.id}`);
+      showToast(`Đã thêm lễ tân "${full_name.trim()}" thành công.`);
+      setTimeout(() => navigate("/app/admin/catalog?tab=receptionists"), 1200);
     } catch (err) {
       setError(stripHtml(err.message) || "Không tạo được lễ tân.");
       setSaving(false);
@@ -231,6 +240,7 @@ export default function ReceptionistDetailPage() {
 
     return (
       <div className="dash-page receptionist-detail-page">
+        <Toast message={toast?.message} variant={toast?.variant} />
         <div className="receptionist-detail-page__back">
           <button className="receptionist-detail-page__back-btn" type="button" onClick={() => goBack(navigate)}>
             <ArrowLeft className="mc-icon mc-icon--sm" />
@@ -339,6 +349,21 @@ export default function ReceptionistDetailPage() {
 
   // ── Render: View mode ──────────────────────────────────────────────────
   if (!editMode) {
+    if (!profile) {
+      return (
+        <div className="dash-page receptionist-detail-page">
+          <div className="receptionist-detail-page__back">
+            <button className="receptionist-detail-page__back-btn" type="button" onClick={() => goBack(navigate)}>
+              <ArrowLeft className="mc-icon mc-icon--sm" />
+              Quay lại danh mục
+            </button>
+          </div>
+          <div className="receptionist-detail-page__error">
+            {error || "Không tìm thấy lễ tân."}
+          </div>
+        </div>
+      );
+    }
     const { full_name, username, email, phone, notes, is_active } = profile;
 
     return (

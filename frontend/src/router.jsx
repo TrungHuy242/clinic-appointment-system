@@ -4,7 +4,7 @@ import PublicLayout from "./layouts/PublicLayout/PublicLayout";
 import PatientLayout from "./layouts/PatientLayout/PatientLayout";
 import StaffLayout from "./layouts/StaffLayout/StaffLayout";
 import AdminLayout from "./layouts/AdminLayout/AdminLayout";
-import { RequireGuest, RequireRole, ROLES } from "./services/authService";
+import { RequireGuest, RequireRole, PublicRoute, ROLES } from "./services/authService";
 import LandingPage from "./pages/public/LandingPage/LandingPage";
 import BookingWizardPage from "./pages/public/BookingWizardPage/BookingWizardPage";
 import BookingSuccessPage from "./pages/public/BookingSuccessPage/BookingSuccessPage";
@@ -24,6 +24,7 @@ import ReceptionCheckinPage from "./pages/reception/CheckinPage/CheckinPage";
 import ReceptionDashboardPage from "./pages/reception/DashboardPage/DashboardPage";
 import ReceptionistProfilePage from "./pages/reception/ProfilePage/ProfilePage";
 import DoctorSchedulePage from "./pages/doctor/SchedulePage/SchedulePage";
+import DoctorWorkSchedulePage from "./pages/doctor/WorkSchedulePage/WorkSchedulePage";
 import DoctorQueuePage from "./pages/doctor/QueuePage/QueuePage";
 import DoctorVisitsPage from "./pages/doctor/VisitsPage/VisitsPage";
 import DoctorVisitPage from "./pages/doctor/VisitPage/VisitPage";
@@ -50,10 +51,18 @@ function AuthOutlet() {
   );
 }
 
+function PublicLayoutWrapper({ children }) {
+  return (
+    <PublicRoute>
+      <PublicLayout />
+    </PublicRoute>
+  );
+}
+
 export default function AppRouter() {
   return (
     <Routes>
-      <Route element={<PublicLayout />}>
+      <Route element={<PublicLayoutWrapper />}>
         <Route path="/" element={<LandingPage />} />
         <Route path="/landing" element={<LandingPage />} />
         <Route path="/book" element={<BookingWizardPage />} />
@@ -110,8 +119,9 @@ export default function AppRouter() {
           </RequireRole>
         }
       >
-        <Route index element={<Navigate replace to="/app/doctor/schedule" />} />
-        <Route path="schedule" element={<DoctorSchedulePage />} />
+        <Route index element={<Navigate replace to="/app/doctor/appointments" />} />
+        <Route path="appointments" element={<DoctorSchedulePage />} />
+        <Route path="schedule" element={<DoctorWorkSchedulePage />} />
         <Route path="queue" element={<DoctorQueuePage />} />
         <Route path="visits" element={<DoctorVisitsPage />} />
         <Route path="profile" element={<DoctorProfilePage />} />

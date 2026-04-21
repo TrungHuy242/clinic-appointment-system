@@ -52,6 +52,8 @@ export const ENDPOINTS = {
     doctorVisitComplete: (code) => `${API_PREFIX}/doctor/visits/${code}/complete/`,
     doctorProfile: `${API_PREFIX}/doctor/profile/`,
     doctorChangePassword: `${API_PREFIX}/doctor/change-password/`,
+    doctorScheduleConfig: `${API_PREFIX}/doctor/schedule-config/`,
+    doctorTimeOff: `${API_PREFIX}/doctor/time-off/`,
     receptionDashboard: `${API_PREFIX}/reception/dashboard/`,
     receptionProfile: `${API_PREFIX}/reception/profile/`,
     receptionChangePassword: `${API_PREFIX}/reception/change-password/`,

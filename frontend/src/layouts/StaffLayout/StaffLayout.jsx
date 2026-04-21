@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { Outlet, Link, NavLink, useNavigate } from "react-router-dom";
 import {
   BarChart3,
-  Bell,
   Building2,
   Calendar,
   CalendarCheck,
@@ -44,7 +43,8 @@ const STAFF_PORTALS = {
     fallbackName: "Bác sĩ",
     profileApi: () => doctorApi.getProfile(),
     navItems: [
-      { to: "/app/doctor/schedule", label: "Lịch làm việc", icon: Calendar },
+      { to: "/app/doctor/appointments", label: "Lịch khám", icon: Calendar },
+      { to: "/app/doctor/schedule", label: "Lịch làm việc", icon: CalendarCheck },
       { to: "/app/doctor/queue", label: "Hàng đợi khám", icon: ClipboardList },
       { to: "/app/doctor/visits", label: "Phiếu khám", icon: Stethoscope },
       { to: "/app/doctor/profile", label: "Hồ sơ của tôi", icon: UserRound },
@@ -76,7 +76,8 @@ export default function StaffLayout({ portal }) {
 
   // Fetch staff profile to display name in sidebar
   useEffect(() => {
-    config.profileApi()
+    const profileApi = config.profileApi;
+    profileApi()
       .then((data) => {
         const name =
           data?.full_name ||
@@ -87,7 +88,7 @@ export default function StaffLayout({ portal }) {
         if (name) setProfileName(name);
       })
       .catch(() => {});
-  }, []);
+  }, [config.profileApi]);
 
   const displayName =
     profileName ||

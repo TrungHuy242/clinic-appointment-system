@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Html5Qrcode, Html5QrcodeScannerState } from "html5-qrcode";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { CircleCheck, CircleX, Clock3, QrCode, Search, Square, TriangleAlert } from "lucide-react";
 import Badge from "../../../components/Badge/Badge";
 import Button from "../../../components/Button/Button";
@@ -79,7 +79,6 @@ function extractCodeFromQR(qrString) {
 }
 
 export default function CheckinPage() {
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);

@@ -12,7 +12,7 @@ from django.contrib.auth.hashers import check_password as django_check_password,
 
 from appointments.models import Appointment, AppointmentStatus
 from appointments.services import get_active_appointments_queryset, set_appointment_status
-from catalog.models import Doctor, Specialty
+from catalog.models import Doctor, DoctorSchedule, DoctorTimeOff, Specialty
 
 from .models import AdminAuditLog, MedicalRecord, PatientNotification, PatientProfile, User, UserRole
 
@@ -478,7 +478,7 @@ def update_doctor_profile(doctor, payload):
     doctor.email = str(payload.get('email') or doctor.email or '').strip()
     if 'fullName' in payload and payload['fullName']:
         doctor.full_name = str(payload['fullName']).strip()
-    doctor.save(update_fields=['full_name', 'bio', 'phone', 'email', 'updated_at'])
+    doctor.save(update_fields=['full_name', 'bio', 'phone', 'email'])
     return get_doctor_profile(doctor)
 
 
@@ -979,7 +979,7 @@ def _seed_historical_logs():
     Idempotent — skips if AdminAuditLog already has records.
     """
     from .models import AdminAuditLog
-    from catalog.models import Doctor, Specialty
+    from catalog.models import Doctor, DoctorSchedule, DoctorTimeOff, Specialty
 
     if AdminAuditLog.objects.exists():
         return
@@ -1412,13 +1412,19 @@ def reset_admin_receptionist_password(receptionist_id, new_password):
 
 
 def _staff_receptionist(request):
-    """Return the logged-in User who is a receptionist, or raise."""
-    user = getattr(request, "user", None)
-    if not user or not getattr(user, "is_authenticated", False):
+    """Return the actual User model instance for the logged-in receptionist, or raise."""
+    user_data = getattr(request, "user", None)
+    if not user_data or not getattr(user_data, "is_authenticated", False):
         raise PermissionDenied("Authentication required.")
-    role = getattr(user, "role", None)
+    role = getattr(user_data, "role", None)
     if role not in (UserRole.RECEPTIONIST, UserRole.ADMIN):
         raise PermissionDenied("Receptionist access required.")
+    user_id = getattr(user_data, "id", None)
+    if not user_id:
+        raise PermissionDenied("User ID not found in session.")
+    user = User.objects.filter(pk=user_id).first()
+    if not user:
+        raise PermissionDenied("User profile not found.")
     return user
 
 
@@ -1517,3 +1523,111 @@ def get_receptionist_dashboard_data():
         },
         'upcoming': upcoming_rows,
     }
+
+
+# ── Doctor Schedule Management ─────────────────────────────────────────────────
+
+WEEKDAY_NAMES = {
+    0: 'Thứ Hai',
+    1: 'Thứ Ba',
+    2: 'Thứ Tư',
+    3: 'Thứ Năm',
+    4: 'Thứ Sáu',
+    5: 'Thứ Bảy',
+    6: 'Chủ Nhật',
+}
+
+
+def get_doctor_schedule_config(doctor):
+    """Return current work schedule and time-off for a doctor."""
+    schedules = {
+        s.weekday: s.is_working
+        for s in doctor.schedules.all()
+    }
+    schedule_rows = []
+    for weekday in range(7):
+        schedule_rows.append({
+            'weekday': weekday,
+            'label': WEEKDAY_NAMES[weekday],
+            'isWorking': schedules.get(weekday, True),
+        })
+
+    time_offs = list(
+        doctor.time_offs.all().order_by('off_date')
+    )
+    time_off_rows = [
+        {
+            'id': t.id,
+            'offDate': t.off_date.isoformat(),
+            'reason': t.reason,
+        }
+        for t in time_offs
+    ]
+
+    return {
+        'schedule': schedule_rows,
+        'timeOffs': time_off_rows,
+    }
+
+
+@transaction.atomic
+def update_doctor_schedule(doctor, payload):
+    """Update work day settings for a doctor.
+    payload: { schedule: [{ week day: int, isWorking: bool }] }
+    """
+    schedule_list = payload.get('schedule') or []
+    updated = []
+    for item in schedule_list:
+        weekday = int(item.get('weekday', -1))
+        if weekday < 0 or weekday > 6:
+            continue
+        is_working = bool(item.get('isWorking', True))
+        schedule, _ = DoctorSchedule.objects.update_or_create(
+            doctor=doctor,
+            weekday=weekday,
+            defaults={'is_working': is_working},
+        )
+        updated.append({
+            'weekday': weekday,
+            'label': WEEKDAY_NAMES[weekday],
+            'isWorking': schedule.is_working,
+        })
+    return updated
+
+
+@transaction.atomic
+def add_doctor_time_off(doctor, payload):
+    """Add a time-off day for a doctor.
+    payload: { offDate: "YYYY-MM-DD", reason: "..." }
+    """
+    off_date_raw = payload.get('offDate')
+    if not off_date_raw:
+        raise ValidationError({'offDate': 'offDate is required (YYYY-MM-DD format).'})
+
+    off_date = parse_optional_date(off_date_raw, 'offDate')
+    reason = str(payload.get('reason') or '').strip()
+
+    time_off, created = DoctorTimeOff.objects.get_or_create(
+        doctor=doctor,
+        off_date=off_date,
+        defaults={'reason': reason},
+    )
+    if not created:
+        time_off.reason = reason
+        time_off.save(update_fields=['reason'])
+
+    return {
+        'id': time_off.id,
+        'offDate': time_off.off_date.isoformat(),
+        'reason': time_off.reason,
+    }
+
+
+@transaction.atomic
+def delete_doctor_time_off(doctor, time_off_id):
+    """Delete a time-off record for a doctor."""
+    time_off = DoctorTimeOff.objects.filter(pk=time_off_id, doctor=doctor).first()
+    if not time_off:
+        raise ValidationError({'detail': 'Không tìm thấy ngày nghỉ phép.'})
+    time_off.delete()
+    return {'success': True}

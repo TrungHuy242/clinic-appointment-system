@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Baby,
   Building2,
@@ -8,6 +8,7 @@ import {
   KeyRound,
   Pencil,
   Plus,
+  PowerOff,
   Sparkles,
   Stethoscope,
   Timer,
@@ -22,16 +23,19 @@ import Input from "../../../components/Input/Input";
 import LoadingSpinner from "../../../components/LoadingSpinner/LoadingSpinner";
 import Modal from "../../../components/Modal/Modal";
 import {
-  deleteDoctor,
+  createSpecialty,
+  createVisitType,
   deleteReceptionistProfile,
-  deleteSpecialty,
   deleteVisitType,
+  hardDeleteDoctor,
+  hardDeleteSpecialty,
   listDoctors,
   listReceptionistProfiles,
   listSpecialties,
   listVisitTypes,
   resetReceptionistPassword,
   resetUserPassword,
+  updateDoctor,
   updateSpecialty,
   updateVisitType,
 } from "../../../services/adminApi";
@@ -56,11 +60,11 @@ function formatPrice(value) {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function IconBtn({ icon: Icon, label, onClick, variant = "default", disabled = false }) {
+function IconBtn({ icon: Icon, label, onClick, variant = "default", disabled = false, className = "" }) {
   return (
     <button
       type="button"
-      className={`cat-icon-btn cat-icon-btn--${variant}`}
+      className={`cat-icon-btn cat-icon-btn--${variant} ${className}`}
       title={label}
       aria-label={label}
       onClick={onClick}
@@ -94,22 +98,31 @@ function ConfirmModal({ open, title, body, confirmLabel, confirmVariant, onConfi
 
 // ── Specialty Card ───────────────────────────────────────────────────────────
 
-function SpecialtyCard({ item, saving, onEdit, onDelete }) {
+function SpecialtyCard({ item, saving, onEdit, onDeactivate, onHardDelete }) {
   const SpecialtyIcon = SPECIALTY_ICONS[item.name] || Building2;
+  const isActive = Boolean(item.is_active);
   return (
-    <div className={`cat-card ${!item.is_active ? "cat-card--inactive" : ""}`}>
+    <div className={`cat-card ${!isActive ? "cat-card--inactive" : ""}`}>
       <div className="cat-card__icon">
         <SpecialtyIcon className="mc-icon mc-icon--lg" />
       </div>
       <div className="cat-card__body">
         <div className="cat-card__name">{item.name}</div>
         {item.description && <div className="cat-card__desc">{item.description}</div>}
-        <div className="cat-card__meta">{item.doc_count || 0} bác sĩ</div>
+        <div className="cat-card__meta">
+          {isActive
+            ? `${item.doc_count || 0} bác sĩ đang hoạt động`
+            : `Đã vô hiệu hóa · ${item.doc_count || 0} bác sĩ`}
+        </div>
       </div>
-      <Badge variant={item.is_active ? "success" : "neutral"}>{item.is_active ? "Hoạt động" : "Tạm ngưng"}</Badge>
+      <Badge variant={isActive ? "success" : "neutral"}>{isActive ? "Hoạt động" : "Tạm ngưng"}</Badge>
       <div className="cat-card__actions">
         <IconBtn icon={Pencil} label="Sửa" onClick={() => onEdit(item)} disabled={saving} />
-        <IconBtn icon={Trash2} label="Xóa" variant="danger" onClick={() => onDelete(item)} disabled={saving} />
+        {isActive ? (
+          <IconBtn icon={PowerOff} label="Vô hiệu hóa" variant="warning" onClick={() => onDeactivate(item)} disabled={saving} />
+        ) : (
+          <IconBtn icon={Trash2} label="Xóa vĩnh viễn" variant="danger" onClick={() => onHardDelete(item)} disabled={saving} />
+        )}
       </div>
     </div>
   );
@@ -117,9 +130,10 @@ function SpecialtyCard({ item, saving, onEdit, onDelete }) {
 
 // ── Doctor Card ──────────────────────────────────────────────────────────────
 
-function DoctorCard({ item, saving, onDelete, onResetPassword, navigate }) {
+function DoctorCard({ item, saving, onDeactivate, onHardDelete, onResetPassword, navigate }) {
+  const isActive = Boolean(item.is_active);
   return (
-    <div className={`cat-card cat-card--doctor ${!item.is_active ? "cat-card--inactive" : ""}`}>
+    <div className={`cat-card cat-card--doctor ${!isActive ? "cat-card--inactive" : ""}`}>
       <div className="cat-card__icon">
         <UserRound className="mc-icon mc-icon--lg" />
       </div>
@@ -130,8 +144,8 @@ function DoctorCard({ item, saving, onDelete, onResetPassword, navigate }) {
         </div>
         {item.bio && <div className="cat-card__desc cat-card__desc--bio">{item.bio}</div>}
         <div className="cat-card__badges">
-          <Badge variant={item.is_active ? "success" : "neutral"}>
-            {item.is_active ? "Đang nhận lịch" : "Tạm ngưng"}
+          <Badge variant={isActive ? "success" : "neutral"}>
+            {isActive ? "Đang nhận lịch" : "Tạm ngưng"}
           </Badge>
           {item.has_account ? (
             <Badge variant="info"><UserCheck className="mc-icon mc-icon--xs" style={{ marginRight: 3 }} />@{item.linked_username}</Badge>
@@ -155,13 +169,23 @@ function DoctorCard({ item, saving, onDelete, onResetPassword, navigate }) {
             disabled={saving}
           />
         )}
-        <IconBtn
-          icon={Trash2}
-          label="Xóa"
-          variant="danger"
-          onClick={() => onDelete(item)}
-          disabled={saving}
-        />
+        {isActive ? (
+          <IconBtn
+            icon={PowerOff}
+            label="Vô hiệu hóa"
+            variant="warning"
+            onClick={() => onDeactivate(item)}
+            disabled={saving}
+          />
+        ) : (
+          <IconBtn
+            icon={Trash2}
+            label="Xóa vĩnh viễn"
+            variant="danger"
+            onClick={() => onHardDelete(item)}
+            disabled={saving}
+          />
+        )}
       </div>
     </div>
   );
@@ -169,9 +193,10 @@ function DoctorCard({ item, saving, onDelete, onResetPassword, navigate }) {
 
 // ── VisitType Card ───────────────────────────────────────────────────────────
 
-function VisitTypeCard({ item, saving, onEdit, onDelete }) {
+function VisitTypeCard({ item, saving, onEdit, onDeactivate, onHardDelete }) {
+  const isActive = Boolean(item.is_active);
   return (
-    <div className={`cat-card cat-card--visittype ${!item.is_active ? "cat-card--inactive" : ""}`}>
+    <div className={`cat-card cat-card--visittype ${!isActive ? "cat-card--inactive" : ""}`}>
       <div className="cat-card__icon">
         <ClipboardList className="mc-icon mc-icon--md" />
       </div>
@@ -183,10 +208,14 @@ function VisitTypeCard({ item, saving, onEdit, onDelete }) {
         </div>
         {item.description && <div className="cat-card__desc">{item.description}</div>}
       </div>
-      <Badge variant={item.is_active ? "success" : "neutral"}>{item.is_active ? "Hoạt động" : "Tạm ngưng"}</Badge>
+      <Badge variant={isActive ? "success" : "neutral"}>{isActive ? "Hoạt động" : "Tạm ngưng"}</Badge>
       <div className="cat-card__actions">
         <IconBtn icon={Pencil} label="Sửa" onClick={() => onEdit(item)} disabled={saving} />
-        <IconBtn icon={Trash2} label="Xóa" variant="danger" onClick={() => onDelete(item)} disabled={saving} />
+        {isActive ? (
+          <IconBtn icon={PowerOff} label="Vô hiệu hóa" variant="warning" onClick={() => onDeactivate(item)} disabled={saving} />
+        ) : (
+          <IconBtn icon={Trash2} label="Xóa vĩnh viễn" variant="danger" onClick={() => onHardDelete(item)} disabled={saving} />
+        )}
       </div>
     </div>
   );
@@ -240,7 +269,10 @@ function ReceptionistCard({ item, saving, onDelete, onResetPassword, navigate })
 
 export default function CatalogPage() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("specialties");
+  const [searchParams] = useSearchParams();
+  const validTabs = ["specialties", "doctors", "visitTypes", "receptionists"];
+  const initialTab = validTabs.includes(searchParams.get("tab")) ? searchParams.get("tab") : "specialties";
+  const [activeTab, setActiveTab] = useState(initialTab);
 
   // ── Specialty ──────────────────────────────────────────────────────────────
   const [specialties, setSpecialties] = useState([]);
@@ -320,34 +352,68 @@ export default function CatalogPage() {
 
   // ── Specialty handlers ────────────────────────────────────────────────────
   async function handleSaveSpecialty() {
-    const { name, description } = specialtyModal.item;
+    const { id, name, description, is_active } = specialtyModal.item;
     if (!name?.trim()) { setError("Tên khoa là bắt buộc."); return; }
     setSaving(true);
     setError("");
     try {
-      await updateSpecialty(specialtyModal.item.id, { name: name.trim(), description: (description || "").trim() });
+      const payload = {
+        name: name.trim(),
+        description: (description || "").trim(),
+        is_active: Boolean(is_active),
+      };
+      if (id) {
+        await updateSpecialty(id, payload);
+      } else {
+        await createSpecialty(payload);
+      }
       setSpecialtyModal({ open: false, item: null });
       await loadCatalog();
     } catch (err) {
-      setError(stripHtml(err.message) || "Không sửa được khoa.");
+      setError(stripHtml(err.message) || (id ? "Không sửa được khoa." : "Không tạo được khoa."));
     } finally {
       setSaving(false);
     }
   }
 
-  function handleDeleteSpecialty(item) {
+  // Vô hiệu hóa khoa (PATCH is_active=false)
+  function handleDeactivateSpecialty(item) {
     setConfirmModal({
       open: true,
-      title: "Xóa khoa?",
-      body: `Khoa "${item.name}" sẽ bị xóa vĩnh viễn. Hành động này không thể hoàn tác. Bạn chắc chắn?`,
-      confirmLabel: "Xóa",
+      title: "Vô hiệu hóa khoa?",
+      body: `Khoa "${item.name}" sẽ bị tạm ngưng. Khoa sẽ không xuất hiện trong danh sách đặt lịch nhưng dữ liệu cũ vẫn được giữ. Bạn có thể kích hoạt lại sau.`,
+      confirmLabel: "Vô hiệu hóa",
       confirmVariant: "danger",
       onConfirm: async () => {
         setConfirmModal({ open: false });
         setSaving(true);
         setError("");
         try {
-          await deleteSpecialty(item.id);
+          await updateSpecialty(item.id, { is_active: false });
+          await loadCatalog();
+        } catch (err) {
+          setError(stripHtml(err.message) || "Không vô hiệu hóa được khoa.");
+        } finally {
+          setSaving(false);
+        }
+      },
+    });
+  }
+
+  // Xóa vĩnh viễn khoa
+  function handleHardDeleteSpecialty(item) {
+    setConfirmModal({
+      open: true,
+      title: "Xóa vĩnh viễn khoa?",
+      body: `Khoa "${item.name}" sẽ bị xóa vĩnh viễn khỏi hệ thống. Hành động này không thể hoàn tác. Bạn chắc chắn muốn xóa?`,
+      confirmLabel: "Xóa vĩnh viễn",
+      confirmVariant: "danger",
+      onConfirm: async () => {
+        setConfirmModal({ open: false });
+        setSaving(true);
+        setError("");
+        try {
+          await hardDeleteSpecialty(item.id);
           await loadCatalog();
         } catch (err) {
           setError(stripHtml(err.message) || "Không xóa được khoa.");
@@ -359,19 +425,44 @@ export default function CatalogPage() {
   }
 
   // ── Doctor handlers ───────────────────────────────────────────────────────
-  function handleDeleteDoctor(item) {
+  // Vô hiệu hóa bác sĩ (PATCH is_active=false)
+  function handleDeactivateDoctor(item) {
     setConfirmModal({
       open: true,
-      title: "Xóa bác sĩ?",
-      body: `Bác sĩ "${item.full_name}" sẽ bị xóa vĩnh viễn. Hành động này không thể hoàn tác. Bạn chắc chắn?`,
-      confirmLabel: "Xóa",
+      title: "Vô hiệu hóa bác sĩ?",
+      body: `Bác sĩ "${item.full_name}" sẽ bị tạm ngưng. Bác sĩ sẽ không nhận lịch hẹn mới nhưng dữ liệu cũ (lịch hẹn, hồ sơ khám) vẫn được giữ nguyên. Bạn có thể kích hoạt lại sau.`,
+      confirmLabel: "Vô hiệu hóa",
       confirmVariant: "danger",
       onConfirm: async () => {
         setConfirmModal({ open: false });
         setSaving(true);
         setError("");
         try {
-          await deleteDoctor(item.id);
+          await updateDoctor(item.id, { is_active: false });
+          await loadCatalog();
+        } catch (err) {
+          setError(stripHtml(err.message) || "Không vô hiệu hóa được bác sĩ.");
+        } finally {
+          setSaving(false);
+        }
+      },
+    });
+  }
+
+  // Xóa vĩnh viễn bác sĩ
+  function handleHardDeleteDoctor(item) {
+    setConfirmModal({
+      open: true,
+      title: "Xóa vĩnh viễn bác sĩ?",
+      body: `Bác sĩ "${item.full_name}" sẽ bị xóa vĩnh viễn khỏi hệ thống. Hành động này không thể hoàn tác. Bạn chắc chắn muốn xóa?`,
+      confirmLabel: "Xóa vĩnh viễn",
+      confirmVariant: "danger",
+      onConfirm: async () => {
+        setConfirmModal({ open: false });
+        setSaving(true);
+        setError("");
+        try {
+          await hardDeleteDoctor(item.id);
           await loadCatalog();
         } catch (err) {
           setError(stripHtml(err.message) || "Không xóa được bác sĩ.");
@@ -384,32 +475,61 @@ export default function CatalogPage() {
 
   // ── VisitType handlers ────────────────────────────────────────────────────
   async function handleSaveVisitType() {
-    const { name, duration_minutes, price, description } = visitTypeModal.item;
+    const { id, name, duration_minutes, price, description, is_active } = visitTypeModal.item;
     if (!name?.trim()) { setError("Tên loại khám là bắt buộc."); return; }
     setSaving(true);
     setError("");
     try {
-      await updateVisitType(visitTypeModal.item.id, {
+      const payload = {
         name: name.trim(),
         duration_minutes: Number(duration_minutes) || 25,
         price: Number(price) || 0,
         description: (description || "").trim(),
-      });
+        is_active: Boolean(is_active),
+      };
+      if (id) {
+        await updateVisitType(id, payload);
+      } else {
+        await createVisitType(payload);
+      }
       setVisitTypeModal({ open: false, item: null });
       await loadCatalog();
     } catch (err) {
-      setError(stripHtml(err.message) || "Không sửa được loại khám.");
+      setError(stripHtml(err.message) || (id ? "Không sửa được loại khám." : "Không tạo được loại khám."));
     } finally {
       setSaving(false);
     }
   }
 
-  function handleDeleteVisitType(item) {
+  function handleDeactivateVisitType(item) {
     setConfirmModal({
       open: true,
-      title: "Xóa loại khám?",
-      body: `Loại khám "${item.name}" sẽ bị xóa vĩnh viễn. Hành động này không thể hoàn tác. Bạn chắc chắn?`,
-      confirmLabel: "Xóa",
+      title: "Vô hiệu hóa loại khám?",
+      body: `Loại khám "${item.name}" sẽ bị tạm ngưng. Bạn có thể kích hoạt lại sau.`,
+      confirmLabel: "Vô hiệu hóa",
+      confirmVariant: "danger",
+      onConfirm: async () => {
+        setConfirmModal({ open: false });
+        setSaving(true);
+        setError("");
+        try {
+          await updateVisitType(item.id, { is_active: false });
+          await loadCatalog();
+        } catch (err) {
+          setError(stripHtml(err.message) || "Không vô hiệu hóa được loại khám.");
+        } finally {
+          setSaving(false);
+        }
+      },
+    });
+  }
+
+  function handleHardDeleteVisitType(item) {
+    setConfirmModal({
+      open: true,
+      title: "Xóa vĩnh viễn loại khám?",
+      body: `Loại khám "${item.name}" sẽ bị xóa vĩnh viễn. Hành động này không thể hoàn tác. Bạn chắc chắn muốn xóa?`,
+      confirmLabel: "Xóa vĩnh viễn",
       confirmVariant: "danger",
       onConfirm: async () => {
         setConfirmModal({ open: false });
@@ -479,7 +599,6 @@ export default function CatalogPage() {
     try {
       const { item, type } = resetPwModal;
       if (type === "doctor") {
-        // Doctor accounts are User model — use adminUserResetPassword with linked_user_id
         await resetUserPassword(item.linked_user_id, { new_password });
       } else if (type === "receptionist") {
         await resetReceptionistPassword(item.id, { new_password });
@@ -548,6 +667,10 @@ export default function CatalogPage() {
               value={specialtySearch}
               onChange={(e) => setSpecialtySearch(e.target.value)}
             />
+            <Button size="sm" onClick={() => setSpecialtyModal({ open: true, item: { name: "", description: "", is_active: true } })}>
+              <Plus className="mc-icon mc-icon--xs" style={{ marginRight: 4 }} />
+              Thêm khoa
+            </Button>
           </div>
           {specialtiesWithCount.length === 0 ? (
             <div className="cat-empty">Không có khoa nào.</div>
@@ -559,7 +682,8 @@ export default function CatalogPage() {
                   item={s}
                   saving={saving}
                   onEdit={(item) => setSpecialtyModal({ open: true, item: { ...item } })}
-                  onDelete={handleDeleteSpecialty}
+                  onDeactivate={handleDeactivateSpecialty}
+                  onHardDelete={handleHardDeleteSpecialty}
                 />
               ))}
             </div>
@@ -591,7 +715,8 @@ export default function CatalogPage() {
                   key={d.id}
                   item={d}
                   saving={saving}
-                  onDelete={handleDeleteDoctor}
+                  onDeactivate={handleDeactivateDoctor}
+                  onHardDelete={handleHardDeleteDoctor}
                   onResetPassword={(item) => openResetPw(item, "doctor")}
                   navigate={navigate}
                 />
@@ -611,6 +736,10 @@ export default function CatalogPage() {
               value={visitTypeSearch}
               onChange={(e) => setVisitTypeSearch(e.target.value)}
             />
+            <Button size="sm" onClick={() => setVisitTypeModal({ open: true, item: { name: "", duration_minutes: 20, price: 0, description: "", is_active: true } })}>
+              <Plus className="mc-icon mc-icon--xs" style={{ marginRight: 4 }} />
+              Thêm loại khám
+            </Button>
           </div>
           {filteredVisitTypes.length === 0 ? (
             <div className="cat-empty">Không có loại khám nào.</div>
@@ -622,7 +751,8 @@ export default function CatalogPage() {
                   item={v}
                   saving={saving}
                   onEdit={(item) => setVisitTypeModal({ open: true, item: { ...item } })}
-                  onDelete={handleDeleteVisitType}
+                  onDeactivate={handleDeactivateVisitType}
+                  onHardDelete={handleHardDeleteVisitType}
                 />
               ))}
             </div>
@@ -666,15 +796,17 @@ export default function CatalogPage() {
 
       {/* ─── MODALS ─── */}
 
-      {/* Specialty Edit Modal */}
+      {/* Specialty Edit/Create Modal */}
       <Modal
         open={specialtyModal.open}
-        title="Sửa khoa"
+        title={specialtyModal.item?.id ? "Sửa khoa" : "Thêm khoa mới"}
         onClose={() => setSpecialtyModal({ open: false, item: null })}
         footer={
           <>
             <Button variant="secondary" size="sm" onClick={() => setSpecialtyModal({ open: false, item: null })} disabled={saving}>Hủy</Button>
-            <Button size="sm" onClick={handleSaveSpecialty} disabled={saving}>Lưu</Button>
+            <Button size="sm" onClick={handleSaveSpecialty} disabled={saving}>
+              {specialtyModal.item?.id ? "Lưu" : "Tạo mới"}
+            </Button>
           </>
         }
       >
@@ -684,12 +816,22 @@ export default function CatalogPage() {
               label="Tên khoa"
               value={specialtyModal.item.name || ""}
               onChange={(e) => setSpecialtyModal((m) => ({ ...m, item: { ...m.item, name: e.target.value } }))}
+              placeholder="VD: Nhi khoa, Da liễu..."
             />
             <Input
               label="Mô tả"
               value={specialtyModal.item.description || ""}
               onChange={(e) => setSpecialtyModal((m) => ({ ...m, item: { ...m.item, description: e.target.value } }))}
+              placeholder="Mô tả ngắn về chuyên khoa..."
             />
+            <label className="cat-modal-form__checkbox">
+              <input
+                type="checkbox"
+                checked={Boolean(specialtyModal.item.is_active)}
+                onChange={(e) => setSpecialtyModal((m) => ({ ...m, item: { ...m.item, is_active: e.target.checked } }))}
+              />
+              <span>Hoạt động</span>
+            </label>
           </div>
         )}
       </Modal>
@@ -702,7 +844,9 @@ export default function CatalogPage() {
         footer={
           <>
             <Button variant="secondary" size="sm" onClick={() => setVisitTypeModal({ open: false, item: null })} disabled={saving}>Hủy</Button>
-            <Button size="sm" onClick={handleSaveVisitType} disabled={saving}>Lưu</Button>
+            <Button size="sm" onClick={handleSaveVisitType} disabled={saving}>
+              {visitTypeModal.item?.id ? "Lưu" : "Tạo mới"}
+            </Button>
           </>
         }
       >
@@ -732,6 +876,14 @@ export default function CatalogPage() {
               value={visitTypeModal.item.description || ""}
               onChange={(e) => setVisitTypeModal((m) => ({ ...m, item: { ...m.item, description: e.target.value } }))}
             />
+            <label className="cat-modal-form__checkbox">
+              <input
+                type="checkbox"
+                checked={Boolean(visitTypeModal.item.is_active)}
+                onChange={(e) => setVisitTypeModal((m) => ({ ...m, item: { ...m.item, is_active: e.target.checked } }))}
+              />
+              <span>Hoạt động</span>
+            </label>
           </div>
         )}
       </Modal>

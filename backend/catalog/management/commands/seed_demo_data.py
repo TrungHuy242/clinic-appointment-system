@@ -7,7 +7,7 @@ from django.utils.dateparse import parse_date
 
 from appointments.models import Appointment, AppointmentHistory, AppointmentStatus
 from appointments.services import get_daily_block_frames, sync_appointment_blocks
-from catalog.models import Doctor, Specialty, VisitType
+from catalog.models import Doctor, DoctorSchedule, Specialty, VisitType
 from portal.models import AdminAuditLog, AuditAction, MedicalRecord, PatientNotification, PatientProfile, User
 
 
@@ -230,6 +230,7 @@ class Command(BaseCommand):
         specialty_map = self.seed_specialties()
         self.seed_visit_types()
         doctor_map = self.seed_doctors(specialty_map)
+        self.seed_doctor_schedules(doctor_map)
         profile_map = self.seed_profiles()
         self.seed_appointments(doctor_map, specialty_map, profile_map)
         self.seed_appointment_history(doctor_map)
@@ -276,6 +277,18 @@ class Command(BaseCommand):
             )
             doctor_map[item['full_name']] = doctor
         return doctor_map
+
+    def seed_doctor_schedules(self, doctor_map):
+        """Seed default work schedules: Mon-Fri working, Sat-Sun off."""
+        for doctor in doctor_map.values():
+            for weekday in range(7):
+                is_working = weekday < 5  # Mon-Fri = working, Sat-Sun = off
+                DoctorSchedule.objects.update_or_create(
+                    doctor=doctor,
+                    weekday=weekday,
+                    defaults={'is_working': is_working},
+                )
+        self.stdout.write(self.style.SUCCESS(f'Seeded work schedules for {len(doctor_map)} doctors.'))
 
     def seed_profiles(self):
         PatientProfile.objects.update(is_current=False)
@@ -835,18 +848,27 @@ class Command(BaseCommand):
         for data in staff_users:
             doctor_name = data.pop('doctor_name', None)
             doctor_obj = doctor_map.get(doctor_name) if doctor_name else None
-            user, created = User.objects.get_or_create(
+            existing = User.objects.filter(username=data['username']).first()
+            if existing:
+                continue
+            if doctor_obj:
+                existing_by_doctor = User.objects.filter(doctor=doctor_obj).first()
+                if existing_by_doctor:
+                    existing_by_doctor.username = data['username']
+                    for field in ('password', 'full_name', 'role', 'email'):
+                        setattr(existing_by_doctor, field, data[field])
+                    existing_by_doctor.save(update_fields=['username', 'password', 'full_name', 'role', 'email', 'updated_at'])
+                    created_count += 1
+                    continue
+            User.objects.create(
+                password=make_password(data['password']),
+                full_name=data['full_name'],
+                role=data['role'],
+                email=data['email'],
+                doctor=doctor_obj,
                 username=data['username'],
-                defaults={
-                    'password': make_password(data['password']),
-                    'full_name': data['full_name'],
-                    'role': data['role'],
-                    'email': data['email'],
-                    'doctor': doctor_obj,
-                }
             )
-            if created:
-                created_count += 1
+            created_count += 1
 
         self.stdout.write(self.style.SUCCESS(f'Created {created_count} staff users.'))
         print('[Demo] Staff login credentials:')

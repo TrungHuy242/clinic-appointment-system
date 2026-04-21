@@ -108,6 +108,13 @@
   color: var(--color-text-muted);
 }
 
+/* ── Queue content body ── */
+.queue-content-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 /* ── Enhanced empty & error states ── */
 .queue-empty-state,
 .queue-error-state {
@@ -162,4 +169,71 @@
 @keyframes queue-spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+/* ── Done queue section ── */
+.done-queue-section {
+  margin-top: 16px;
+}
+
+.done-queue-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--color-bg-soft);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.done-queue-toggle:hover {
+  background: var(--color-surface);
+  color: var(--color-text-main);
+}
+
+.done-toggle-icon {
+  margin-left: auto;
+  transition: transform 0.2s;
+}
+
+.done-toggle-icon.rotated {
+  transform: rotate(180deg);
+}
+
+.done-list {
+  margin-top: 8px;
+}
+
+.queue-item.done-item {
+  opacity: 0.6;
+}
+
+.queue-item.done-item .queue-number {
+  background: var(--color-success);
+}
+
+.queue-item.done-item .queue-number {
+  width: auto;
+  height: auto;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.done-number {
+  width: 28px;
+  height: 28px;
+  background: var(--color-success) !important;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
 }

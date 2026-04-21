@@ -26,6 +26,7 @@ class SpecialtyViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter]
     search_fields = ['name']
     http_method_names = ['get', 'post', 'put', 'patch', 'delete', 'head', 'options']
+    lookup_field = 'id'
 
     def get_queryset(self):
         queryset = Specialty.objects.all().order_by('name')
@@ -57,17 +58,41 @@ class SpecialtyViewSet(viewsets.ModelViewSet):
             detail=f'Cập nhật chuyên khoa "{instance.name}"', ip_address=ip,
         )
 
-    # Soft-delete: set is_active=False
     def destroy(self, request, *args, **kwargs):
+        """
+        Soft-delete: set is_active=False (vô hiệu hóa).
+        Bản ghi vẫn tồn tại trong DB, không còn xuất hiện trong booking.
+        """
         instance = self.get_object()
         instance.is_active = False
         instance.save(update_fields=['is_active'])
         actor_name, actor_role, ip = _admin_actor(request)
         log_admin_action(
+            'DEACTIVATE', 'Specialty', instance.id, instance.name,
+            actor_name=actor_name, actor_role=actor_role,
+            detail=f'Vô hiệu hóa chuyên khoa "{instance.name}"', ip_address=ip,
+        )
+        return Response(status=204)
+
+    @action(detail=True, methods=['delete'], url_path='hard-delete')
+    def hard_delete(self, request, id=None):
+        """
+        Hard-delete vĩnh viễn: chỉ cho phép khi không còn doctor nào thuộc khoa này.
+        """
+        instance = self.get_object()
+        doctor_count = Doctor.objects.filter(specialty=instance).count()
+        if doctor_count > 0:
+            return Response(
+                {'detail': f'Không thể xóa vĩnh viễn chuyên khoa này vì vẫn còn {doctor_count} bác sĩ thuộc khoa. Hãy chuyển bác sĩ sang khoa khác hoặc vô hiệu hóa chuyên khoa.'},
+                status=400,
+            )
+        actor_name, actor_role, ip = _admin_actor(request)
+        log_admin_action(
             'DELETE', 'Specialty', instance.id, instance.name,
             actor_name=actor_name, actor_role=actor_role,
-            detail=f'Xóa chuyên khoa "{instance.name}"', ip_address=ip,
+            detail=f'Xóa vĩnh viễn chuyên khoa "{instance.name}"', ip_address=ip,
         )
+        instance.delete()
         return Response(status=204)
 
 
@@ -79,6 +104,7 @@ class DoctorViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter]
     search_fields = ['full_name']
     http_method_names = ['get', 'post', 'put', 'patch', 'delete', 'head', 'options']
+    lookup_field = 'id'
 
     def get_queryset(self):
         queryset = Doctor.objects.select_related('specialty').all().order_by('full_name')
@@ -158,13 +184,51 @@ class DoctorViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     def perform_destroy(self, instance):
+        """
+        Soft-delete: set is_active=False (vô hiệu hóa).
+        Bác sĩ vẫn tồn tại trong DB, dữ liệu lịch sử khám/lịch hẹn được giữ nguyên.
+        """
         actor_name, actor_role, ip = _admin_actor(self.request)
+        log_admin_action(
+            'DEACTIVATE', 'Doctor', instance.id, instance.full_name,
+            actor_name=actor_name, actor_role=actor_role,
+            detail=f'Vô hiệu hóa bác sĩ "{instance.full_name}"', ip_address=ip,
+        )
+        instance.is_active = False
+        instance.save(update_fields=['is_active'])
+
+    @action(detail=True, methods=['delete'], url_path='hard-delete')
+    def hard_delete(self, request, id=None):
+        """
+        Hard-delete vĩnh viễn: chỉ cho phép khi không còn lịch hẹn hay tài khoản nào.
+        """
+        instance = self.get_object()
+        from appointments.models import Appointment
+        from portal.models import User
+
+        appointment_count = Appointment.objects.filter(doctor=instance).count()
+        user_account = User.objects.filter(doctor=instance, role='doctor').first()
+
+        deps = []
+        if appointment_count > 0:
+            deps.append(f'{appointment_count} lịch hẹn')
+        if user_account:
+            deps.append(f'tài khoản đăng nhập @{user_account.username}')
+
+        if deps:
+            return Response(
+                {'detail': f'Không thể xóa vĩnh viễn bác sĩ này vì đã phát sinh {" và ".join(deps)}. Hãy dùng chức năng vô hiệu hóa.'},
+                status=400,
+            )
+
+        actor_name, actor_role, ip = _admin_actor(request)
         log_admin_action(
             'DELETE', 'Doctor', instance.id, instance.full_name,
             actor_name=actor_name, actor_role=actor_role,
-            detail=f'Xóa bác sĩ "{instance.full_name}"', ip_address=ip,
+            detail=f'Xóa vĩnh viễn bác sĩ "{instance.full_name}"', ip_address=ip,
         )
         instance.delete()
+        return Response(status=204)
 
     @action(detail=True, methods=['post'], url_path='create-account')
     def create_account(self, request, pk=None):
@@ -213,6 +277,7 @@ class VisitTypeViewSet(viewsets.ModelViewSet):
     serializer_class = VisitTypeSerializer
     filter_backends = [filters.SearchFilter]
     search_fields = ['name']
+    lookup_field = 'id'
 
     def get_queryset(self):
         queryset = VisitType.objects.all().order_by('name')
@@ -240,10 +305,36 @@ class VisitTypeViewSet(viewsets.ModelViewSet):
         )
 
     def perform_destroy(self, instance):
+        """
+        Soft-delete: set is_active=False (vô hiệu hóa).
+        """
         actor_name, actor_role, ip = _admin_actor(self.request)
+        log_admin_action(
+            'DEACTIVATE', 'VisitType', instance.id, instance.name,
+            actor_name=actor_name, actor_role=actor_role,
+            detail=f'Vô hiệu hóa loại khám "{instance.name}"', ip_address=ip,
+        )
+        instance.is_active = False
+        instance.save(update_fields=['is_active'])
+
+    @action(detail=True, methods=['delete'], url_path='hard-delete')
+    def hard_delete(self, request, id=None):
+        """
+        Hard-delete vĩnh viễn: chỉ cho phép khi không có appointment nào dùng loại khám này.
+        """
+        instance = self.get_object()
+        from appointments.models import Appointment
+        appt_count = Appointment.objects.filter(visit_type=instance).count()
+        if appt_count > 0:
+            return Response(
+                {'detail': f'Không thể xóa vĩnh viễn vì đã có {appt_count} lịch hẹn sử dụng loại khám này. Hãy dùng chức năng vô hiệu hóa.'},
+                status=400,
+            )
+        actor_name, actor_role, ip = _admin_actor(request)
         log_admin_action(
             'DELETE', 'VisitType', instance.id, instance.name,
             actor_name=actor_name, actor_role=actor_role,
-            detail=f'Xóa loại khám "{instance.name}"', ip_address=ip,
+            detail=f'Xóa vĩnh viễn loại khám "{instance.name}"', ip_address=ip,
         )
         instance.delete()
+        return Response(status=204)

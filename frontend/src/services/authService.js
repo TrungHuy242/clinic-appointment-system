@@ -158,4 +158,23 @@ export function RequireGuest({ children }) {
   return children;
 }
 
+/**
+ * PublicRoute: guests and patients can access public pages (/, /book, /lookup, etc.).
+ * Authenticated staff (admin, doctor, receptionist) are redirected to their portal.
+ */
+export function PublicRoute({ children }) {
+  const auth = useAuth();
+
+  if (auth.loading) {
+    return <FullPageLoader />;
+  }
+
+  const staffRoles = [ROLES.ADMIN, ROLES.DOCTOR, ROLES.RECEPTIONIST];
+  if (auth.isAuthenticated && staffRoles.includes(auth.role)) {
+    return <Navigate replace to={auth.getRedirectPath()} />;
+  }
+
+  return children;
+}
+
 export default authApi;
