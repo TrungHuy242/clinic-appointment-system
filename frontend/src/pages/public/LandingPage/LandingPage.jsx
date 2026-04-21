@@ -82,11 +82,11 @@ export default function LandingPage() {
           <div className="landing-hero-stats">
             <div className="landing-stat">
               <Star className="landing-stat-icon" />
-              <span>4.9/5 đánh giá</span>
+              <span>Demo — giá trị giả lập</span>
             </div>
             <div className="landing-stat">
               <User className="landing-stat-icon" />
-              <span>30+ bác sĩ</span>
+              <span>Demo — số liệu giả lập</span>
             </div>
             <div className="landing-stat">
               <Clock className="landing-stat-icon" />

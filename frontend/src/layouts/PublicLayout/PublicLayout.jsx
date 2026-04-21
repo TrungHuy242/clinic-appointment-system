@@ -13,7 +13,6 @@ import {
   Sparkles,
   Star,
   Stethoscope,
-  UserRound,
   Users,
 } from "lucide-react";
 import Button from "../../components/Button/Button";
@@ -86,7 +85,7 @@ export default function PublicLayout({ variant = "default" }) {
                 <span className="auth-social-avatar">AN</span>
                 <span className="auth-social-avatar">BT</span>
                 <span className="auth-social-avatar">LH</span>
-                <span className="auth-social-more">+20k</span>
+                <span className="auth-social-more">+50</span>
               </div>
               <div>
                 <div className="auth-social-stars">
@@ -95,7 +94,7 @@ export default function PublicLayout({ variant = "default" }) {
                   ))}
                 </div>
                 <div className="auth-social-text">
-                  Được tin dùng bởi hơn 20.000 bệnh nhân tại Đà Nẵng
+                  Demo — số liệu giả lập cho môi trường phát triển
                 </div>
               </div>
             </div>
