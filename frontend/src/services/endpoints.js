@@ -1,4 +1,8 @@
-export const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:8000";
+// Default fallback luôn có giá trị hợp lệ cho new URL(base, path)
+// Khi Vite/build env có VITE_API_BASE_URL thì dùng env
+// Khi dev qua react-scripts proxy thì dùng "" (relative path)
+const _envBase = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE_URL) || "";
+export const API_BASE_URL = _envBase;
 export const API_PREFIX = "";
 
 export const ENDPOINTS = {
@@ -46,6 +50,12 @@ export const ENDPOINTS = {
     doctorVisitStart: (code) => `${API_PREFIX}/doctor/visits/${code}/start/`,
     doctorVisitDraft: (code) => `${API_PREFIX}/doctor/visits/${code}/draft/`,
     doctorVisitComplete: (code) => `${API_PREFIX}/doctor/visits/${code}/complete/`,
+    doctorProfile: `${API_PREFIX}/doctor/profile/`,
+    doctorChangePassword: `${API_PREFIX}/doctor/change-password/`,
+    receptionDashboard: `${API_PREFIX}/reception/dashboard/`,
+    receptionProfile: `${API_PREFIX}/reception/profile/`,
+    receptionChangePassword: `${API_PREFIX}/reception/change-password/`,
+    receptionCreateAppointment: `${API_PREFIX}/reception/appointments/create/`,
     receptionPatients: `${API_PREFIX}/reception/patients/`,
     auditLogs: `${API_PREFIX}/admin/audit-logs/`,
     reports: `${API_PREFIX}/admin/reports/`,

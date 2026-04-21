@@ -33,7 +33,6 @@ export const ROLE_ROUTES = {
 export const authApi = {
   login: (payload) => apiClient.post(ENDPOINTS.portal.login, payload),
   register: (payload) => apiClient.post(ENDPOINTS.portal.register, payload),
-  staffLogin: (payload) => apiClient.post(ENDPOINTS.portal.staffLogin, payload),
   claimProfile: (appointmentCode, fullName) =>
     apiClient.post(ENDPOINTS.portal.claimProfile, {
       appointmentCode: appointmentCode.trim().toUpperCase(),

@@ -1,17 +1,23 @@
 import { API_BASE_URL } from "./endpoints";
 
 function buildUrl(path, params) {
-  const url = new URL(path, API_BASE_URL);
+  let base;
+  if (API_BASE_URL) {
+    base = new URL(path, API_BASE_URL);
+  } else {
+    const cleanPath = path.startsWith('/') ? path : `/${path}`;
+    base = new URL(cleanPath, window.location.origin);
+  }
 
   if (params) {
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== "") {
-        url.searchParams.set(key, value);
+        base.searchParams.set(key, value);
       }
     });
   }
 
-  return url.toString();
+  return base.toString();
 }
 
 function extractErrorMessage(payload) {

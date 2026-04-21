@@ -18,6 +18,9 @@ export const doctorApi = {
   startVisit: (code) => apiClient.post(ENDPOINTS.portal.doctorVisitStart(code)),
   saveDraft: (code, data) => apiClient.patch(ENDPOINTS.portal.doctorVisitDraft(code), data),
   completeVisit: (code, data) => apiClient.post(ENDPOINTS.portal.doctorVisitComplete(code), data),
+  getProfile: () => apiClient.get(ENDPOINTS.portal.doctorProfile),
+  updateProfile: (data) => apiClient.patch(ENDPOINTS.portal.doctorProfile, data),
+  changePassword: (data) => apiClient.post(ENDPOINTS.portal.doctorChangePassword, data),
 };
 
 export const getDoctorSchedule = (date) => doctorApi.getSchedule(date);
