@@ -611,10 +611,29 @@ def get_appointment_by_code_and_phone(code, phone):
     return expire_pending_appointment_if_needed(appointment)
 
 
+def _is_doctor_working_on_date(doctor_id, appointment_date):
+    """Return True if the doctor is scheduled to work on this date."""
+    from catalog.models import DoctorSchedule, DoctorTimeOff
+
+    weekday = appointment_date.weekday()
+
+    schedule = DoctorSchedule.objects.filter(doctor_id=doctor_id, weekday=weekday).first()
+    if schedule and not schedule.is_working:
+        return False
+
+    if DoctorTimeOff.objects.filter(doctor_id=doctor_id, off_date=appointment_date).exists():
+        return False
+
+    return True
+
+
 def build_doctor_slots(doctor_id, appointment_date, visit_type=AppointmentVisitType.VISIT_20):
     normalized_visit_type = normalize_visit_type(visit_type)
     required_blocks = get_visit_type_blocks(normalized_visit_type)
     visit_duration = get_visit_type_duration(normalized_visit_type)
+
+    if not _is_doctor_working_on_date(doctor_id, appointment_date):
+        return []
 
     appointments = list(
         get_active_appointments_queryset()

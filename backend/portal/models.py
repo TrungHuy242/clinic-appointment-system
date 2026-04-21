@@ -32,6 +32,7 @@ class User(models.Model):
         related_name='user',
     )
     is_active = models.BooleanField(default=True)
+    auth_token = models.CharField(max_length=255, default='', blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

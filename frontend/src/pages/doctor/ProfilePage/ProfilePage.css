@@ -236,3 +236,196 @@
     width: 100%;
   }
 }
+
+/* ── Schedule tab ── */
+.doc-schedule-card {
+  margin-bottom: 16px;
+}
+
+.doc-schedule-section-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text-main);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.doc-schedule-hint {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin: 0 0 16px;
+  line-height: 1.5;
+}
+
+/* ── Weekday grid ── */
+.doc-weekday-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.doc-weekday-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 6px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--color-border-subtle);
+  background: var(--color-bg-soft);
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+
+.doc-weekday-btn:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+.doc-weekday-btn.active {
+  background: var(--color-success-soft);
+  border-color: var(--color-success);
+}
+
+.doc-weekday-btn.active:hover {
+  background: #bbf7d0;
+}
+
+.doc-weekday-btn__short {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text-main);
+}
+
+.doc-weekday-btn__full {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.doc-weekday-btn__status {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--color-danger);
+  margin-top: 2px;
+}
+
+.doc-weekday-btn.active .doc-weekday-btn__status {
+  color: var(--color-success);
+}
+
+@media (max-width: 600px) {
+  .doc-weekday-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .doc-weekday-btn__full {
+    display: none;
+  }
+}
+
+/* ── Time-off form ── */
+.doc-timeoff-form {
+  margin-bottom: 16px;
+  padding: 14px;
+  background: var(--color-bg-soft);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-subtle);
+}
+
+.doc-timeoff-form__row {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.doc-timeoff-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.doc-timeoff-form__field input {
+  min-width: 150px;
+}
+
+.doc-timeoff-form__field--reason {
+  flex: 1;
+}
+
+.doc-timeoff-form__field--reason input {
+  width: 100%;
+  min-width: 0;
+}
+
+.doc-timeoff-add-btn {
+  flex-shrink: 0;
+  height: 36px;
+}
+
+/* ── Time-off list ── */
+.doc-timeoff-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 28px;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.doc-timeoff-empty p {
+  margin: 0;
+  font-size: 13px;
+}
+
+.doc-timeoff-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.doc-timeoff-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--color-bg-soft);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-subtle);
+}
+
+.doc-timeoff-item__date {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-primary);
+  min-width: 90px;
+}
+
+.doc-timeoff-item__reason {
+  flex: 1;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.doc-timeoff-item__delete {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--color-danger);
+  cursor: pointer;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+
+.doc-timeoff-item__delete:hover {
+  background: var(--color-danger-soft);
+}

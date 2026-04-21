@@ -93,7 +93,8 @@ export default function DoctorDetailPage() {
   async function loadSpecialties() {
     try {
       const data = await listSpecialties();
-      setSpecialties(Array.isArray(data) ? data : []);
+      // Chỉ hiện khoa đang hoạt động trong danh sách chọn
+      setSpecialties(Array.isArray(data) ? data.filter((s) => s.is_active) : []);
     } catch {
       // non-critical
     }

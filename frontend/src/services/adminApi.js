@@ -7,10 +7,12 @@ export const adminApi = {
   createSpecialty: (payload) => apiClient.post(ENDPOINTS.catalog.specialties, payload),
   updateSpecialty: (id, payload) => apiClient.patch(ENDPOINTS.catalog.specialty(id), payload),
   deleteSpecialty: (id) => apiClient.delete(ENDPOINTS.catalog.specialty(id)),
+  hardDeleteSpecialty: (id) => apiClient.delete(`${ENDPOINTS.catalog.specialty(id)}hard-delete/`),
   listDoctors: () => apiClient.get(ENDPOINTS.catalog.doctors),
   createDoctor: (payload) => apiClient.post(ENDPOINTS.catalog.doctors, payload),
   updateDoctor: (id, payload) => apiClient.patch(ENDPOINTS.catalog.doctor(id), payload),
   deleteDoctor: (id) => apiClient.delete(ENDPOINTS.catalog.doctor(id)),
+  hardDeleteDoctor: (id) => apiClient.delete(`${ENDPOINTS.catalog.doctor(id)}hard-delete/`),
   createDoctorAccount: (doctorId, payload) =>
     apiClient.post(ENDPOINTS.catalog.doctorCreateAccount(doctorId), payload),
   listVisitTypes: () => apiClient.get(ENDPOINTS.catalog.visitTypes),
@@ -72,10 +74,12 @@ export const listSpecialties = () => adminApi.listSpecialties();
 export const createSpecialty = (payload) => adminApi.createSpecialty(payload);
 export const updateSpecialty = (id, payload) => adminApi.updateSpecialty(id, payload);
 export const deleteSpecialty = (id) => adminApi.deleteSpecialty(id);
+export const hardDeleteSpecialty = (id) => adminApi.hardDeleteSpecialty(id);
 export const listDoctors = () => adminApi.listDoctors();
 export const createDoctor = (payload) => adminApi.createDoctor(payload);
 export const updateDoctor = (id, payload) => adminApi.updateDoctor(id, payload);
 export const deleteDoctor = (id) => adminApi.deleteDoctor(id);
+export const hardDeleteDoctor = (id) => adminApi.hardDeleteDoctor(id);
 export const createDoctorAccount = (doctorId, payload) => adminApi.createDoctorAccount(doctorId, payload);
 export const listVisitTypes = () => adminApi.listVisitTypes();
 export const createVisitType = (payload) => adminApi.createVisitType(payload);

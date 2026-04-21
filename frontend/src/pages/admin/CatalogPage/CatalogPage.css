@@ -148,10 +148,14 @@
   cursor: not-allowed;
 }
 
+.cat-icon-btn--warning:hover {
+  background: #d97706;
+  color: #fff;
+}
+
 .cat-icon-btn--danger:hover {
   background: #dc2626;
   color: #fff;
-  border-radius: var(--radius-md);
 }
 
 .cat-icon-btn__icon {
