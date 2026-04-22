@@ -5,6 +5,11 @@ import { appointmentApi } from "../../../services/patientApi";
 import { useAuth } from "../../../services/authService";
 import "./AccountPage.css";
 
+function stripHtml(raw) {
+  if (typeof raw !== "string") return "";
+  return raw.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() || "Đã xảy ra lỗi.";
+}
+
 function StatusMessage({ type, message }) {
   if (!message) return null;
   return (
@@ -50,7 +55,7 @@ export default function AccountPage() {
       setAccount(data);
       setProfileForm(data || {});
     } catch (error) {
-      setProfileMsg({ type: "error", text: error.message || "Không tải được thông tin tài khoản." });
+      setProfileMsg({ type: "error", text: stripHtml(error.message) || "Không tải được thông tin tài khoản." });
     } finally {
       setLoading(false);
     }
@@ -72,7 +77,7 @@ export default function AccountPage() {
       setProfileMsg({ type: "success", text: "Cập nhật thông tin thành công." });
       setTimeout(() => setProfileMsg({ type: "", text: "" }), 3000);
     } catch (error) {
-      setProfileMsg({ type: "error", text: error.message || "Không thể cập nhật thông tin." });
+      setProfileMsg({ type: "error", text: stripHtml(error.message) || "Không thể cập nhật thông tin." });
     } finally {
       setProfileSaving(false);
     }
@@ -118,7 +123,7 @@ export default function AccountPage() {
         });
         setPasswordErrors(mapped);
       } else {
-        setPasswordMsg({ type: "error", text: error.message || "Không thể đổi mật khẩu." });
+        setPasswordMsg({ type: "error", text: stripHtml(error.message) || "Không thể đổi mật khẩu." });
       }
     } finally {
       setPasswordSaving(false);

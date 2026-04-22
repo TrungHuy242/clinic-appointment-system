@@ -1,223 +1,333 @@
+/* ═══════════════════════════════════════════════════════════════
+   Patient Layout — Vertical Sidebar
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Layout Root ── */
 .patient-layout {
+  display: flex;
   min-height: 100vh;
+  background: var(--color-bg);
 }
 
-.patient-header {
-  position: sticky;
+/* ── Sidebar ── */
+.patient-sidebar {
+  position: fixed;
   top: 0;
-  z-index: 24;
-  background: rgba(248, 252, 255, 0.86);
-  backdrop-filter: blur(18px);
-  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  left: 0;
+  width: 260px;
+  height: 100vh;
+  background: #fff;
+  border-right: 1px solid rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
+  z-index: 300;
+  overflow: hidden;
 }
 
-.patient-header-inner {
-  max-width: var(--container-max);
-  margin: 0 auto;
-  padding: 12px 20px;
-  min-height: var(--header-height);
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.patient-brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+/* ── Brand / Logo ── */
+.psidebar-brand {
+  padding: 20px 16px 16px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
   flex-shrink: 0;
 }
 
-.patient-brand__logo {
-  width: 36px;
-  height: 36px;
+.psidebar-brand-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.psidebar-logo {
+  width: 38px;
+  height: 38px;
   border-radius: 10px;
-  background: linear-gradient(135deg, #0f172a 0%, #0f766e 100%);
+  background: linear-gradient(135deg, #0f172a 0%, #0d9488 100%);
   color: #f8fafc;
   display: grid;
   place-items: center;
-  box-shadow: var(--shadow-soft-primary);
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.25);
 }
 
-.patient-brand__title {
-  font-weight: 800;
+.psidebar-brand-name {
   font-size: 14px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.2;
 }
 
-.patient-brand__subtitle {
+.psidebar-brand-sub {
   font-size: 11px;
-  color: var(--color-text-secondary);
+  color: #0d9488;
+  font-weight: 500;
+  margin-top: 1px;
 }
 
-.patient-nav {
+/* ── Navigation ── */
+.psidebar-nav {
+  flex: 1;
+  padding: 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+}
+
+.psidebar-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  border-radius: 10px;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.18s ease;
+  position: relative;
+}
+
+.psidebar-nav-link:hover {
+  background: rgba(14, 165, 163, 0.07);
+  color: #0d9488;
+}
+
+.psidebar-nav-link.active {
+  background: rgba(14, 165, 163, 0.12);
+  color: #0d9488;
+  font-weight: 700;
+  box-shadow: inset 3px 0 0 #0d9488;
+}
+
+.psidebar-nav-icon {
+  flex-shrink: 0;
+  color: currentColor;
+}
+
+.psidebar-nav-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ef4444;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* ── Sidebar Footer ── */
+.psidebar-footer {
+  padding: 12px 10px 16px;
+  border-top: 1px solid rgba(15, 23, 42, 0.06);
+  flex-shrink: 0;
+}
+
+.psidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #f8fafc;
+  margin-bottom: 6px;
+}
+
+.psidebar-user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+  color: #0369a1;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.psidebar-user-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.psidebar-user-name {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.psidebar-user-role {
+  display: block;
+  font-size: 11px;
+  color: #0d9488;
+  font-weight: 500;
+  margin-top: 1px;
+}
+
+.psidebar-logout {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  color: #ef4444;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  text-align: left;
+}
+
+.psidebar-logout:hover {
+  background: rgba(239, 68, 68, 0.08);
+}
+
+/* ── Main Content Area ── */
+.patient-main {
+  flex: 1;
+  margin-left: 260px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.patient-content {
+  flex: 1;
+  padding: 28px 32px 48px;
+}
+
+.patient-content-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* ── Mobile Top Bar ── */
+.patient-mobile-bar {
+  display: none;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #fff;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  position: sticky;
+  top: 0;
+  z-index: 200;
+}
+
+.patient-mobile-menu-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 8px;
+  background: transparent;
+  color: #0f172a;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.patient-mobile-brand {
   display: flex;
   align-items: center;
   gap: 6px;
   flex: 1;
-  flex-wrap: wrap;
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f172a;
 }
 
-.patient-nav-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
-  border-radius: 999px;
-  color: var(--color-text-muted);
-  font-size: 13px;
-  font-weight: 600;
-  transition: all 0.2s ease;
+.patient-mobile-logo {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background: linear-gradient(135deg, #0f172a 0%, #0d9488 100%);
+  color: #f8fafc;
+  display: grid;
+  place-items: center;
 }
 
-.patient-nav-link:hover {
-  background: rgba(14, 165, 163, 0.08);
-  color: var(--color-primary-dark);
-}
-
-.patient-nav-link.active {
-  background: linear-gradient(135deg, rgba(14, 165, 163, 0.12), rgba(59, 130, 246, 0.08));
-  color: var(--color-primary-dark);
-  box-shadow: inset 0 0 0 1px rgba(14, 165, 163, 0.16);
-}
-
-.patient-nav-icon {
-  color: currentColor;
-}
-
-.patient-header-actions {
+.patient-mobile-notif {
+  position: relative;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-.patient-notif-btn,
-.patient-avatar-btn {
-  position: relative;
-  width: 38px;
-  height: 38px;
-  display: inline-flex;
-  align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  background: rgba(255, 255, 255, 0.82);
-  color: var(--color-text-main);
-  transition: all 0.2s ease;
-  cursor: pointer;
-}
-
-.patient-notif-btn:hover,
-.patient-avatar-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-sm);
-  border-color: rgba(14, 165, 163, 0.22);
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 8px;
+  color: #64748b;
+  text-decoration: none;
+  flex-shrink: 0;
 }
 
 .patient-notif-dot {
   position: absolute;
-  top: 9px;
-  right: 8px;
+  top: 7px;
+  right: 7px;
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--color-danger);
+  background: #ef4444;
   border: 2px solid #fff;
 }
 
-.patient-content {
-  padding: 20px 0 44px;
-}
-
-.patient-content-inner {
-  max-width: var(--container-max);
-  margin: 0 auto;
-  padding: 0 20px;
-}
-
-@media (max-width: 960px) {
-  .patient-header-inner {
-    flex-wrap: wrap;
-    justify-content: space-between;
-  }
-
-  .patient-nav {
-    order: 3;
-    width: 100%;
-  }
-}
-
-@media (max-width: 640px) {
-  .patient-content-inner,
-  .patient-header-inner {
-    padding-left: 16px;
-    padding-right: 16px;
-  }
-}
-
-/* User Menu Dropdown */
-.patient-user-menu {
-  position: relative;
-}
-
-.patient-user-dropdown {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  min-width: 180px;
-  background: white;
-  border-radius: 10px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  padding: 6px;
+/* ── Mobile Overlay ── */
+.psidebar-overlay {
   display: none;
-  z-index: 100;
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.4);
+  z-index: 290;
+  backdrop-filter: blur(2px);
 }
 
-.patient-user-menu:hover .patient-user-dropdown,
-.patient-user-menu:focus-within .patient-user-dropdown {
-  display: block;
+/* ── Responsive: Tablet ── */
+@media (max-width: 1024px) {
+  .patient-sidebar {
+    width: 220px;
+  }
+  .patient-main {
+    margin-left: 220px;
+  }
+  .patient-content {
+    padding: 24px 24px 40px;
+  }
 }
 
-.patient-user-info {
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
+/* ── Responsive: Mobile ── */
+@media (max-width: 768px) {
+  .patient-sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    box-shadow: none;
+  }
 
-.patient-user-info strong {
-  font-size: 13px;
-  color: var(--color-text-main);
-}
+  .patient-sidebar.open {
+    transform: translateX(0);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.12);
+  }
 
-.patient-user-info span {
-  font-size: 11px;
-  color: var(--color-text-muted);
-}
+  .patient-main {
+    margin-left: 0;
+  }
 
-.patient-user-dropdown hr {
-  border: none;
-  border-top: 1px solid rgba(15, 23, 42, 0.08);
-  margin: 6px 0;
-}
+  .patient-mobile-bar {
+    display: flex;
+  }
 
-.patient-logout-btn {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 10px;
-  border: none;
-  background: transparent;
-  color: var(--color-danger);
-  font-size: 13px;
-  font-weight: 500;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
+  .patient-content {
+    padding: 20px 16px 40px;
+  }
 
-.patient-logout-btn:hover {
-  background: rgba(239, 68, 68, 0.08);
+  .psidebar-overlay {
+    display: block;
+  }
 }

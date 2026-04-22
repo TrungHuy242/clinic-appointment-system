@@ -208,6 +208,11 @@ function OtpModal({ phone, demoOtp, onVerified, onClose }) {
 }
 
 // ── RegisterPage ──────────────────────────────────────────────────────────────
+function stripHtml(raw) {
+  if (typeof raw !== "string") return "";
+  return raw.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() || "Đã xảy ra lỗi.";
+}
+
 export default function RegisterPage() {
   const navigate = useNavigate();
   const [step, setStep]           = useState(1);
@@ -256,8 +261,8 @@ export default function RegisterPage() {
       setDemoOtp(res.otp || "");
       setRegPhone(form.phone);
       setShowOtp(true);
-    } catch (err) {
-      setSubmitError(err.message || "Không thể đăng ký tài khoản.");
+    } catch (error) {
+      setSubmitError(stripHtml(error.message) || "Không thể đăng ký tài khoản.");
     } finally {
       setSubmitting(false);
     }

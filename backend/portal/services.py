@@ -7,13 +7,16 @@ from django.db import transaction
 from django.db.models import Count, Q
 from django.utils import timezone
 from django.utils.dateparse import parse_date
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import PermissionDenied, ValidationError
+
+from common.auth import SESSION_USER_KEY
+from django.contrib.auth.hashers import check_password as django_check_password, make_password
 
 from appointments.models import Appointment, AppointmentStatus
 from appointments.services import get_active_appointments_queryset, set_appointment_status
-from catalog.models import Doctor, Specialty
+from catalog.models import Doctor, DoctorSchedule, DoctorTimeOff, Specialty
 
-from .models import MedicalRecord, PatientNotification, PatientProfile, User
+from .models import AdminAuditLog, MedicalRecord, PatientNotification, PatientProfile, User, UserRole
 
 
 _OTP_STORE = {}
@@ -42,6 +45,7 @@ SCHEDULE_STATUS_MAP = {
     AppointmentStatus.PENDING: 'waiting',
     AppointmentStatus.CONFIRMED: 'waiting',
     AppointmentStatus.CHECKED_IN: 'checked_in',
+    AppointmentStatus.WAITING: 'waiting',
     AppointmentStatus.IN_PROGRESS: 'in_progress',
     AppointmentStatus.COMPLETED: 'done',
 }
@@ -49,6 +53,7 @@ QUEUE_STATUS_MAP = {
     AppointmentStatus.PENDING: 'waiting',
     AppointmentStatus.CONFIRMED: 'waiting',
     AppointmentStatus.CHECKED_IN: 'waiting',
+    AppointmentStatus.WAITING: 'waiting',
     AppointmentStatus.IN_PROGRESS: 'in_progress',
     AppointmentStatus.COMPLETED: 'done',
 }
@@ -59,6 +64,25 @@ GENDER_LABELS = {
     '': 'Khác',
 }
 PHONE_PATTERN = re.compile(r'^0\d{9}$')
+
+
+def log_admin_action(action, resource_type, resource_id='', resource_label='',
+                     actor_name='', actor_role='', detail='', ip_address=None):
+    """Persist an admin audit log entry. Safe to call even if the caller fails."""
+    from .models import AdminAuditLog
+    try:
+        AdminAuditLog.objects.create(
+            action=action,
+            resource_type=resource_type,
+            resource_id=str(resource_id),
+            resource_label=resource_label,
+            actor_name=actor_name,
+            actor_role=actor_role,
+            detail=detail,
+            ip_address=ip_address,
+        )
+    except Exception:
+        pass
 
 
 def normalize_text(value):
@@ -146,8 +170,6 @@ def set_current_profile(profile, request=None):
 
 @transaction.atomic
 def unified_login(payload, request=None):
-    from django.contrib.auth.hashers import check_password as django_check_password
- 
     identifier = str(
         payload.get('identifier')
         or payload.get('phone')
@@ -155,34 +177,47 @@ def unified_login(payload, request=None):
         or ''
     ).strip()
     password = str(payload.get('password') or '').strip()
- 
+
     if not identifier:
         raise ValidationError({'identifier': 'Vui lòng nhập số điện thoại hoặc tên đăng nhập.'})
     if not password:
         raise ValidationError({'password': 'Vui lòng nhập mật khẩu.'})
- 
+
     # bệnh nhân (PatientProfile – plain-text password) ─────────────
     patient = PatientProfile.objects.filter(
         Q(phone=identifier)
         | Q(account_username__iexact=identifier)
         | Q(account_email__iexact=identifier)
     ).first()
- 
-    if patient and patient.account_password == password:
+
+    if patient and django_check_password(password, patient.account_password):
         set_current_profile(patient, request)
+
+        # Also store in session so SessionUserAuthentication can authenticate patient
+        if request and hasattr(request, 'session'):
+            request.session[SESSION_USER_KEY] = {
+                'id': patient.id,
+                'username': patient.account_username or patient.phone,
+                'full_name': patient.full_name,
+                'role': 'patient',
+                'patient_profile_id': patient.id,
+                'is_active': True,
+            }
+            request.session.modified = True
+
         return {
             'success': True,
             'role': 'patient',
             'account': get_account_info(patient),
         }
- 
+
     # nhân viên (portal_user – hashed password) ────────────────────
     staff = User.objects.filter(username=identifier, is_active=True).first()
- 
+
     # Fallback: thử case-insensitive nếu exact không có kết quả
     if not staff:
         staff = User.objects.filter(username__iexact=identifier, is_active=True).first()
- 
+
     if staff and django_check_password(password, staff.password):
         # doctor_id trong portal_user đang NULL → tự tra catalog_doctor theo full_name
         doctor_id = staff.doctor_id
@@ -193,8 +228,25 @@ def unified_login(payload, request=None):
             if matched_doctor:
                 doctor_id = matched_doctor.id
                 # Cập nhật luôn vào DB để lần sau khỏi tra lại
-                User.objects.filter(pk=staff.pk).update(doctor_id=doctor_id)
- 
+                try:
+                    User.objects.filter(pk=staff.pk).update(doctor_id=doctor_id)
+                except Exception:
+                    pass  # Constraint violation hoặc lỗi khác — bỏ qua, doctor_id đã có
+
+        user_payload = {
+            'id': staff.id,
+            'username': staff.username,
+            'full_name': staff.full_name,
+            'role': staff.role,
+            'doctor_id': doctor_id,
+            'is_active': staff.is_active,
+        }
+
+        # Store in session so SessionUserAuthentication can read it on subsequent requests
+        if request and hasattr(request, 'session'):
+            request.session[SESSION_USER_KEY] = user_payload
+            request.session.modified = True
+
         return {
             'success': True,
             'role': staff.role,   # 'admin' | 'receptionist' | 'doctor'
@@ -207,7 +259,7 @@ def unified_login(payload, request=None):
                 'doctorId': doctor_id,
             },
         }
- 
+
     # Sai thông tin ────────────────────────────────────────────────────
     raise ValidationError({'non_field_errors': 'Thông tin đăng nhập không hợp lệ.'})
 
@@ -257,7 +309,7 @@ def register_patient_account(payload):
             gender=gender,
             account_username=phone,
             account_email=email,
-            account_password=password,
+            account_password=make_password(password),
             is_current=False,
         )
     else:
@@ -265,7 +317,7 @@ def register_patient_account(payload):
         profile.dob = dob
         profile.gender = gender
         profile.account_email = email or profile.account_email
-        profile.account_password = password
+        profile.account_password = make_password(password)
         if not profile.account_username:
             profile.account_username = phone
         profile.save()
@@ -295,6 +347,7 @@ def get_profile_by_appointment(code, full_name):
             phone=appointment.patient_phone,
             account_username=appointment.patient_phone,
             account_email='',
+            account_password=make_password(appointment.patient_phone),
             is_current=False,
         )
 
@@ -420,15 +473,62 @@ def change_password(profile, payload):
     new_password = str(payload.get('newPassword') or '').strip()
     confirm_password = str(payload.get('confirmPassword') or '').strip()
 
-    if current_password != profile.account_password:
+    if not django_check_password(current_password, profile.account_password):
         raise ValidationError({'currentPassword': 'Mật khẩu hiện tại không đúng.'})
     if len(new_password) < 6:
         raise ValidationError({'newPassword': 'Mật khẩu mới phải từ 6 ký tự trở lên.'})
     if new_password != confirm_password:
         raise ValidationError({'confirmPassword': 'Mật khẩu xác nhận không khớp.'})
 
-    profile.account_password = new_password
+    profile.account_password = make_password(new_password)
     profile.save(update_fields=['account_password', 'updated_at'])
+    return {'success': True}
+
+
+def get_doctor_profile(doctor):
+    """Return profile info for the authenticated doctor."""
+    return {
+        'id': doctor.id,
+        'fullName': doctor.full_name,
+        'specialty': doctor.specialty.name if doctor.specialty else '',
+        'phone': doctor.phone or '',
+        'email': doctor.email or '',
+        'bio': doctor.bio or '',
+        'username': doctor.user.username if doctor.user else '',
+    }
+
+
+@transaction.atomic
+def update_doctor_profile(doctor, payload):
+    """Update doctor profile fields (bio, phone, email — not specialty)."""
+    doctor.bio = str(payload.get('bio') or doctor.bio or '').strip()
+    doctor.phone = str(payload.get('phone') or doctor.phone or '').strip()
+    doctor.email = str(payload.get('email') or doctor.email or '').strip()
+    if 'fullName' in payload and payload['fullName']:
+        doctor.full_name = str(payload['fullName']).strip()
+    doctor.save(update_fields=['full_name', 'bio', 'phone', 'email'])
+    return get_doctor_profile(doctor)
+
+
+@transaction.atomic
+def change_doctor_password(doctor, payload):
+    """Change password for a doctor account (via their linked User model)."""
+    current_password = str(payload.get('currentPassword') or '').strip()
+    new_password = str(payload.get('newPassword') or '').strip()
+    confirm_password = str(payload.get('confirmPassword') or '').strip()
+
+    if not doctor.user:
+        raise ValidationError({'general': 'Tài khoản không tìm thấy.'})
+
+    if not django_check_password(current_password, doctor.user.password):
+        raise ValidationError({'currentPassword': 'Mật khẩu hiện tại không đúng.'})
+    if len(new_password) < 6:
+        raise ValidationError({'newPassword': 'Mật khẩu mới phải từ 6 ký tự trở lên.'})
+    if new_password != confirm_password:
+        raise ValidationError({'confirmPassword': 'Mật khẩu xác nhận không khớp.'})
+
+    doctor.user.password = make_password(new_password)
+    doctor.user.save(update_fields=['password', 'updated_at'])
     return {'success': True}
 
 
@@ -664,7 +764,7 @@ def get_doctor_visits(doctor=None, status='all'):
             'patientName': appointment.patient_full_name,
             'date': timezone.localtime(appointment.scheduled_start).strftime('%d/%m/%Y'),
             'status': appointment.status,
-            'diagnosis': appointment.medical_record.diagnosis_name if appointment.medical_record else None,
+            'diagnosis': getattr(getattr(appointment, 'medical_record', None), 'diagnosis_name', None),
         }
         for appointment in queryset
     ]
@@ -681,6 +781,7 @@ def get_or_create_record_for_appointment(appointment):
             full_name=appointment.patient_full_name,
             phone=appointment.patient_phone,
             account_username=appointment.patient_phone,
+            account_password=make_password(appointment.patient_phone),
         )
 
     return MedicalRecord.objects.create(
@@ -866,108 +967,70 @@ def _build_log_item(log_id, when, actor, role, action, resource, detail, ip='127
 
 
 def get_audit_logs_data():
-    items = []
-    log_id = 1
+    """Read real audit logs from AdminAuditLog table.
+    NOTE: Logs are written from v2.1 onwards. Historical data before this
+    migration is captured via _seed_historical_logs() which runs once.
+    """
+    from .models import AdminAuditLog
 
-    for specialty in Specialty.objects.order_by('-created_at'):
-        items.append(
-            _build_log_item(
-                log_id,
-                specialty.created_at,
-                'Admin Demo',
-                'admin',
-                'CREATE',
-                f'Specialty:{specialty.name}',
-                f'Thêm chuyên khoa {specialty.name}',
-            )
-        )
-        log_id += 1
+    _seed_historical_logs()
 
-    for doctor in Doctor.objects.select_related('specialty').order_by('-created_at'):
-        items.append(
-            _build_log_item(
-                log_id,
-                doctor.created_at,
-                'Admin Demo',
-                'admin',
-                'CREATE',
-                f'Doctor:{doctor.full_name}',
-                f'Thêm bác sĩ {doctor.full_name} - {doctor.specialty.name}',
-            )
-        )
-        log_id += 1
-
-    appointments = Appointment.all_objects.select_related('doctor', 'specialty').filter(is_deleted=False).order_by('-created_at')
-    for appointment in appointments:
-        items.append(
-            _build_log_item(
-                log_id,
-                appointment.created_at,
-                'Lễ tân Demo',
-                'receptionist',
-                'CREATE',
-                appointment.code,
-                f'Tạo lịch hẹn cho {appointment.patient_full_name}',
-            )
-        )
-        log_id += 1
-
-        if appointment.status in {AppointmentStatus.CHECKED_IN, AppointmentStatus.IN_PROGRESS, AppointmentStatus.COMPLETED}:
-            items.append(
-                _build_log_item(
-                    log_id,
-                    appointment.updated_at - timedelta(minutes=5),
-                    'Lễ tân Demo',
-                    'receptionist',
-                    'CHECKIN',
-                    appointment.code,
-                    f'Check-in thành công cho {appointment.patient_full_name}',
-                )
-            )
-            log_id += 1
-
-        if appointment.status == AppointmentStatus.COMPLETED:
-            items.append(
-                _build_log_item(
-                    log_id,
-                    appointment.updated_at,
-                    appointment.doctor.full_name,
-                    'doctor',
-                    'COMPLETE',
-                    appointment.code,
-                    f'Hoàn tất khám cho {appointment.patient_full_name}',
-                )
-            )
-            log_id += 1
-
-    for record in MedicalRecord.objects.select_related('doctor').exclude(diagnosis_name='').order_by('-updated_at'):
-        items.append(
-            _build_log_item(
-                log_id,
-                record.updated_at,
-                record.doctor.full_name,
-                'doctor',
-                'UPDATE',
-                record.code,
-                f'Cập nhật hồ sơ khám {record.code}',
-            )
-        )
-        log_id += 1
-
-    items.sort(key=lambda item: item['_sort'], reverse=True)
-    for item in items:
-        item.pop('_sort', None)
+    queryset = AdminAuditLog.objects.all().order_by('-created_at')
+    items = [
+        {
+            'id': log.id,
+            'time': format_datetime_display(log.created_at),
+            'actor': log.actor_name,
+            'role': log.actor_role,
+            'action': log.action,
+            'resource': f'{log.resource_type}:{log.resource_label}',
+            'detail': log.detail,
+            'ip': log.ip_address or '',
+        }
+        for log in queryset
+    ]
 
     stats = {
         'total': len(items),
         'create': sum(1 for item in items if item['action'] == 'CREATE'),
-        'update': sum(1 for item in items if item['action'] == 'UPDATE'),
-        'delete': sum(1 for item in items if item['action'] == 'DELETE'),
+        'update': sum(1 for item in items if item['action'] in {'UPDATE', 'RESCHEDULE', 'STATUS_CHANGE'}),
+        'delete': sum(1 for item in items if item['action'] in {'DELETE', 'RESET_PASSWORD', 'CREATE_ACCOUNT'}),
     }
     return {
         'items': items,
         'stats': stats,
     }
+
+
+def _seed_historical_logs():
+    """One-time backfill: create AdminAuditLog entries from existing database records.
+    Idempotent — skips if AdminAuditLog already has records.
+    """
+    from .models import AdminAuditLog
+    from catalog.models import Doctor, DoctorSchedule, DoctorTimeOff, Specialty
+
+    if AdminAuditLog.objects.exists():
+        return
+
+    logs_to_create = []
+
+    for specialty in Specialty.objects.all():
+        logs_to_create.append(AdminAuditLog(
+            action='CREATE', resource_type='Specialty', resource_id=str(specialty.id),
+            resource_label=specialty.name, actor_name='System', actor_role='admin',
+            detail=f'Tạo chuyên khoa "{specialty.name}" (historical)',
+        ))
+
+    for doctor in Doctor.objects.select_related('specialty').all():
+        logs_to_create.append(AdminAuditLog(
+            action='CREATE', resource_type='Doctor', resource_id=str(doctor.id),
+            resource_label=f'{doctor.full_name} ({doctor.specialty.name})',
+            actor_name='System', actor_role='admin',
+            detail=f'Tạo hồ sơ bác sĩ "{doctor.full_name}" - {doctor.specialty.name} (historical)',
+        ))
+
+    if logs_to_create:
+        AdminAuditLog.objects.bulk_create(logs_to_create, ignore_conflicts=True)
 
 
 def _month_labels():
@@ -1097,3 +1160,502 @@ def get_reports_data(period='year'):
         'specialtyStats': specialty_stats,
         'summaryRows': summary_rows,
     }
+
+
+# ── Admin Dashboard ────────────────────────────────────────────────────────────
+
+def get_dashboard_data():
+    """Return dashboard data for admin overview."""
+    today = timezone.localdate()
+    now = timezone.localtime()
+
+    today_qs = Appointment.objects.filter(
+        is_deleted=False,
+        scheduled_start__date=today,
+    ).select_related('doctor', 'specialty')
+
+    pending = today_qs.filter(status=AppointmentStatus.PENDING).count()
+    confirmed = today_qs.filter(status=AppointmentStatus.CONFIRMED).count()
+    checked_in = today_qs.filter(status=AppointmentStatus.CHECKED_IN).count()
+    in_progress = today_qs.filter(status=AppointmentStatus.IN_PROGRESS).count()
+    completed = today_qs.filter(status=AppointmentStatus.COMPLETED).count()
+
+    stat_cards = [
+        {'key': 'total_today', 'label': 'Tổng lịch hẹn hôm nay', 'value': today_qs.count()},
+        {'key': 'pending',      'label': 'Chờ xác nhận',          'value': pending},
+        {'key': 'confirmed',    'label': 'Đã xác nhận',           'value': confirmed},
+        {'key': 'checked_in',  'label': 'Đã check-in',            'value': checked_in},
+        {'key': 'in_progress', 'label': 'Đang khám',             'value': in_progress},
+        {'key': 'completed',   'label': 'Đã hoàn thành',         'value': completed},
+    ]
+
+    # Recent appointments (up to 10)
+    recent_qs = Appointment.objects.filter(
+        is_deleted=False,
+    ).exclude(
+        status__in=[AppointmentStatus.CANCELLED, AppointmentStatus.NO_SHOW]
+    ).select_related('doctor').order_by('-scheduled_start')[:10]
+
+    recent_appointments = []
+    for apt in recent_qs:
+        start = timezone.localtime(apt.scheduled_start)
+        recent_appointments.append({
+            'code':         apt.code,
+            'patient':      apt.patient_full_name,
+            'doctor_name':  apt.doctor.full_name if apt.doctor else '—',
+            'date':        start.strftime('%d/%m/%Y'),
+            'time':        start.strftime('%H:%M'),
+            'status':      apt.status,
+        })
+
+    # Alerts
+    alerts = []
+    if pending > 0:
+        alerts.append({'type': 'warning', 'message': f'Có {pending} lịch hẹn đang chờ xác nhận.'})
+    if today_qs.filter(status=AppointmentStatus.NO_SHOW).exists():
+        alerts.append({'type': 'danger', 'message': 'Có bệnh nhân không đến khám hôm nay.'})
+    if today_qs.filter(status=AppointmentStatus.CHECKED_IN).exists():
+        alerts.append({'type': 'info', 'message': 'Một số bệnh nhân đã check-in và đang chờ khám.'})
+    if not alerts:
+        alerts.append({'type': 'info', 'message': 'Không có cảnh báo nào.'})
+
+    return {
+        'statCards':            stat_cards,
+        'recentAppointments':   recent_appointments,
+        'alerts':               alerts,
+    }
+
+
+# ── Admin Doctor Detail ────────────────────────────────────────────────────────
+
+def get_admin_doctor_detail(doctor_id):
+    """Return doctor profile with stats for admin detail page."""
+    doctor = Doctor.objects.select_related('specialty').filter(pk=doctor_id).first()
+    if not doctor:
+        raise ValidationError({'detail': 'Không tìm thấy bác sĩ.'})
+
+    from portal.models import User
+    linked_user = None
+    u = User.objects.filter(doctor=doctor, role='doctor').first()
+    if u:
+        linked_user = {
+            'id':       u.id,
+            'username': u.username,
+            'full_name': u.full_name,
+            'is_active': u.is_active,
+        }
+
+    total = Appointment.objects.filter(is_deleted=False, doctor=doctor).count()
+    completed = Appointment.objects.filter(
+        is_deleted=False, doctor=doctor, status=AppointmentStatus.COMPLETED
+    ).count()
+
+    return {
+        'id':              doctor.id,
+        'full_name':       doctor.full_name,
+        'phone':           doctor.phone or '',
+        'email':           doctor.email or '',
+        'specialty':       doctor.specialty_id,        # ID used by frontend edit form
+        'specialty_name':  doctor.specialty.name if doctor.specialty else '',
+        'bio':             doctor.bio or '',
+        'is_active':       doctor.is_active,
+        'linked_user':     linked_user,
+        'stats': {
+            'total_appointments':       total,
+            'completed_appointments':   completed,
+        },
+    }
+
+
+# ── Admin Patient Profiles ─────────────────────────────────────────────────────
+
+def get_admin_patient_profiles():
+    """Return all patient profiles with appointment counts."""
+    profiles = PatientProfile.objects.order_by('-created_at')
+
+    result = []
+    for p in profiles:
+        total = Appointment.objects.filter(patient_phone=p.phone).exclude(is_deleted=True).count()
+        completed = Appointment.objects.filter(
+            patient_phone=p.phone,
+            status=AppointmentStatus.COMPLETED,
+        ).exclude(is_deleted=True).count()
+        result.append({
+            'id': p.id,
+            'full_name': p.full_name,
+            'phone': p.phone,
+            'dob': p.dob or None,
+            'gender': p.gender or '',
+            'account_username': p.account_username,
+            'account_email': p.account_email or '',
+            'is_current': p.is_current,
+            'is_guest': p.account_password == '',
+            'appointment_count': total,
+            'completed_count': completed,
+            'created_at': p.created_at,
+        })
+    return result
+
+
+def delete_admin_patient_profile(profile_id):
+    """Soft-delete a patient profile."""
+    profile = PatientProfile.objects.filter(pk=profile_id).first()
+    if not profile:
+        raise ValidationError({'detail': 'Không tìm thấy bệnh nhân.'})
+    profile.delete()
+    return True
+
+
+def reset_admin_patient_password(profile_id, new_password):
+    """Reset patient account password."""
+    profile = PatientProfile.objects.filter(pk=profile_id).first()
+    if not profile:
+        raise ValidationError({'detail': 'Không tìm thấy bệnh nhân.'})
+    if len(new_password) < 6:
+        raise ValidationError({'new_password': 'Mật khẩu phải ít nhất 6 ký tự.'})
+    profile.account_password = make_password(new_password)
+    profile.save(update_fields=['account_password', 'updated_at'])
+    return True
+
+
+# ── Admin Receptionist Profiles ─────────────────────────────────────────────────
+
+def get_admin_receptionist_profiles():
+    """Return all receptionist accounts."""
+    return list(
+        User.objects.filter(role=UserRole.RECEPTIONIST)
+        .order_by('-created_at')
+        .values('id', 'username', 'full_name', 'email', 'phone', 'notes', 'is_active', 'created_at')
+    )
+
+
+def get_admin_receptionist_profile(receptionist_id):
+    """Return single receptionist profile."""
+    user = User.objects.filter(pk=receptionist_id, role=UserRole.RECEPTIONIST).first()
+    if not user:
+        raise ValidationError({'detail': 'Không tìm thấy lễ tân.'})
+    return {
+        'id':        user.id,
+        'username':  user.username,
+        'full_name': user.full_name,
+        'email':     user.email or '',
+        'phone':     user.phone or '',
+        'notes':     user.notes or '',
+        'is_active': user.is_active,
+        'created_at': user.created_at,
+    }
+
+
+@transaction.atomic
+def create_admin_receptionist_profile(payload):
+    """Create a new receptionist account."""
+    from django.contrib.auth.hashers import make_password
+    username = str(payload.get('username') or '').strip()
+    password = str(payload.get('password') or '').strip()
+    full_name = str(payload.get('full_name') or '').strip()
+    if not username:
+        raise ValidationError({'username': 'Tên đăng nhập là bắt buộc.'})
+    if not password or len(password) < 6:
+        raise ValidationError({'password': 'Mật khẩu phải ít nhất 6 ký tự.'})
+    if not full_name:
+        raise ValidationError({'full_name': 'Họ tên là bắt buộc.'})
+    if User.objects.filter(username__iexact=username).exists():
+        raise ValidationError({'username': 'Tên đăng nhập đã tồn tại.'})
+
+    user = User.objects.create(
+        username=username,
+        password=make_password(password),
+        full_name=full_name,
+        email=str(payload.get('email') or '').strip(),
+        phone=str(payload.get('phone') or '').strip(),
+        notes=str(payload.get('notes') or '').strip(),
+        role=UserRole.RECEPTIONIST,
+        is_active=bool(payload.get('is_active', True)),
+    )
+    return {
+        'id':        user.id,
+        'username':  user.username,
+        'full_name': user.full_name,
+        'email':     user.email,
+        'phone':     user.phone,
+        'notes':     user.notes,
+        'is_active': user.is_active,
+        'created_at': user.created_at,
+    }
+
+
+@transaction.atomic
+def update_admin_receptionist_profile(receptionist_id, payload):
+    """Update receptionist profile."""
+    user = User.objects.filter(pk=receptionist_id, role=UserRole.RECEPTIONIST).first()
+    if not user:
+        raise ValidationError({'detail': 'Không tìm thấy lễ tân.'})
+
+    if 'full_name' in payload:
+        user.full_name = str(payload['full_name']).strip()
+    if 'email' in payload:
+        user.email = str(payload['email']).strip()
+    if 'phone' in payload:
+        user.phone = str(payload['phone']).strip()
+    if 'notes' in payload:
+        user.notes = str(payload['notes']).strip()
+    if 'is_active' in payload:
+        user.is_active = bool(payload['is_active'])
+
+    user.save()
+    return {
+        'id':        user.id,
+        'username':  user.username,
+        'full_name': user.full_name,
+        'email':     user.email,
+        'phone':     user.phone,
+        'notes':     user.notes,
+        'is_active': user.is_active,
+        'created_at': user.created_at,
+    }
+
+
+@transaction.atomic
+def delete_admin_receptionist_profile(receptionist_id):
+    """Delete receptionist account."""
+    user = User.objects.filter(pk=receptionist_id, role=UserRole.RECEPTIONIST).first()
+    if not user:
+        raise ValidationError({'detail': 'Không tìm thấy lễ tân.'})
+    user.delete()
+    return True
+
+
+@transaction.atomic
+def reset_admin_receptionist_password(receptionist_id, new_password):
+    """Reset receptionist account password."""
+    from django.contrib.auth.hashers import make_password
+    user = User.objects.filter(pk=receptionist_id, role=UserRole.RECEPTIONIST).first()
+    if not user:
+        raise ValidationError({'detail': 'Không tìm thấy lễ tân.'})
+    if len(new_password) < 6:
+        raise ValidationError({'new_password': 'Mật khẩu phải ít nhất 6 ký tự.'})
+    user.password = make_password(new_password)
+    user.save(update_fields=['password', 'updated_at'])
+    return True
+
+
+def _staff_receptionist(request):
+    """Return the actual User model instance for the logged-in receptionist, or raise."""
+    user_data = getattr(request, "user", None)
+    if not user_data or not getattr(user_data, "is_authenticated", False):
+        raise PermissionDenied("Authentication required.")
+    role = getattr(user_data, "role", None)
+    if role not in (UserRole.RECEPTIONIST, UserRole.ADMIN):
+        raise PermissionDenied("Receptionist access required.")
+    user_id = getattr(user_data, "id", None)
+    if not user_id:
+        raise PermissionDenied("User ID not found in session.")
+    user = User.objects.filter(pk=user_id).first()
+    if not user:
+        raise PermissionDenied("User profile not found.")
+    return user
+
+
+def get_receptionist_profile(user):
+    """Return profile info for the authenticated receptionist."""
+    return {
+        'id': user.id,
+        'username': user.username,
+        'fullName': user.full_name,
+        'email': user.email or '',
+        'phone': user.phone or '',
+        'notes': user.notes or '',
+        'isActive': user.is_active,
+    }
+
+
+@transaction.atomic
+def update_receptionist_profile(user, payload):
+    """Update receptionist profile fields (fullName, email, phone, notes)."""
+    if 'fullName' in payload and payload['fullName']:
+        user.full_name = str(payload['fullName']).strip()
+    if 'email' in payload:
+        user.email = str(payload['email']).strip()
+    if 'phone' in payload:
+        user.phone = str(payload['phone']).strip()
+    if 'notes' in payload:
+        user.notes = str(payload['notes']).strip()
+    user.save(update_fields=['full_name', 'email', 'phone', 'notes', 'updated_at'])
+    return get_receptionist_profile(user)
+
+
+@transaction.atomic
+def change_receptionist_password(user, payload):
+    """Change password for a receptionist account."""
+    current_password = str(payload.get('currentPassword') or '').strip()
+    new_password = str(payload.get('newPassword') or '').strip()
+    confirm_password = str(payload.get('confirmPassword') or '').strip()
+
+    if not django_check_password(current_password, user.password):
+        raise ValidationError({'currentPassword': 'Mật khẩu hiện tại không đúng.'})
+    if len(new_password) < 6:
+        raise ValidationError({'newPassword': 'Mật khẩu mới phải từ 6 ký tự trở lên.'})
+    if new_password != confirm_password:
+        raise ValidationError({'confirmPassword': 'Mật khẩu xác nhận không khớp.'})
+
+    user.password = make_password(new_password)
+    user.save(update_fields=['password', 'updated_at'])
+    return {'success': True}
+
+
+def get_receptionist_dashboard_data():
+    """Return stats for the receptionist dashboard."""
+    today = timezone.localdate()
+    appointments = get_active_appointments_queryset().filter(
+        scheduled_start__date=today
+    )
+    total = appointments.count()
+    confirmed = appointments.filter(status=AppointmentStatus.CONFIRMED).count()
+    checked_in = appointments.filter(status=AppointmentStatus.CHECKED_IN).count()
+    waiting = appointments.filter(status=AppointmentStatus.WAITING).count()
+    in_progress = appointments.filter(status=AppointmentStatus.IN_PROGRESS).count()
+    completed = appointments.filter(status=AppointmentStatus.COMPLETED).count()
+    cancelled = appointments.filter(status__in=[AppointmentStatus.CANCELLED, AppointmentStatus.NO_SHOW]).count()
+
+    upcoming_qs = appointments.exclude(
+        status__in=[AppointmentStatus.CANCELLED, AppointmentStatus.NO_SHOW]
+    ).exclude(
+        status=AppointmentStatus.COMPLETED
+    ).order_by('scheduled_start')[:8]
+
+    def _fmt(v):
+        return v.strftime('%H:%M')
+
+    upcoming_rows = [
+        {
+            'id': a.id,
+            'code': a.code,
+            'patientName': a.patient_full_name,
+            'specialty': a.specialty.name if a.specialty else '',
+            'doctor': a.doctor.full_name if a.doctor else '',
+            'slot': f"{_fmt(a.scheduled_start)} - {_fmt(a.scheduled_end)}",
+            'status': a.status,
+        }
+        for a in upcoming_qs
+    ]
+
+    return {
+        'stats': {
+            'total': total,
+            'confirmed': confirmed,
+            'checkedIn': checked_in,
+            'waiting': waiting,
+            'inProgress': in_progress,
+            'completed': completed,
+            'cancelled': cancelled,
+        },
+        'upcoming': upcoming_rows,
+    }
+
+
+# ── Doctor Schedule Management ─────────────────────────────────────────────────
+
+WEEKDAY_NAMES = {
+    0: 'Thứ Hai',
+    1: 'Thứ Ba',
+    2: 'Thứ Tư',
+    3: 'Thứ Năm',
+    4: 'Thứ Sáu',
+    5: 'Thứ Bảy',
+    6: 'Chủ Nhật',
+}
+
+
+def get_doctor_schedule_config(doctor):
+    """Return current work schedule and time-off for a doctor."""
+    schedules = {
+        s.weekday: s.is_working
+        for s in doctor.schedules.all()
+    }
+    schedule_rows = []
+    for weekday in range(7):
+        schedule_rows.append({
+            'weekday': weekday,
+            'label': WEEKDAY_NAMES[weekday],
+            'isWorking': schedules.get(weekday, True),
+        })
+
+    time_offs = list(
+        doctor.time_offs.all().order_by('off_date')
+    )
+    time_off_rows = [
+        {
+            'id': t.id,
+            'offDate': t.off_date.isoformat(),
+            'reason': t.reason,
+        }
+        for t in time_offs
+    ]
+
+    return {
+        'schedule': schedule_rows,
+        'timeOffs': time_off_rows,
+    }
+
+
+@transaction.atomic
+def update_doctor_schedule(doctor, payload):
+    """Update work day settings for a doctor.
+    payload: { schedule: [{ week day: int, isWorking: bool }] }
+    """
+    schedule_list = payload.get('schedule') or []
+    updated = []
+    for item in schedule_list:
+        weekday = int(item.get('weekday', -1))
+        if weekday < 0 or weekday > 6:
+            continue
+        is_working = bool(item.get('isWorking', True))
+        schedule, _ = DoctorSchedule.objects.update_or_create(
+            doctor=doctor,
+            weekday=weekday,
+            defaults={'is_working': is_working},
+        )
+        updated.append({
+            'weekday': weekday,
+            'label': WEEKDAY_NAMES[weekday],
+            'isWorking': schedule.is_working,
+        })
+    return updated
+
+
+@transaction.atomic
+def add_doctor_time_off(doctor, payload):
+    """Add a time-off day for a doctor.
+    payload: { offDate: "YYYY-MM-DD", reason: "..." }
+    """
+    off_date_raw = payload.get('offDate')
+    if not off_date_raw:
+        raise ValidationError({'offDate': 'offDate is required (YYYY-MM-DD format).'})
+
+    off_date = parse_optional_date(off_date_raw, 'offDate')
+    reason = str(payload.get('reason') or '').strip()
+
+    time_off, created = DoctorTimeOff.objects.get_or_create(
+        doctor=doctor,
+        off_date=off_date,
+        defaults={'reason': reason},
+    )
+    if not created:
+        time_off.reason = reason
+        time_off.save(update_fields=['reason'])
+
+    return {
+        'id': time_off.id,
+        'offDate': time_off.off_date.isoformat(),
+        'reason': time_off.reason,
+    }
+
+
+@transaction.atomic
+def delete_doctor_time_off(doctor, time_off_id):
+    """Delete a time-off record for a doctor."""
+    time_off = DoctorTimeOff.objects.filter(pk=time_off_id, doctor=doctor).first()
+    if not time_off:
+        raise ValidationError({'detail': 'Không tìm thấy ngày nghỉ phép.'})
+    time_off.delete()
+    return {'success': True}

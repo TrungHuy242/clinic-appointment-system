@@ -1,9 +1,15 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CalendarDays, CircleCheck, Clock3, Play, ScanLine } from "lucide-react";
+import { CalendarCheck, CalendarDays, CircleCheck, Clock3, Play, ScanLine } from "lucide-react";
 import Badge from "../../../components/Badge/Badge";
 import { getDoctorSchedule } from "../../../services/doctorApi";
+import { startVisit } from "../../../services/doctorApi";
 import "./SchedulePage.css";
+
+function stripHtml(raw) {
+  if (typeof raw !== "string") return "";
+  return raw.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() || "Đã xảy ra lỗi.";
+}
 
 const STATUS_MAP = {
   waiting: { label: "Chờ khám", variant: "neutral", icon: Clock3 },
@@ -57,7 +63,7 @@ export default function SchedulePage() {
         }
       } catch (loadError) {
         if (mounted) {
-          setError(loadError.message || "Không tải được lịch khám.");
+          setError(stripHtml(loadError.message) || "Không tải được lịch khám.");
         }
       } finally {
         if (mounted) {
@@ -137,9 +143,33 @@ export default function SchedulePage() {
         ))}
       </div>
 
-      {loading && <div className="schedule-list">Đang tải lịch khám...</div>}
-      {!loading && error && <div className="schedule-list">{error}</div>}
-      {!loading && !error && filteredItems.length === 0 && <div className="schedule-list">Không có lịch khám phù hợp.</div>}
+      {loading && <div className="schedule-list schedule-loading">Đang tải lịch khám...</div>}
+      {!loading && error && (
+        <div className="schedule-empty-state">
+          <div className="schedule-empty-icon"><CalendarCheck size={36} /></div>
+          <p className="schedule-empty-title">Không tải được lịch khám</p>
+          <p className="schedule-empty-hint">{error}</p>
+        </div>
+      )}
+      {!loading && !error && filteredItems.length === 0 && (
+        <div className="schedule-empty-state">
+          <div className="schedule-empty-icon"><CalendarCheck size={36} /></div>
+          <p className="schedule-empty-title">
+            {activeFilter === "all"
+              ? "Không có lịch khám hôm nay"
+              : activeFilter === "waiting"
+              ? "Không có lịch chờ khám"
+              : activeFilter === "in_progress"
+              ? "Không có lịch đang khám"
+              : "Không có lịch đã hoàn tất"}
+          </p>
+          <p className="schedule-empty-hint">
+            {activeFilter === "all"
+              ? "Bạn chưa có lịch khám nào cho ngày hôm nay. Bệnh nhân sẽ xuất hiện ở đây sau khi được đặt lịch."
+              : "Thử chọn tab khác hoặc quay lại \"Tất cả\" để xem toàn bộ lịch."}
+          </p>
+        </div>
+      )}
 
       {!loading && !error && filteredItems.length > 0 && (
         <div className="schedule-list">
@@ -174,7 +204,16 @@ export default function SchedulePage() {
                         <button
                           className="dash-action-btn dash-action-btn--primary my-schedule-page__start-btn"
                           type="button"
-                          onClick={() => navigate(`/app/doctor/visit/${item.code}`)}
+                          onClick={async () => {
+                            if (item.status !== "in_progress") {
+                              try {
+                                await startVisit(item.code);
+                              } catch {
+                                // Non-fatal: allow navigate even if transition fails
+                              }
+                            }
+                            navigate(`/app/doctor/visit/${item.code}`);
+                          }}
                         >
                           {item.status === "in_progress" ? "Tiếp tục khám" : "Bắt đầu khám"}
                         </button>

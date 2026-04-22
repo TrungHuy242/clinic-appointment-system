@@ -33,8 +33,10 @@ export const ROLE_ROUTES = {
 export const authApi = {
   login: (payload) => apiClient.post(ENDPOINTS.portal.login, payload),
   register: (payload) => apiClient.post(ENDPOINTS.portal.register, payload),
+
   verifyOtp: (payload) => apiClient.post(ENDPOINTS.portal.verifyOtp, payload),  // ← thêm dòng này
   staffLogin: (payload) => apiClient.post(ENDPOINTS.portal.staffLogin, payload),
+
   claimProfile: (appointmentCode, fullName) =>
     apiClient.post(ENDPOINTS.portal.claimProfile, {
       appointmentCode: appointmentCode.trim().toUpperCase(),
@@ -154,6 +156,25 @@ export function RequireGuest({ children }) {
   }
 
   if (auth.isAuthenticated) {
+    return <Navigate replace to={auth.getRedirectPath()} />;
+  }
+
+  return children;
+}
+
+/**
+ * PublicRoute: guests and patients can access public pages (/, /book, /lookup, etc.).
+ * Authenticated staff (admin, doctor, receptionist) are redirected to their portal.
+ */
+export function PublicRoute({ children }) {
+  const auth = useAuth();
+
+  if (auth.loading) {
+    return <FullPageLoader />;
+  }
+
+  const staffRoles = [ROLES.ADMIN, ROLES.DOCTOR, ROLES.RECEPTIONIST];
+  if (auth.isAuthenticated && staffRoles.includes(auth.role)) {
     return <Navigate replace to={auth.getRedirectPath()} />;
   }
 

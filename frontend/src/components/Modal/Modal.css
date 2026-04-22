@@ -67,6 +67,10 @@
   font-size: 14px;
 }
 
+.mc-modal--lg {
+  max-width: 620px;
+}
+
 .mc-modal-footer {
   display: flex;
   justify-content: flex-end;

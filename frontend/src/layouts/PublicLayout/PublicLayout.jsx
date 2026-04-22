@@ -1,9 +1,8 @@
-import React from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import {
   CalendarCheck2,
   HeartPulse,
-  LayoutDashboard,
   LogIn,
   LogOut,
   MapPin,
@@ -13,11 +12,11 @@ import {
   Sparkles,
   Star,
   Stethoscope,
-  UserRound,
+  User,
   Users,
 } from "lucide-react";
 import Button from "../../components/Button/Button";
-import { ROLE_ROUTES, useAuth } from "../../services/authService";
+import { useAuth } from "../../services/authService";
 import "./PublicLayout.css";
 import "./AuthPanel.css";
 
@@ -39,9 +38,21 @@ export default function PublicLayout({ variant = "default" }) {
   const location  = useLocation();
   const navigate  = useNavigate();
   const { isAuthenticated, role, user, logout } = useAuth();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
 
   const isActive = (path) =>
     location.pathname === path || location.pathname.startsWith(path + "/");
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // ── Auth variant (trang login / register) ──────────────────────────────
   if (variant === "auth") {
@@ -86,7 +97,7 @@ export default function PublicLayout({ variant = "default" }) {
                 <span className="auth-social-avatar">AN</span>
                 <span className="auth-social-avatar">BT</span>
                 <span className="auth-social-avatar">LH</span>
-                <span className="auth-social-more">+20k</span>
+                <span className="auth-social-more">+50</span>
               </div>
               <div>
                 <div className="auth-social-stars">
@@ -95,7 +106,7 @@ export default function PublicLayout({ variant = "default" }) {
                   ))}
                 </div>
                 <div className="auth-social-text">
-                  Được tin dùng bởi hơn 20.000 bệnh nhân tại Đà Nẵng
+                  Demo — số liệu giả lập cho môi trường phát triển
                 </div>
               </div>
             </div>
@@ -173,28 +184,60 @@ export default function PublicLayout({ variant = "default" }) {
 
             {/* ── Auth buttons: thay đổi theo trạng thái đăng nhập ── */}
             {isAuthenticated ? (
-              <div className="public-nav__user-group">
-                {/* Nút vào cổng tương ứng role */}
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="public-nav__portal-btn"
-                  onClick={() => navigate(ROLE_ROUTES[role] || "/app/patient")}
+              <div className="public-nav__user-menu" ref={menuRef}>
+                <button
+                  type="button"
+                  className={`public-nav__user-trigger${menuOpen ? " open" : ""}`}
+                  onClick={() => setMenuOpen((v) => !v)}
+                  aria-haspopup="true"
+                  aria-expanded={menuOpen}
                 >
-                  <LayoutDashboard className="mc-icon mc-icon--sm" />
-                  {user?.name || user?.fullName || "Cổng của tôi"}
-                </Button>
+                  <span className="user-avatar">
+                    <User className="mc-icon mc-icon--sm" />
+                  </span>
+                  <span className="user-name">
+                    {user?.name || user?.fullName || "Cổng của tôi"}
+                  </span>
+                  <svg
+                    className={`user-chevron${menuOpen ? " rotated" : ""}`}
+                    width="12"
+                    height="12"
+                    viewBox="0 0 12 12"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M2 4L6 8L10 4"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </button>
 
-                {/* Đăng xuất */}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="public-nav__logout-btn"
-                  onClick={() => { logout(); navigate("/login"); }}
-                >
-                  <LogOut className="mc-icon mc-icon--sm" />
-                  Đăng xuất
-                </Button>
+                {menuOpen && (
+                  <div className="public-nav__dropdown" role="menu">
+                    <div className="dropdown-user-info">
+                      <div className="dropdown-user-name">
+                        {user?.name || user?.fullName}
+                      </div>
+                      <div className="dropdown-user-role">{role}</div>
+                    </div>
+                    <button
+                      type="button"
+                      className="dropdown-item dropdown-item--danger"
+                      role="menuitem"
+                      onClick={() => {
+                        logout();
+                        navigate("/login");
+                      }}
+                    >
+                      <LogOut className="mc-icon mc-icon--sm" />
+                      Đăng xuất
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
               <Button

@@ -2,8 +2,8 @@ from django.contrib import admin
 from django.urls import include, path
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('api/v1/', include('catalog.urls')),
-    path('api/v1/', include('appointments.urls')),
-    path('api/v1/', include('portal.urls')),
+    path('django-admin/', admin.site.urls),  # Đổi admin path tránh conflict
+    path('', include('catalog.urls')),
+    path('', include('appointments.urls')),
+    path('', include('portal.urls')),
 ]

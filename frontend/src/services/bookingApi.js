@@ -15,15 +15,9 @@ function buildSlotLabel(startValue, endValue) {
 }
 
 function toOffsetDateTime(dateValue, timeValue) {
-  const [year, month, day] = dateValue.split("-").map(Number);
-  const [hour, minute] = timeValue.split(":").map(Number);
-  const localDate = new Date(year, month - 1, day, hour, minute, 0, 0);
-  const offsetMinutes = -localDate.getTimezoneOffset();
-  const sign = offsetMinutes >= 0 ? "+" : "-";
-  const absoluteOffset = Math.abs(offsetMinutes);
-  const offsetHours = String(Math.floor(absoluteOffset / 60)).padStart(2, "0");
-  const offsetMins = String(absoluteOffset % 60).padStart(2, "0");
-  return `${dateValue}T${timeValue}:00${sign}${offsetHours}:${offsetMins}`;
+  // Return naive datetime (no timezone offset) so Django parses it
+  // using its TIME_ZONE setting (Asia/Ho_Chi_Minh), avoiding ±14h shift.
+  return `${dateValue}T${timeValue}:00`;
 }
 
 function mapAppointmentToBooking(appointment) {
@@ -83,6 +77,8 @@ export function getSlots(doctorId, date, visitType) {
     params: { date, visit_type: visitType },
   });
 }
+
+export const getDoctorSlots = getSlots;
 
 export async function createGuestBooking(payload) {
   const [slotStart, slotEnd] = payload.slot.split(" - ");

@@ -1,9 +1,51 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Download, FileText, Settings2, ShieldCheck, Trash2 } from "lucide-react";
 import Badge from "../../../components/Badge/Badge";
+import LoadingSpinner from "../../../components/LoadingSpinner/LoadingSpinner";
 import Table from "../../../components/Table/Table";
 import { getAuditLogs } from "../../../services/adminApi";
+import { ROLE_LABELS } from "../../../services/authService";
 import "./AuditPage.css";
+
+function stripHtml(raw) {
+  if (typeof raw !== "string") return "";
+  return raw.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() || "Đã xảy ra lỗi.";
+}
+
+const ACTION_LABELS = {
+  CREATE: "Tạo mới",
+  UPDATE: "Cập nhật",
+  DELETE: "Xóa",
+  LOGIN: "Đăng nhập",
+  CHECKIN: "Check-in",
+  COMPLETE: "Hoàn tất khám",
+};
+
+function exportCSV(items) {
+  const headers = ["Thời gian", "Người thực hiện", "Vai trò", "Hành động", "Đối tượng", "Chi tiết", "IP"];
+  const rows = items.map((item) => [
+    item.time || "",
+    item.actor || "",
+    ROLE_LABELS[item.role] || item.role || "",
+    ACTION_LABELS[item.action] || item.action || "",
+    item.resource || "",
+    item.detail || "",
+    item.ip || "",
+  ]);
+  const csvContent = [headers, ...rows]
+    .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+    .join("\n");
+  const BOM = "\uFEFF";
+  const blob = new Blob([BOM + csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `audit-logs-${new Date().toISOString().split("T")[0]}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
 
 const ACTION_CONFIG = {
   CREATE: { label: "Tạo mới", variant: "success" },
@@ -14,7 +56,6 @@ const ACTION_CONFIG = {
   COMPLETE: { label: "Hoàn tất khám", variant: "success" },
 };
 
-const ROLE_MAP = { receptionist: "Lễ tân", doctor: "Bác sĩ", admin: "Quản trị" };
 const STAT_CARDS = [
   { key: "total", label: "Tổng thao tác", icon: FileText, tone: "sky" },
   { key: "create", label: "Tạo mới", icon: ShieldCheck, tone: "green" },
@@ -30,7 +71,7 @@ const COLUMNS = [
     render: (row) => (
       <div>
         <div className="audit-logs-page__actor-name">{row.actor}</div>
-        <div className="audit-logs-page__actor-role">{ROLE_MAP[row.role]}</div>
+        <div className="audit-logs-page__actor-role">{ROLE_LABELS[row.role]}</div>
       </div>
     ),
   },
@@ -68,7 +109,7 @@ export default function AuditPage() {
         }
       } catch (loadError) {
         if (mounted) {
-          setError(loadError.message || "Không tải được nhật ký thao tác.");
+          setError(stripHtml(loadError.message) || "Không tải được nhật ký thao tác.");
         }
       } finally {
         if (mounted) {
@@ -105,7 +146,7 @@ export default function AuditPage() {
           <h1 className="dash-page-title">Nhật ký thao tác</h1>
           <p className="dash-page-sub">Theo dõi mọi hành động trên hệ thống MediCare</p>
         </div>
-        <button className="dash-btn-primary" type="button"><Download className="mc-icon mc-icon--sm" /> Xuất CSV</button>
+        <button className="dash-btn-primary" type="button" onClick={() => exportCSV(payload.items)}><Download className="mc-icon mc-icon--sm" /> Xuất CSV</button>
       </div>
 
       <div className="dash-stats-row">
@@ -134,8 +175,15 @@ export default function AuditPage() {
         </select>
       </div>
 
-      {loading ? <div className="dash-page-sub">Đang tải nhật ký thao tác...</div> : null}
-      {error ? <div className="dash-page-sub">{error}</div> : null}
+      {loading ? (
+        <div style={{ padding: "40px", textAlign: "center" }}><LoadingSpinner /></div>
+      ) : null}
+      {error && !loading ? (
+        <div className="audit-page__error">
+          {error}
+          <button type="button" className="audit-page__error-close" onClick={() => setError("")}>×</button>
+        </div>
+      ) : null}
       {!loading && !error && <Table columns={COLUMNS} data={filtered} emptyMessage="Không có kết quả." />}
     </div>
   );

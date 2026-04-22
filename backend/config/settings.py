@@ -16,9 +16,25 @@ if ENV_FILE.exists():
         key, value = line.split('=', 1)
         os.environ.setdefault(key.strip(), value.strip())
 
-SECRET_KEY = 'django-insecure-i79q2d*u(2xyjq2awilnt!f=3x_4upv8vhi*)gk3x)(paf$^u_'
-DEBUG = True
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'testserver']
+_raw_debug = os.getenv('DJANGO_DEBUG', '').lower()
+# Default True (development). Must explicitly set DJANGO_DEBUG=false for production.
+DEBUG = _raw_debug not in ('false', '0', 'no')
+
+_secret = os.getenv('DJANGO_SECRET_KEY', '')
+# Enforce secure SECRET_KEY when running in production mode
+if not DEBUG:
+    if not _secret:
+        raise ValueError(
+            "DJANGO_SECRET_KEY must be set when DEBUG=False. "
+            "Generate one with: python -c \"from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())\""
+        )
+    if _secret.startswith('django-insecure-'):
+        raise ValueError(
+            "DJANGO_SECRET_KEY must not be an insecure default in production. "
+            "Generate a secure key at: python -c \"from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())\""
+        )
+SECRET_KEY = _secret or 'django-insecure-dev-only'
+ALLOWED_HOSTS = [h.strip() for h in os.getenv('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1,testserver').split(',')]
 DEFAULT_CHARSET = 'utf-8'
 
 INSTALLED_APPS = [
@@ -110,6 +126,12 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'common.auth.SessionUserAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',
+    ],
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
         'rest_framework.renderers.BrowsableAPIRenderer',
@@ -124,3 +146,13 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_ALL_ORIGINS = True
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+
+SESSION_COOKIE_SAMESITE = None
+SESSION_COOKIE_DOMAIN = None
+CSRF_COOKIE_SAMESITE = None

@@ -1,14 +1,69 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { BarChart3, CalendarDays, CircleCheck, Download, Users } from "lucide-react";
+import LoadingSpinner from "../../../components/LoadingSpinner/LoadingSpinner";
 import { getReports } from "../../../services/adminApi";
 import "./ReportsPage.css";
 
+function stripHtml(raw) {
+  if (typeof raw !== "string") return "";
+  return raw.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() || "Đã xảy ra lỗi.";
+}
+
 const KPI_CARDS = [
   { key: "appointments", label: "Tổng lịch hẹn", icon: CalendarDays, tone: "sky" },
-  { key: "revenue", label: "Doanh thu (triệu)", icon: BarChart3, tone: "green" },
+  { key: "revenue", label: "Lượt khám hoàn tất (ước tính)", icon: BarChart3, tone: "green" },
   { key: "newPatients", label: "Bệnh nhân mới", icon: Users, tone: "yellow" },
   { key: "completionRate", label: "Tỷ lệ hoàn tất", icon: CircleCheck, tone: "violet" },
 ];
+
+function exportReport(payload, period) {
+  const periodLabel = { week: "Tuan", month: "Thang", quarter: "Quy", year: "Nam" }[period] || period;
+  const rows = [];
+  rows.push(["BÁO CÁO THỐNG KÊ - KỲ " + periodLabel.toUpperCase()]);
+  rows.push(["Ngày xuất:", new Date().toLocaleString("vi-VN")]);
+  rows.push([]);
+  rows.push(["CHỈ SỐ TỔNG QUAN"]);
+  rows.push(["Tổng lịch hẹn", payload.kpis?.appointments ?? 0]);
+  rows.push(["Doanh thu (triệu đồng)", payload.kpis?.revenue ?? 0]);
+  rows.push(["Bệnh nhân mới", payload.kpis?.newPatients ?? 0]);
+  rows.push(["Tỷ lệ hoàn tất (%)", payload.kpis?.completionRate ?? 0]);
+  rows.push([]);
+  rows.push(["LỊCH HẸN THEO KỲ"]);
+  payload.labels.forEach((label, i) => {
+    rows.push([label, payload.appointmentSeries[i] ?? 0]);
+  });
+  rows.push([]);
+  rows.push(["DOANH THU THEO KỲ (TRIỆU ĐỒNG)"]);
+  rows.push(["NOTE: Revenue values are hardcoded estimates (2/6/12/18 triệu), not real billing data."]);
+  payload.labels.forEach((label, i) => {
+    rows.push([label, payload.revenueSeries[i] ?? 0]);
+  });
+  rows.push([]);
+  rows.push(["PHÂN BỔ THEO CHUYÊN KHOA"]);
+  rows.push(["Chuyên khoa", "Số lượt", "Tỷ lệ (%)"]);
+  payload.specialtyStats.forEach((s) => {
+    rows.push([s.name, s.count, s.pct]);
+  });
+  rows.push([]);
+  rows.push(["TÓM TẮT"]);
+  payload.summaryRows.forEach((r) => {
+    rows.push([r.label, r.value]);
+  });
+
+  const csvContent = rows
+    .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+    .join("\n");
+  const BOM = "\uFEFF";
+  const blob = new Blob([BOM + csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `bao-cao-${period}-${new Date().toISOString().split("T")[0]}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
 
 const SPECIALTY_COLORS = ["#13c8ec", "#06b6d4", "#0ea5e9", "#3b82f6", "#8b5cf6", "#ec4899"];
 
@@ -43,7 +98,7 @@ export default function ReportsPage() {
         }
       } catch (loadError) {
         if (mounted) {
-          setError(loadError.message || "Không tải được báo cáo.");
+          setError(stripHtml(loadError.message) || "Không tải được báo cáo.");
         }
       } finally {
         if (mounted) {
@@ -76,7 +131,7 @@ export default function ReportsPage() {
               </button>
             ))}
           </div>
-          <button className="dash-btn-primary" type="button"><Download className="mc-icon mc-icon--sm" /> Xuất báo cáo</button>
+          <button className="dash-btn-primary" type="button" onClick={() => exportReport(payload, period)}><Download className="mc-icon mc-icon--sm" /> Xuất báo cáo</button>
         </div>
       </div>
 
@@ -91,8 +146,15 @@ export default function ReportsPage() {
         ))}
       </div>
 
-      {loading ? <div className="dash-page-sub">Đang tải báo cáo...</div> : null}
-      {error ? <div className="dash-page-sub">{error}</div> : null}
+      {loading ? (
+        <div style={{ padding: "40px", textAlign: "center" }}><LoadingSpinner /></div>
+      ) : null}
+      {error && !loading ? (
+        <div className="report-page__error">
+          {error}
+          <button type="button" className="report-page__error-close" onClick={() => setError("")}>×</button>
+        </div>
+      ) : null}
 
       {!loading && !error && (
         <div className="report-charts-grid">
@@ -117,7 +179,7 @@ export default function ReportsPage() {
           </div>
 
           <div className="report-chart-card">
-            <div className="report-chart-title">Doanh thu (triệu đồng)</div>
+            <div className="report-chart-title">Lượt khám hoàn tất theo kỳ</div>
             <div className="bar-chart">
               {payload.revenueSeries.map((value, index) => (
                 <div key={`rev-${payload.labels[index] || index}`} className="bar-chart__col">

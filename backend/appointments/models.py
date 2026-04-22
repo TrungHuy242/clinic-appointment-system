@@ -10,6 +10,7 @@ class AppointmentStatus(models.TextChoices):
     PENDING = 'PENDING', 'Pending'
     CONFIRMED = 'CONFIRMED', 'Confirmed'
     CHECKED_IN = 'CHECKED_IN', 'Checked in'
+    WAITING = 'WAITING', 'Waiting'
     IN_PROGRESS = 'IN_PROGRESS', 'In progress'
     COMPLETED = 'COMPLETED', 'Completed'
     CANCELLED = 'CANCELLED', 'Cancelled'
@@ -104,6 +105,41 @@ class AppointmentBlock(models.Model):
 
     def __str__(self):
         return f'{self.doctor_id}:{self.appointment_date}:{self.block_index}'
+
+
+class AppointmentHistory(models.Model):
+    """Audit trail ghi lại từng thay đổi trạng thái / lịch của một appointment."""
+
+    ACTION_CHOICES = [
+        ('CREATE', 'Tạo mới'),
+        ('CONFIRM', 'Xác nhận'),
+        ('CANCEL', 'Hủy lịch'),
+        ('CHECKIN', 'Check-in'),
+        ('MOVE_TO_DOCTOR', 'Chuyển sang bác sĩ'),
+        ('NO_SHOW', 'No-show'),
+        ('RESCHEDULE', 'Dời lịch'),
+        ('COMPLETE', 'Hoàn tất khám'),
+        ('DELETE', 'Xóa'),
+    ]
+
+    appointment = models.ForeignKey(
+        Appointment,
+        on_delete=models.CASCADE,
+        related_name='history',
+    )
+    action = models.CharField(max_length=20, choices=ACTION_CHOICES)
+    changed_by = models.CharField(max_length=150, blank=True, help_text='Tên người thực hiện (staff name hoặc "Hệ thống")')
+    changed_by_role = models.CharField(max_length=20, blank=True, help_text='Vai trò: admin / receptionist / doctor')
+    note = models.TextField(blank=True, help_text='Ghi chú bổ sung (vd: lý do hủy, lịch cũ → lịch mới)')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Appointment History'
+        verbose_name_plural = 'Appointment Histories'
+
+    def __str__(self):
+        return f'{self.appointment.code} — {self.action} @ {self.created_at}'
 
 
 def generate_appointment_code():
