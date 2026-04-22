@@ -21,6 +21,8 @@ import { QRCodeSVG } from "qrcode.react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import LoadingSpinner from "../../../components/LoadingSpinner/LoadingSpinner";
 import { getBookingByCode, lookupAppointmentsByPhone, expirePA1 } from "../../../services/bookingApi";
+import { lookupAppointment, lookupAppointmentsByPhone } from "../../../services/bookingApi";
+
 import "./LookupPage.css";
 
 const STATUS_CONFIG = {
