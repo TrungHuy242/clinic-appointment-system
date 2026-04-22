@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Outlet, Link, NavLink, useNavigate } from "react-router-dom";
 import {
   Bell,
+  BookOpen,
   CalendarDays,
   FileText,
   LogOut,
@@ -14,6 +15,7 @@ import "./PatientLayout.css";
 
 const NAV_ITEMS = [
   { to: "/app/patient/appointments", label: "Lịch hẹn", icon: CalendarDays },
+  { to: "/app/patient/medical-book", label: "Sổ khám", icon: BookOpen },
   { to: "/app/patient/health-profile", label: "Hồ sơ sức khỏe", icon: FileText },
   { to: "/app/patient/account", label: "Tài khoản", icon: UserRound },
   { to: "/app/patient/notifications", label: "Thông báo", icon: Bell },

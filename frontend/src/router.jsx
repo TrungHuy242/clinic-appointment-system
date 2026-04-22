@@ -14,6 +14,7 @@ import RegisterPage from "./pages/public/RegisterPage/RegisterPage";
 import ClaimProfilePage from "./pages/public/ClaimProfilePage/ClaimProfilePage";
 import NotFoundPage from "./pages/public/NotFoundPage/NotFoundPage";
 import MyAppointmentsPage from "./pages/patient/MyAppointmentsPage/MyAppointmentsPage";
+import MedicalBookPage from "./pages/patient/MedicalBookPage/MedicalBookPage";
 import HealthProfilePage from "./pages/patient/HealthProfilePage/HealthProfilePage";
 import AccountPage from "./pages/patient/AccountPage/AccountPage";
 import NotificationsPage from "./pages/patient/NotificationsPage/NotificationsPage";
@@ -89,6 +90,7 @@ export default function AppRouter() {
       >
         <Route index element={<Navigate replace to="/app/patient/appointments" />} />
         <Route path="appointments" element={<MyAppointmentsPage />} />
+        <Route path="medical-book" element={<MedicalBookPage />} />
         <Route path="health-profile" element={<HealthProfilePage />} />
         <Route path="account" element={<AccountPage />} />
         <Route path="notifications" element={<NotificationsPage />} />
@@ -151,6 +153,7 @@ export default function AppRouter() {
       </Route>
 
       <Route path="/patient/appointments" element={<LegacyPatientRedirect suffix="/appointments" />} />
+      <Route path="/patient/medical-book" element={<LegacyPatientRedirect suffix="/medical-book" />} />
       <Route path="/patient/health-profile" element={<LegacyPatientRedirect suffix="/health-profile" />} />
       <Route path="/patient/account" element={<LegacyPatientRedirect suffix="/account" />} />
       <Route path="/patient/notifications" element={<LegacyPatientRedirect suffix="/notifications" />} />

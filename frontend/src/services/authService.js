@@ -33,10 +33,22 @@ export const ROLE_ROUTES = {
 export const authApi = {
   login: (payload) => apiClient.post(ENDPOINTS.portal.login, payload),
   register: (payload) => apiClient.post(ENDPOINTS.portal.register, payload),
+  sendOtp: (phone) => apiClient.post(ENDPOINTS.portal.sendOtp, { phone }),
+  verifyOtp: (phone, otpCode, remember) =>
+    apiClient.post(ENDPOINTS.portal.verifyOtp, { phone, otp_code: otpCode, remember }),
   claimProfile: (appointmentCode, fullName) =>
     apiClient.post(ENDPOINTS.portal.claimProfile, {
       appointmentCode: appointmentCode.trim().toUpperCase(),
       fullName,
+    }),
+  forgotPasswordSendOtp: (phone) =>
+    apiClient.post(ENDPOINTS.portal.forgotPasswordSendOtp, { phone }),
+  forgotPasswordReset: (phone, otpCode, newPassword, confirmPassword) =>
+    apiClient.post(ENDPOINTS.portal.forgotPasswordReset, {
+      phone,
+      otp_code: otpCode,
+      newPassword,
+      confirmPassword,
     }),
 };
 

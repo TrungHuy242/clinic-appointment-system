@@ -19,6 +19,8 @@ from .services import (
     delete_admin_receptionist_profile,
     delete_doctor_time_off,
     delete_notification,
+    forgot_password_reset,
+    forgot_password_send_otp,
     get_account_info,
     get_admin_doctor_detail,
     get_admin_patient_profiles,
@@ -41,6 +43,7 @@ from .services import (
     get_reports_data,
     get_visit_detail,
     get_visit_queue,
+    get_patient_medical_records,
     log_admin_action,
     reset_admin_patient_password,
     reset_admin_receptionist_password,
@@ -49,6 +52,8 @@ from .services import (
     mark_notification_read,
     register_patient_account,
     save_visit_draft,
+    send_otp,
+    verify_otp,
     update_account_info,
     update_admin_receptionist_profile,
     update_doctor_profile,
@@ -87,6 +92,38 @@ class PatientRegisterAPIView(APIView):
 
     def post(self, request, *args, **kwargs):
         return Response(register_patient_account(request.data))
+
+
+class PatientSendOtpAPIView(APIView):
+    permission_classes = []
+    authentication_classes = []
+
+    def post(self, request, *args, **kwargs):
+        return Response(send_otp(request.data, request))
+
+
+class PatientVerifyOtpAPIView(APIView):
+    permission_classes = []
+    authentication_classes = []
+
+    def post(self, request, *args, **kwargs):
+        return Response(verify_otp(request.data, request))
+
+
+class ForgotPasswordSendOtpAPIView(APIView):
+    permission_classes = []
+    authentication_classes = []
+
+    def post(self, request, *args, **kwargs):
+        return Response(forgot_password_send_otp(request.data))
+
+
+class ForgotPasswordResetAPIView(APIView):
+    permission_classes = []
+    authentication_classes = []
+
+    def post(self, request, *args, **kwargs):
+        return Response(forgot_password_reset(request.data))
 
 
 class PatientClaimProfileAPIView(APIView):
@@ -155,6 +192,13 @@ class PatientRecordDetailAPIView(APIView):
 
     def get(self, request, record_code, *args, **kwargs):
         return Response(get_record_detail(get_current_profile(request), record_code))
+
+
+class PatientMedicalRecordsAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        return Response(get_patient_medical_records(get_current_profile(request)))
 
 
 class PatientNotificationsAPIView(APIView):
@@ -400,7 +444,12 @@ class AdminPatientProfileAPIView(APIView):
     permission_classes = [IsAdmin]
 
     def delete(self, request, profile_id, *args, **kwargs):
-        delete_admin_patient_profile(profile_id)
+        user = request.user
+        delete_admin_patient_profile(
+            profile_id,
+            actor_name=getattr(user, 'full_name', 'Admin'),
+            actor_role=getattr(user, 'role', 'admin'),
+        )
         return Response(status=204)
 
 
@@ -409,7 +458,12 @@ class AdminPatientProfileResetPasswordAPIView(APIView):
 
     def post(self, request, profile_id, *args, **kwargs):
         new_password = request.data.get('new_password')
-        reset_admin_patient_password(profile_id, new_password)
+        user = request.user
+        reset_admin_patient_password(
+            profile_id, new_password,
+            actor_name=getattr(user, 'full_name', 'Admin'),
+            actor_role=getattr(user, 'role', 'admin'),
+        )
         return Response({'success': True})
 
 
@@ -420,7 +474,12 @@ class AdminReceptionistProfilesAPIView(APIView):
         return Response(get_admin_receptionist_profiles())
 
     def post(self, request, *args, **kwargs):
-        return Response(create_admin_receptionist_profile(request.data), status=201)
+        user = request.user
+        return Response(create_admin_receptionist_profile(
+            request.data,
+            actor_name=getattr(user, 'full_name', 'Admin'),
+            actor_role=getattr(user, 'role', 'admin'),
+        ), status=201)
 
 
 class AdminReceptionistProfileAPIView(APIView):
@@ -430,10 +489,20 @@ class AdminReceptionistProfileAPIView(APIView):
         return Response(get_admin_receptionist_profile(profile_id))
 
     def patch(self, request, profile_id, *args, **kwargs):
-        return Response(update_admin_receptionist_profile(profile_id, request.data))
+        user = request.user
+        return Response(update_admin_receptionist_profile(
+            profile_id, request.data,
+            actor_name=getattr(user, 'full_name', 'Admin'),
+            actor_role=getattr(user, 'role', 'admin'),
+        ))
 
     def delete(self, request, profile_id, *args, **kwargs):
-        delete_admin_receptionist_profile(profile_id)
+        user = request.user
+        delete_admin_receptionist_profile(
+            profile_id,
+            actor_name=getattr(user, 'full_name', 'Admin'),
+            actor_role=getattr(user, 'role', 'admin'),
+        )
         return Response(status=204)
 
 
@@ -442,5 +511,10 @@ class AdminReceptionistProfileResetPasswordAPIView(APIView):
 
     def post(self, request, profile_id, *args, **kwargs):
         new_password = request.data.get('new_password')
-        reset_admin_receptionist_password(profile_id, new_password)
+        user = request.user
+        reset_admin_receptionist_password(
+            profile_id, new_password,
+            actor_name=getattr(user, 'full_name', 'Admin'),
+            actor_role=getattr(user, 'role', 'admin'),
+        )
         return Response({'success': True})

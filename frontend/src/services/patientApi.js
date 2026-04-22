@@ -7,6 +7,7 @@ export const patientApi = {
       params: { tab },
     }),
   getRecordDetail: (id) => apiClient.get(ENDPOINTS.portal.record(id)),
+  getMedicalRecords: () => apiClient.get(ENDPOINTS.portal.medicalRecords),
   getHealthProfile: () => apiClient.get(ENDPOINTS.portal.profile),
   updateHealthProfile: (payload) => apiClient.patch(ENDPOINTS.portal.profile, payload),
   getAccountInfo: () => apiClient.get(ENDPOINTS.portal.account),

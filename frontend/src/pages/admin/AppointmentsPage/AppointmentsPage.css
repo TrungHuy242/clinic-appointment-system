@@ -326,27 +326,94 @@
   font-weight: 500;
 }
 
-/* ── Reschedule Modal ── */
-.appt-reschedule {
+/* ── Reschedule Modal (new slot-picker style) ── */
+.appt-reschedule__old-schedule {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
+  margin-bottom: 4px;
+}
+
+.appt-reschedule__old-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #9a3412;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+
+.appt-reschedule__old-value {
+  font-size: 13.5px;
+  color: #7c2d12;
+  font-weight: 500;
+}
+
+.appt-reschedule__section {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 8px;
 }
 
-.appt-reschedule__fields {
-  display: flex;
-  gap: 12px;
+.appt-reschedule__section-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-.appt-reschedule__field {
-  flex: 1;
+.appt-reschedule__visit-types {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.appt-reschedule__vt-btn {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 8px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+  color: #475569;
+  font-family: inherit;
 }
 
-.appt-reschedule__input {
-  width: 100%;
+.appt-reschedule__vt-btn:hover:not(.active) {
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.04);
+}
+
+.appt-reschedule__vt-btn.active {
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.08);
+  color: #1d4ed8;
+}
+
+.appt-reschedule__vt-label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.appt-reschedule__vt-duration {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.appt-reschedule__vt-btn.active .appt-reschedule__vt-duration {
+  color: #3b82f6;
+}
+
+.appt-reschedule__date-input {
   padding: 8px 12px;
   font-size: 14px;
   color: #334155;
@@ -354,12 +421,114 @@
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   outline: none;
-  box-sizing: border-box;
+  cursor: pointer;
+  max-width: 200px;
 }
 
-.appt-reschedule__input:focus {
+.appt-reschedule__date-input:focus {
   border-color: #3b82f6;
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+.appt-reschedule__loading {
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 400;
+  margin-left: 6px;
+}
+
+.appt-reschedule__no-slots {
+  padding: 16px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 13px;
+  background: #f8fafc;
+  border: 1px dashed #e2e8f0;
+  border-radius: 8px;
+}
+
+.appt-reschedule__slots {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 2px;
+}
+
+.appt-reschedule__slot-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 4px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s, color 0.12s;
+  font-family: inherit;
+}
+
+.appt-reschedule__slot-btn:hover:not(.disabled):not(.selected) {
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.06);
+  color: #1d4ed8;
+}
+
+.appt-reschedule__slot-btn.selected {
+  border-color: #3b82f6;
+  background: #3b82f6;
+  color: #fff;
+}
+
+.appt-reschedule__slot-btn.disabled,
+.appt-reschedule__slot-btn:disabled {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #cbd5e1;
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+
+.appt-reschedule__confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 10px;
+}
+
+.appt-reschedule__confirm-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.appt-reschedule__confirm-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #0369a1;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.appt-reschedule__confirm-value {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #0c4a6e;
+  text-align: right;
+}
+
+.appt-reschedule__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .appt-reschedule__textarea {
@@ -380,6 +549,13 @@
   border-color: #3b82f6;
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
 }
+
+/* ── Legacy reschedule (kept for reference) ── */
+.appt-reschedule__fields {
+  display: flex;
+  gap: 12px;
+}
+
 
 /* ── History Modal ── */
 .appt-history__empty {
