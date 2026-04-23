@@ -202,3 +202,4 @@ Chi tiết từng lượt khám
 - Lễ tân có thể tạo lịch hẹn trực tiếp tại quầy cho bệnh nhân.
 - Lễ tân có thể quét mã QR để tìm nhanh lịch hẹn và thực hiện check-in.
 - Lễ tân có màn hình quản lý bệnh nhân để tra cứu thông tin hành chính và ghi chú.
+- Sau khi check-in, lễ tân có thể chuyển bệnh nhân sang hàng chờ bác sĩ.
