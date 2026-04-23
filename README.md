@@ -199,3 +199,4 @@ Chi tiết từng lượt khám
 ## 10. Chức năng lễ tân đã bổ sung
 
 - Lễ tân có dashboard theo dõi số lượng lịch hẹn trong ngày.
+- Lễ tân có thể tạo lịch hẹn trực tiếp tại quầy cho bệnh nhân.
