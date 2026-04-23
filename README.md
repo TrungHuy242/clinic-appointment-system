@@ -194,3 +194,8 @@ Chi tiết từng lượt khám
 - Tất cả file chứa tiếng Việt phải được lưu bằng UTF-8.
 - Không copy/paste nội dung từ nguồn làm hỏng dấu hoặc sai encoding.
 - Frontend đã khai báo `<meta charset="UTF-8" />` trong `frontend/public/index.html`; nếu thêm HTML/template mới thì giữ nguyên chuẩn này.
+---
+
+## 10. Chức năng lễ tân đã bổ sung
+
+- Lễ tân có dashboard theo dõi số lượng lịch hẹn trong ngày.
