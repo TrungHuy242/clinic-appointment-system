@@ -204,3 +204,4 @@ Chi tiết từng lượt khám
 - Lễ tân có màn hình quản lý bệnh nhân để tra cứu thông tin hành chính và ghi chú.
 - Sau khi check-in, lễ tân có thể chuyển bệnh nhân sang hàng chờ bác sĩ.
 - Lễ tân có trang hồ sơ cá nhân để cập nhật thông tin và đổi mật khẩu.
+- API lễ tân tách riêng các thao tác dashboard, lịch hẹn, bệnh nhân và check-in.
