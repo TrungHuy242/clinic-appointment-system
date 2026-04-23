@@ -41,14 +41,16 @@ export const receptionApi = {
       date,
     }).then((data) => ({
       state: data.state,
-      message: data.message,
       appointment: data.appointment ? mapAppointment(data.appointment) : null,
     })),
   getPatients: () => apiClient.get(ENDPOINTS.portal.receptionPatients),
-
-  // THÊM ĐÂY
   moveToWaiting: (id) =>
-   apiClient.patch(`/api/v1/reception/move-to-waiting/${id}/`),
+    apiClient.patch(`${ENDPOINTS.appointments.reception}${id}/move-to-waiting/`),
+  getDashboard: () => apiClient.get(ENDPOINTS.portal.receptionDashboard),
+  getProfile: () => apiClient.get(ENDPOINTS.portal.receptionProfile),
+  updateProfile: (data) => apiClient.patch(ENDPOINTS.portal.receptionProfile, data),
+  changePassword: (data) => apiClient.post(ENDPOINTS.portal.receptionChangePassword, data),
+  createAppointment: (payload) => apiClient.post(ENDPOINTS.portal.receptionCreateAppointment, payload),
 };
 
 export const listTodayAppointments = (date) => receptionApi.listAppointments(date);

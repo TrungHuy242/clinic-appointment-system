@@ -2,12 +2,13 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.dateparse import parse_date
 from rest_framework import status, viewsets
+from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import AppointmentStatus
-from .serializers import AppointmentGuestSerializer, AppointmentSerializer
+from .serializers import AppointmentGuestSerializer, AppointmentSerializer, ReceptionAppointmentSerializer
 from .services import (
     build_doctor_slots,
     get_active_appointments_queryset,
@@ -56,6 +57,22 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         soft_delete_appointment(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=True, methods=['patch'], url_path='move-to-waiting')
+    def move_to_waiting(self, request, pk=None):
+        instance = self.get_object()
+        if instance.status != AppointmentStatus.CHECKED_IN:
+            raise ValidationError('Chỉ chuyển khi đã check-in')
+
+        updated = set_appointment_status(instance, AppointmentStatus.WAITING)
+        return Response(AppointmentSerializer(updated).data)
+
+    @action(detail=False, methods=['post'], url_path='create')
+    def create_appointment(self, request):
+        serializer = ReceptionAppointmentSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        appointment = serializer.save()
+        return Response(AppointmentSerializer(appointment).data, status=status.HTTP_201_CREATED)
 
 
 class GuestAppointmentCreateAPIView(APIView):

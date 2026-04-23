@@ -20,7 +20,10 @@ from .views import (
     PatientNotificationsMarkAllReadAPIView,
     PatientRecordDetailAPIView,
     PatientRegisterAPIView,
+    ReceptionChangePasswordAPIView,
+    ReceptionDashboardAPIView,
     ReceptionPatientsAPIView,
+    ReceptionProfileAPIView,
     StaffLoginAPIView,
 )
 
@@ -44,6 +47,9 @@ urlpatterns = [
     path('doctor/visits/<str:code>/draft/', DoctorVisitDraftAPIView.as_view(), name='doctor-visit-draft'),
     path('doctor/visits/<str:code>/complete/', DoctorVisitCompleteAPIView.as_view(), name='doctor-visit-complete'),
     path('reception/patients/', ReceptionPatientsAPIView.as_view(), name='reception-patients'),
+    path('reception/dashboard/', ReceptionDashboardAPIView.as_view(), name='reception-dashboard'),
+    path('reception/profile/', ReceptionProfileAPIView.as_view(), name='reception-profile'),
+    path('reception/change-password/', ReceptionChangePasswordAPIView.as_view(), name='reception-change-password'),
     path('admin/audit-logs/', AdminAuditLogsAPIView.as_view(), name='admin-audit-logs'),
     path('admin/reports/', AdminReportsAPIView.as_view(), name='admin-reports'),
 ]

@@ -9,6 +9,8 @@ from .services import (
     claim_profile,
     complete_visit,
     delete_notification,
+    _staff_request_user,
+    change_receptionist_password,
     get_account_info,
     get_audit_logs_data,
     get_current_doctor,
@@ -18,6 +20,8 @@ from .services import (
     get_notifications,
     get_patient_appointments,
     get_reception_patients_data,
+    get_receptionist_dashboard_data,
+    get_receptionist_profile,
     get_record_detail,
     get_reports_data,
     get_visit_detail,
@@ -28,6 +32,7 @@ from .services import (
     register_patient_account,
     save_visit_draft,
     staff_login,
+    update_receptionist_profile,
     update_account_info,
     update_health_profile,
 )
@@ -40,7 +45,7 @@ class PatientLoginAPIView(APIView):
 
 class StaffLoginAPIView(APIView):
     def post(self, request, *args, **kwargs):
-        return Response(staff_login(request.data))
+        return Response(staff_login(request.data, request))
 
 
 class PatientRegisterAPIView(APIView):
@@ -154,6 +159,28 @@ class DoctorVisitCompleteAPIView(APIView):
 class ReceptionPatientsAPIView(APIView):
     def get(self, request, *args, **kwargs):
         return Response(get_reception_patients_data())
+
+
+class ReceptionDashboardAPIView(APIView):
+    def get(self, request, *args, **kwargs):
+        _staff_request_user(request)
+        return Response(get_receptionist_dashboard_data())
+
+
+class ReceptionProfileAPIView(APIView):
+    def get(self, request, *args, **kwargs):
+        user = _staff_request_user(request)
+        return Response(get_receptionist_profile(user))
+
+    def patch(self, request, *args, **kwargs):
+        user = _staff_request_user(request)
+        return Response(update_receptionist_profile(user, request.data))
+
+
+class ReceptionChangePasswordAPIView(APIView):
+    def post(self, request, *args, **kwargs):
+        user = _staff_request_user(request)
+        return Response(change_receptionist_password(user, request.data))
 
 
 class AdminAuditLogsAPIView(APIView):

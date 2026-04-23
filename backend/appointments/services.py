@@ -293,6 +293,89 @@ def create_guest_appointment(data):
     raise ValidationError({'scheduled_start': OVERLAP_MESSAGE})
 
 
+def create_reception_appointment(data):
+    from portal.models import PatientProfile
+
+    patient_full_name = _require_value(data, 'patient_full_name')
+    patient_phone = _require_value(data, 'patient_phone')
+    specialty = _normalize_specialty(_require_value(data, 'specialty'))
+    doctor = _normalize_doctor(_require_value(data, 'doctor'))
+    scheduled_start = _require_value(data, 'scheduled_start')
+    scheduled_end = _require_value(data, 'scheduled_end')
+    visit_type = normalize_visit_type(data.get('visit_type'))
+
+    if isinstance(scheduled_start, str):
+        scheduled_start = timezone.make_aware(datetime.fromisoformat(scheduled_start))
+    if isinstance(scheduled_end, str):
+        scheduled_end = timezone.make_aware(datetime.fromisoformat(scheduled_end))
+
+    validate_doctor_specialty(doctor, specialty)
+    validate_time_range(scheduled_start, scheduled_end)
+
+    reserved_block_indexes, normalized_end = get_reserved_block_indexes_for_visit(scheduled_start, visit_type)
+    appointment_date = timezone.localtime(scheduled_start).date()
+
+    if AppointmentBlock.objects.filter(
+        doctor=doctor,
+        appointment_date=appointment_date,
+        block_index__in=reserved_block_indexes,
+    ).exists():
+        raise ValidationError({'scheduled_start': OVERLAP_MESSAGE})
+
+    for attempt in range(3):
+        try:
+            with transaction.atomic():
+                profile, created = PatientProfile.objects.get_or_create(
+                    phone=patient_phone,
+                    defaults={
+                        'full_name': patient_full_name,
+                        'account_username': patient_phone,
+                        'account_email': '',
+                        'is_current': False,
+                    },
+                )
+                if not created:
+                    update_fields = []
+                    if not profile.full_name:
+                        profile.full_name = patient_full_name
+                        update_fields.append('full_name')
+                    if not profile.account_username:
+                        profile.account_username = patient_phone
+                        update_fields.append('account_username')
+                    if update_fields:
+                        update_fields.append('updated_at')
+                        profile.save(update_fields=update_fields)
+
+                appointment = Appointment.objects.create(
+                    patient_full_name=patient_full_name,
+                    patient_phone=patient_phone,
+                    specialty=specialty,
+                    doctor=doctor,
+                    scheduled_start=scheduled_start,
+                    scheduled_end=normalized_end,
+                    visit_type=visit_type,
+                    status=AppointmentStatus.CONFIRMED,
+                )
+                sync_appointment_blocks(appointment, block_indexes=reserved_block_indexes)
+            return appointment
+        except IntegrityError as exc:
+            raise ValidationError({'scheduled_start': OVERLAP_MESSAGE}) from exc
+        except OperationalError as exc:
+            if 'database is locked' not in str(exc).lower():
+                raise
+            if AppointmentBlock.objects.filter(
+                doctor=doctor,
+                appointment_date=appointment_date,
+                block_index__in=reserved_block_indexes,
+            ).exists():
+                raise ValidationError({'scheduled_start': OVERLAP_MESSAGE}) from exc
+            if attempt == 2:
+                raise ValidationError({'scheduled_start': OVERLAP_MESSAGE}) from exc
+            sleep(0.05 * (attempt + 1))
+
+    raise ValidationError({'scheduled_start': OVERLAP_MESSAGE})
+
+
 def _save_status(appointment, new_status):
     appointment.status = new_status
     appointment.save(update_fields=['status', 'updated_at'])

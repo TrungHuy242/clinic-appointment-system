@@ -1,6 +1,7 @@
 import re
 from datetime import date, timedelta
 
+from django.contrib.auth.hashers import check_password, make_password
 from django.db import transaction
 from django.db.models import Count, Q
 from django.utils import timezone
@@ -10,8 +11,9 @@ from rest_framework.exceptions import ValidationError
 from appointments.models import Appointment, AppointmentStatus
 from appointments.services import get_active_appointments_queryset, set_appointment_status
 from catalog.models import Doctor, Specialty
+from common.auth import SESSION_USER_KEY
 
-from .models import MedicalRecord, PatientNotification, PatientProfile, User
+from .models import MedicalRecord, PatientNotification, PatientProfile, User, UserRole
 
 
 BRANCH_NAME = 'Cơ sở Hải Châu'
@@ -175,10 +177,8 @@ def login_patient_account(payload, request=None):
     }
 
 
-def staff_login(payload):
+def staff_login(payload, request=None):
     """Login for admin, receptionist, doctor roles."""
-    from django.contrib.auth.hashers import check_password
-    
     username = str(payload.get('username') or payload.get('identifier') or '').strip()
     password = str(payload.get('password') or '').strip()
 
@@ -191,6 +191,21 @@ def staff_login(payload):
     if not user or not check_password(password, user.password):
         raise ValidationError({'non_field_errors': 'Thông tin đăng nhập không hợp lệ.'})
 
+    session_user = {
+        'id': user.id,
+        'username': user.username,
+        'full_name': user.full_name,
+        'email': user.email,
+        'phone': user.phone,
+        'notes': user.notes,
+        'role': user.role,
+        'doctor_id': user.doctor_id,
+        'is_active': user.is_active,
+    }
+    if request is not None and hasattr(request, 'session'):
+        request.session[SESSION_USER_KEY] = session_user
+        request.session.modified = True
+
     return {
         'success': True,
         'user': {
@@ -198,6 +213,8 @@ def staff_login(payload):
             'username': user.username,
             'fullName': user.full_name,
             'email': user.email,
+            'phone': user.phone,
+            'notes': user.notes,
             'role': user.role,
             'doctorId': user.doctor_id,
         },
@@ -830,6 +847,108 @@ def get_reception_patients_data():
     return {
         'items': items,
         'stats': stats,
+    }
+
+
+def _staff_request_user(request, allowed_roles=None):
+    allowed_roles = set(allowed_roles or (UserRole.RECEPTIONIST, UserRole.ADMIN))
+    request_user = getattr(request, 'user', None)
+    user_id = getattr(request_user, 'id', None)
+
+    user = None
+    if user_id:
+        user = User.objects.filter(pk=user_id, is_active=True).first()
+
+    if user is None:
+        session_user = getattr(request, 'session', {}).get(SESSION_USER_KEY, {})
+        session_user_id = session_user.get('id')
+        if session_user_id:
+            user = User.objects.filter(pk=session_user_id, is_active=True).first()
+
+    if user is None or user.role not in allowed_roles:
+        raise ValidationError({'detail': 'Vui lòng đăng nhập bằng tài khoản lễ tân.'})
+
+    return user
+
+
+def get_receptionist_profile(user):
+    return {
+        'id': user.id,
+        'username': user.username,
+        'fullName': user.full_name,
+        'email': user.email or '',
+        'phone': user.phone or '',
+        'notes': user.notes or '',
+        'isActive': user.is_active,
+    }
+
+
+@transaction.atomic
+def update_receptionist_profile(user, payload):
+    if payload.get('fullName'):
+        user.full_name = str(payload.get('fullName')).strip()
+    if 'email' in payload:
+        user.email = str(payload.get('email') or '').strip()
+    if 'phone' in payload:
+        user.phone = str(payload.get('phone') or '').strip()
+    if 'notes' in payload:
+        user.notes = str(payload.get('notes') or '').strip()
+
+    user.save(update_fields=['full_name', 'email', 'phone', 'notes', 'updated_at'])
+    return get_receptionist_profile(user)
+
+
+@transaction.atomic
+def change_receptionist_password(user, payload):
+    current_password = str(payload.get('currentPassword') or '').strip()
+    new_password = str(payload.get('newPassword') or '').strip()
+    confirm_password = str(payload.get('confirmPassword') or '').strip()
+
+    if not check_password(current_password, user.password):
+        raise ValidationError({'currentPassword': 'Mật khẩu hiện tại không đúng.'})
+    if len(new_password) < 6:
+        raise ValidationError({'newPassword': 'Mật khẩu mới phải từ 6 ký tự trở lên.'})
+    if new_password != confirm_password:
+        raise ValidationError({'confirmPassword': 'Mật khẩu xác nhận không khớp.'})
+
+    user.password = make_password(new_password)
+    user.save(update_fields=['password', 'updated_at'])
+    return {'success': True}
+
+
+def get_receptionist_dashboard_data():
+    today = timezone.localdate()
+    appointments = get_active_appointments_queryset().filter(scheduled_start__date=today)
+    upcoming = (
+        appointments
+        .exclude(status__in=[AppointmentStatus.CANCELLED, AppointmentStatus.NO_SHOW, AppointmentStatus.COMPLETED])
+        .order_by('scheduled_start')[:8]
+    )
+
+    return {
+        'stats': {
+            'total': appointments.count(),
+            'confirmed': appointments.filter(status=AppointmentStatus.CONFIRMED).count(),
+            'checkedIn': appointments.filter(status=AppointmentStatus.CHECKED_IN).count(),
+            'waiting': appointments.filter(status=AppointmentStatus.WAITING).count(),
+            'inProgress': appointments.filter(status=AppointmentStatus.IN_PROGRESS).count(),
+            'completed': appointments.filter(status=AppointmentStatus.COMPLETED).count(),
+            'cancelled': appointments.filter(
+                status__in=[AppointmentStatus.CANCELLED, AppointmentStatus.NO_SHOW],
+            ).count(),
+        },
+        'upcoming': [
+            {
+                'id': item.id,
+                'code': item.code,
+                'patientName': item.patient_full_name,
+                'specialty': item.specialty.name,
+                'doctor': item.doctor.full_name,
+                'slot': f'{format_time(item.scheduled_start)} - {format_time(item.scheduled_end)}',
+                'status': item.status,
+            }
+            for item in upcoming
+        ],
     }
 
 

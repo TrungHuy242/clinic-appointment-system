@@ -10,6 +10,7 @@ from .services import (
     VISIT_TYPE_MESSAGE,
     build_appointment_qr_text,
     create_guest_appointment,
+    create_reception_appointment,
     get_pending_expiry,
     get_visit_type_blocks,
     set_appointment_status,
@@ -292,3 +293,8 @@ class AppointmentGuestSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         return create_guest_appointment(validated_data)
+
+
+class ReceptionAppointmentSerializer(AppointmentGuestSerializer):
+    def create(self, validated_data):
+        return create_reception_appointment(validated_data)

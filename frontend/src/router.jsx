@@ -21,6 +21,8 @@ import RecordDetailPage from "./pages/patient/RecordDetailPage/RecordDetailPage"
 import ReceptionPatientsPage from "./pages/reception/PatientsPage/PatientsPage";
 import ReceptionAppointmentsPage from "./pages/reception/AppointmentsPage/AppointmentsPage";
 import ReceptionCheckinPage from "./pages/reception/CheckinPage/CheckinPage";
+import ReceptionDashboardPage from "./pages/reception/DashboardPage/DashboardPage";
+import ReceptionistProfilePage from "./pages/reception/ProfilePage/ProfilePage";
 import DoctorSchedulePage from "./pages/doctor/SchedulePage/SchedulePage";
 import DoctorQueuePage from "./pages/doctor/QueuePage/QueuePage";
 import DoctorVisitsPage from "./pages/doctor/VisitsPage/VisitsPage";
@@ -86,10 +88,12 @@ export default function AppRouter() {
           </RequireRole>
         }
       >
-        <Route index element={<Navigate replace to="/app/reception/patients" />} />
+        <Route index element={<Navigate replace to="/app/reception/dashboard" />} />
+        <Route path="dashboard" element={<ReceptionDashboardPage />} />
         <Route path="patients" element={<ReceptionPatientsPage />} />
         <Route path="appointments" element={<ReceptionAppointmentsPage />} />
         <Route path="checkin" element={<ReceptionCheckinPage />} />
+        <Route path="profile" element={<ReceptionistProfilePage />} />
       </Route>
 
       <Route

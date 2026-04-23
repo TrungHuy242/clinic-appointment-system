@@ -1,5 +1,109 @@
-.checkin-page__title {
-  font-size: 20px;
+/* Feedback banner */
+.ci-feedback {
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font-size: 13.5px;
+  font-weight: 500;
+  border: 1px solid transparent;
+  margin-top: 12px;
+}
+
+.ci-feedback--success {
+  background: #f0fdf4;
+  border-color: #86efac;
+  color: #166534;
+}
+
+.ci-feedback--error {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+
+/* ── QR scanner mode toggle ─────────────────────────── */
+.ci-mode-toggle {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.ci-mode-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  border: 1.5px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  line-height: 1;
+}
+
+.ci-mode-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.ci-mode-btn.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #ffffff;
+}
+
+/* ── QR scanner viewport ────────────────────────────── */
+.ci-qr-viewport {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 2px solid var(--color-border-subtle);
+  background: #000;
+  min-height: 260px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ci-qr-viewport video {
+  border-radius: var(--radius-lg);
+}
+
+/* html5-qrcode internal elements */
+.ci-qr-viewport #qr-reader__scan_region {
+  border-radius: var(--radius-lg) !important;
+}
+
+.ci-qr-viewport #qr-reader__dashboard {
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg) !important;
+  padding: 8px 12px !important;
+  background: var(--color-surface) !important;
+}
+
+.ci-qr-viewport #qr-reader__dashboard_section_swaplink,
+.ci-qr-viewport #qr-reader__status_span,
+.ci-qr-viewport #qr-reader__report_error {
+  display: none !important;
+}
+
+/* ── Scanner hint & error ────────────────────────────── */
+.ci-scanner-hint {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  text-align: center;
+  line-height: 1.5;
+}
+
+.ci-scanner-error {
+  padding: 12px 16px;
+  background: var(--color-danger-soft);
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-md);
+  color: var(--color-danger);
+  font-size: 13px;
+  text-align: center;
 }
 
 .checkin-page__loading {
@@ -23,48 +127,8 @@
   font-size: 12px;
 }
 
-
 .checkin-page__note-list {
   margin-top: 4px;
   padding-left: 16px;
   line-height: 1.8;
-}
-.checkin-page__move-buttons > button {
-  margin-right: 8px;
-  margin-bottom: 5px;
-}
-.ci-result__message {
-  margin-top: 6px;
-  font-size: 13px;
-  font-weight: 500;
-}
-.ci-result__message.valid {
-  color: green;
-}
-
-.ci-result__message.early {
-  color: orange;
-}
-
-.ci-result__message.late {
-  color: red;
-}
-
-.ci-result__message.not_found {
-  color: red;
-}
-.ci-result__message.VALID {
-  color: green;
-}
-
-.ci-result__message.TOO_EARLY {
-  color: orange;
-}
-
-.ci-result__message.TOO_LATE {
-  color: red;
-}
-
-.ci-result__message.NOT_FOUND {
-  color: red;
 }

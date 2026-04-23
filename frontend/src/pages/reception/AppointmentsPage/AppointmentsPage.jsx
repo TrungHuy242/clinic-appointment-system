@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { CalendarDays, CheckCircle2, CircleX, Plus, ScanLine, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Badge from "../../../components/Badge/Badge";
@@ -6,23 +6,15 @@ import Button from "../../../components/Button/Button";
 import LoadingSpinner from "../../../components/LoadingSpinner/LoadingSpinner";
 import Table from "../../../components/Table/Table";
 import { listTodayAppointments } from "../../../services/receptionApi";
+import { getStatusInfo } from "../../../services/formatters";
+import ReceptionCreateModal from "./ReceptionCreateModal";
 import "./AppointmentsPage.css";
 
-const STATUS_CONFIG = {
-  CONFIRMED: { label: "Da xac nhan", variant: "success" },
-  PENDING: { label: "Cho xac nhan", variant: "warning" },
-  PENDING_PA1: { label: "Cho xac nhan", variant: "warning" },
-  CHECKED_IN: { label: "Da check-in", variant: "info" },
-  WAITING: { label: "Dang cho bac si", variant: "warning" },
-  CANCELLED: { label: "Da huy", variant: "danger" },
-  COMPLETED: { label: "Hoan tat", variant: "neutral" },
-};
-
 const STAT_CARDS = [
-  { key: "total", label: "Tong lich hen", icon: CalendarDays, tone: "sky" },
-  { key: "confirmed", label: "Da xac nhan", icon: CheckCircle2, tone: "green" },
-  { key: "checkedIn", label: "Da check-in", icon: ScanLine, tone: "blue" },
-  { key: "cancelled", label: "Da huy", icon: CircleX, tone: "red" },
+  { key: "total", label: "Tổng lịch hẹn", icon: CalendarDays, tone: "sky" },
+  { key: "confirmed", label: "Đã xác nhận", icon: CheckCircle2, tone: "green" },
+  { key: "checkedIn", label: "Đã check-in", icon: ScanLine, tone: "blue" },
+  { key: "cancelled", label: "Đã hủy", icon: CircleX, tone: "red" },
 ];
 
 export default function ReceptionAppointmentsPage() {
@@ -32,13 +24,18 @@ export default function ReceptionAppointmentsPage() {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
-  useEffect(() => {
+  const refreshAppointments = useCallback(() => {
     setLoading(true);
     listTodayAppointments(date)
       .then(setAppointments)
       .finally(() => setLoading(false));
   }, [date]);
+
+  useEffect(() => {
+    refreshAppointments();
+  }, [refreshAppointments]);
 
   const filtered = appointments.filter((appointment) => {
     const matchSearch =
@@ -59,21 +56,21 @@ export default function ReceptionAppointmentsPage() {
   const columns = [
     {
       key: "code",
-      title: "Ma lich hen",
+      title: "Mã lịch hẹn",
       render: (row) => <span className="reception-appointments__code">{row.code}</span>,
     },
-    { key: "patientName", title: "Benh nhan", dataIndex: "patientName" },
-    { key: "specialty", title: "Chuyen khoa", dataIndex: "specialty" },
+    { key: "patientName", title: "Bệnh nhân", dataIndex: "patientName" },
+    { key: "specialty", title: "Chuyên khoa", dataIndex: "specialty" },
     {
       key: "slot",
-      title: "Gio hen",
+      title: "Giờ hẹn",
       render: (row) => <span className="reception-appointments__slot">{row.slot}</span>,
     },
     {
       key: "status",
-      title: "Trang thai",
+      title: "Trạng thái",
       render: (row) => {
-        const cfg = STATUS_CONFIG[row.status] ?? { label: row.status, variant: "neutral" };
+        const cfg = getStatusInfo(row.status) ?? { label: row.status, variant: "neutral" };
         return <Badge variant={cfg.variant}>{cfg.label}</Badge>;
       },
     },
@@ -84,7 +81,7 @@ export default function ReceptionAppointmentsPage() {
         <div className="reception-appointments__actions">
           <button
             className="dash-action-btn dash-action-btn--sm"
-            title="Chi tiet"
+            title="Chi tiết"
             type="button"
             onClick={() => navigate(`/booking-success/${row.code}`)}
           >
@@ -95,7 +92,7 @@ export default function ReceptionAppointmentsPage() {
               className="dash-action-btn dash-action-btn--sm dash-action-btn--primary"
               title="Check-in"
               type="button"
-              onClick={() => navigate("/app/reception/checkin")}
+              onClick={() => navigate(`/app/reception/checkin?code=${row.code}`)}
             >
               <CheckCircle2 size={16} />
             </button>
@@ -109,8 +106,8 @@ export default function ReceptionAppointmentsPage() {
     <div className="dash-page reception-appointments">
       <div className="dash-page-header">
         <div>
-          <h1 className="dash-page-title">Quan ly lich hen</h1>
-          <p className="dash-page-sub">Theo doi, loc va cap nhat trang thai lich hen trong ngay theo thoi gian thuc.</p>
+          <h1 className="dash-page-title">{"Quản lý lịch hẹn"}</h1>
+          <p className="dash-page-sub">{"Theo dõi, lọc và cập nhật trạng thái lịch hẹn trong ngày theo thời gian thực."}</p>
         </div>
         <div className="reception-appointments__header-actions">
           <input
@@ -119,9 +116,9 @@ export default function ReceptionAppointmentsPage() {
             value={date}
             onChange={(event) => setDate(event.target.value)}
           />
-          <Button size="sm" onClick={() => navigate("/book")}>
+          <Button size="sm" onClick={() => setShowCreateModal(true)}>
             <Plus className="mc-icon mc-icon--sm" />
-            Tao lich hen
+            {"Tạo lịch hẹn"}
           </Button>
         </div>
       </div>
@@ -144,7 +141,7 @@ export default function ReceptionAppointmentsPage() {
       <div className="dash-filter-bar">
         <input
           className="dash-search-input"
-          placeholder="Tim benh nhan, ma lich hen..."
+          placeholder="Tìm bệnh nhân, mã lịch hẹn..."
           value={search}
           onChange={(event) => setSearch(event.target.value)}
         />
@@ -153,11 +150,16 @@ export default function ReceptionAppointmentsPage() {
           value={filterStatus}
           onChange={(event) => setFilterStatus(event.target.value)}
         >
-          <option value="all">Tat ca trang thai</option>
-          {Object.entries(STATUS_CONFIG).map(([key, value]) => (
-            <option key={key} value={key}>
-              {value.label}
-            </option>
+          <option value="all">Tất cả trạng thái</option>
+          {[
+            { key: "CONFIRMED", label: "Đã xác nhận" },
+            { key: "PENDING", label: "Chờ xác nhận" },
+            { key: "CHECKED_IN", label: "Đã check-in" },
+            { key: "WAITING", label: "Đang chờ bác sĩ" },
+            { key: "CANCELLED", label: "Đã hủy" },
+            { key: "COMPLETED", label: "Hoàn tất" },
+          ].map(({ key, label }) => (
+            <option key={key} value={key}>{label}</option>
           ))}
         </select>
       </div>
@@ -167,8 +169,16 @@ export default function ReceptionAppointmentsPage() {
           <LoadingSpinner />
         </div>
       ) : (
-        <Table columns={columns} data={filtered} emptyMessage="Khong co lich hen nao phu hop." />
+        <Table columns={columns} data={filtered} emptyMessage="Không có lịch hẹn nào phù hợp." />
       )}
+
+      <ReceptionCreateModal
+        open={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSuccess={refreshAppointments}
+      />
     </div>
   );
 }
+
+

@@ -6,10 +6,12 @@ import {
   Calendar,
   CalendarCheck,
   ClipboardList,
+  LayoutDashboard,
   LogOut,
   Settings,
   ShieldCheck,
   Stethoscope,
+  UserRound,
   Users,
 } from "lucide-react";
 import { ROLE_LABELS, useAuth } from "../../services/authService";
@@ -22,9 +24,11 @@ const STAFF_PORTALS = {
     avatarIcon: Users,
     fallbackName: "Nhân viên",
     navItems: [
-      { to: "/app/reception/patients", label: "Quản lý bệnh nhân", icon: Users },
-      { to: "/app/reception/appointments", label: "Quản lý lịch hẹn", icon: CalendarCheck },
+      { to: "/app/reception/dashboard", label: "Trang chủ", icon: LayoutDashboard },
+      { to: "/app/reception/appointments", label: "Lịch hẹn", icon: CalendarCheck },
       { to: "/app/reception/checkin", label: "Check-in", icon: ClipboardList },
+      { to: "/app/reception/patients", label: "Bệnh nhân", icon: Users },
+      { to: "/app/reception/profile", label: "Hồ sơ của tôi", icon: UserRound },
     ],
   },
   doctor: {
