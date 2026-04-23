@@ -78,6 +78,7 @@ export default function BookingWizardPage() {
   const [selectedSlot, setSelectedSlot]       = useState(null);
   const [form, setForm]                       = useState({ name: "", phone: "", dob: "", note: "" });
   const [errors, setErrors]                   = useState({});
+  const [nameInputError, setNameInputError]   = useState("");
   const [prefilled, setPrefilled]             = useState(false); // tránh fetch nhiều lần
 
   // ── Load specialties ────────────────────────────────────────────────────
@@ -351,8 +352,22 @@ const checkPhoneExists = async (phone) => {
               label="Họ và tên *"
               placeholder="Nguyễn Văn An"
               value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              error={errors.name}
+              onChange={(e) => {
+                const value = e.target.value;
+                // Kiểm tra ký tự đặc biệt hoặc số
+                if (/[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(value)) {
+                  setNameInputError("Họ tên không được chứa số hoặc ký tự đặc biệt.");
+                  return;
+                }
+                // Giới hạn tối đa 50 ký tự
+                if (value.length > 50) {
+                  setNameInputError("Họ tên không được vượt quá 50 ký tự.");
+                  return;
+                }
+                setNameInputError("");
+                setForm({ ...form, name: value });
+              }}
+              error={errors.name || nameInputError}
             />
                           <Input
                   label="Số điện thoại *"
