@@ -200,3 +200,4 @@ Chi tiết từng lượt khám
 
 - Lễ tân có dashboard theo dõi số lượng lịch hẹn trong ngày.
 - Lễ tân có thể tạo lịch hẹn trực tiếp tại quầy cho bệnh nhân.
+- Lễ tân có thể quét mã QR để tìm nhanh lịch hẹn và thực hiện check-in.
