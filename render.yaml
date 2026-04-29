@@ -10,7 +10,7 @@ services:
       - key: DB_ENGINE
         value: postgresql
       - key: DB_HOST
-        value: dpg-d7p55khj2pic73d6mfpg-a
+        value: dpg-d7p55khj2pic73d6mfpg-a.singapore-postgres.render.com
       - key: DB_PORT
         value: "5432"
       - key: DB_NAME
