@@ -10,15 +10,15 @@ services:
       - key: DB_ENGINE
         value: postgresql
       - key: DB_HOST
-        value: dpg-d7oqgsho3t8c7386b0jg-a.db.render.com
+        value: dpg-d7p55khj2pic73d6mfpg-a
       - key: DB_PORT
         value: "5432"
       - key: DB_NAME
-        value: clinic_db_48rj
+        value: clinic_db_bpap
       - key: DB_USER
-        value: clinic_user
+        value: clinic_db_bpap_user
       - key: DB_PASSWORD
-        sync: false
+        value: dnnyTKrff6jwuhAdCRe09oA0m97THED3
       - key: DJANGO_DEBUG
         value: "false"
       - key: DJANGO_ALLOWED_HOSTS
