@@ -40,5 +40,5 @@ services:
     healthCheckPath: /
     envVars:
       - key: REACT_APP_API_BASE_URL
-        value: https://clinic-backend.onrender.com/api
+                value: https://clinic-backend-q4t7.onrender.com/api
     autoDeploy: true
