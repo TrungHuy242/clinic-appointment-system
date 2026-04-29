@@ -43,10 +43,12 @@ from .views import (
     ReceptionPatientsAPIView,
     ReceptionProfileAPIView,
     LoginAPIView,
+    RefreshTokenAPIView,
 )
 
 urlpatterns = [
     path('auth/login/', LoginAPIView.as_view(), name='auth-login'),
+    path('auth/refresh/', RefreshTokenAPIView.as_view(), name='auth-refresh'),
     path('auth/logout/', LogoutAPIView.as_view(), name='auth-logout'),
     path('patient/auth/register/', PatientRegisterAPIView.as_view(), name='patient-auth-register'),
     path('patient/auth/send-otp/', PatientSendOtpAPIView.as_view(), name='patient-auth-send-otp'),

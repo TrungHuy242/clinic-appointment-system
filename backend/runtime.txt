@@ -1,0 +1,16 @@
+# ── Base dependencies ────────────────────────────────────────────────────────────
+Django==5.0.14
+djangorestframework==3.16.0
+django-cors-headers==4.7.0
+
+# ── Production server ─────────────────────────────────────────────────────────────
+gunicorn==23.0.0
+
+# ── Database ────────────────────────────────────────────────────────────────────
+psycopg2-binary==2.9.10
+
+# ── Static / Media files ─────────────────────────────────────────────────────────
+Pillow==11.1.0   # for ImageField support if needed later
+
+# ── Environment config ────────────────────────────────────────────────────────────
+python-dotenv==1.0.1

@@ -10,12 +10,67 @@
   - Từ Nguyễn Huyền Trang (Dev)
   - Nguyễn Ngọc Quyền (Dev)
 - **Repository:** https://github.com/TrungHuy242/clinic-appointment-system
-- **Stack:** React (react-scripts) + Django REST Framework + SQLite (dev) / PostgreSQL (prod)
-- **Trạng thái:** Đã hoàn thành — 35/35 E2E tests PASS, sẵn sàng demo
+- **Stack:** React 18 (react-scripts) + Django 5.0 REST Framework + PostgreSQL
+- **Trạng thái:** Hoàn thành — Docker-ready, 200+ backend tests PASS, sẵn sàng demo
 
 ---
 
-## 2. Cách chạy project
+## 2. Chạy project với Docker (Khuyến nghị)
+
+### Yêu cầu
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (Windows/Mac) hoặc Docker Engine (Linux)
+- [Docker Compose](https://docs.docker.com/compose/install/) (đã có sẵn trong Docker Desktop)
+
+### Chạy nhanh (1 lệnh)
+
+```bash
+# Clone repo
+git clone https://github.com/TrungHuy242/clinic-appointment-system.git
+cd clinic-appointment-system
+
+# Chạy tất cả services (PostgreSQL + Backend + Frontend + Nginx)
+docker-compose up -d
+
+# Truy cập
+# Frontend: http://localhost
+# Backend API: http://localhost/api/
+# Health check: http://localhost/api/health/
+```
+
+### Tạo dữ liệu demo
+
+```bash
+# Chạy container để seed data, rồi restart bình thường
+docker-compose exec backend sh -c "python manage.py seed_demo_data --patients 10 --doctors 5"
+```
+
+> **Lưu ý:** Đợi ~30 giây sau khi `docker-compose up` để backend khởi tạo xong (migrations + collectstatic).
+
+### Xem logs
+
+```bash
+docker-compose logs -f backend   # Backend logs
+docker-compose logs -f frontend   # Frontend logs
+docker-compose logs -f db        # Database logs
+```
+
+### Dừng và xóa
+
+```bash
+docker-compose down              # Dừng (giữ data)
+docker-compose down -v           # Dừng + xóa data
+```
+
+### Rebuild khi code thay đổi
+
+```bash
+docker-compose up -d --build     # Rebuild tất cả
+docker-compose up -d --build backend  # Chỉ rebuild backend
+```
+
+---
+
+## 3. Chạy project (Development Local — không Docker)
 
 ### Yêu cầu
 - Python 3.10+
@@ -60,18 +115,29 @@ npm start
 ```
 
 > **Lưu ý:** Frontend chạy tại `http://localhost:3000` và proxy API sang backend `localhost:8000`.
-> File `.env` chứa `VITE_API_BASE_URL=` (trống = dùng proxy, mặc định dev).
 
-### Chạy E2E tests
+---
+
+## 4. Chạy Tests
+
+### Backend Tests
 
 ```bash
 cd backend
-python test_all_flows.py
+pip install -r requirements-test.txt
+pytest
+```
+
+### Frontend Tests
+
+```bash
+cd frontend
+npm test
 ```
 
 ---
 
-## 3. Tài khoản demo
+## 5. Tài khoản demo
 
 | Username / SĐT | Password | Vai trò | Ghi chú |
 |---|---|---|---|
@@ -87,13 +153,13 @@ python test_all_flows.py
 
 ---
 
-## 4. Flow demo đề xuất
+## 6. Flow demo đề xuất
 
 ### Admin — `admin / admin123`
 1. Đăng nhập → Dashboard → KPI cards (tổng lịch hẹn, bệnh nhân mới, tỷ lệ hoàn tất)
 2. Biểu đồ: phân bổ theo chuyên khoa, lịch hẹn theo kỳ
 3. Catalog → Bác sĩ (xem / sửa) → Lễ tân (xem / sửa / tạo)
-4. Appointments → Danh sách lịch hẹn (30 items) → Filter theo ngày / trạng thái
+4. Appointments → Danh sách lịch hẹn → Filter theo ngày / trạng thái
 5. Reports → Export CSV báo cáo
 6. Audit → Xem lịch sử thao tác nhân viên
 
@@ -116,7 +182,6 @@ python test_all_flows.py
 2. My Appointments → Lịch hẹn sắp tới (tạo mới qua booking wizard nếu cần)
 3. Health Profile → Thông tin sức khỏe, dị ứng
 4. Notifications → Tin nhắn xác nhận lịch hẹn
-5. Refresh page → Session vẫn giữ (đã xác minh 35/35 tests PASS)
 
 ### Guest Booking (không cần đăng nhập)
 1. Landing page → "Đặt lịch khám ngay" → Booking Wizard
@@ -126,18 +191,15 @@ python test_all_flows.py
 
 ---
 
-## 5. Giới hạn hiện tại & Hướng phát triển
+## 7. Giới hạn hiện tại & Hướng phát triển
 
 ### Giới hạn (đã biết)
 
 | Giới hạn | Mức độ | Ghi chú |
 |---|---|---|
 | Landing page: Doctor Cards là mock data | **Thấp** | Không kết nối DB; thay bằng API khi cần |
-| Landing page: Stats là mock data | **Thấp** | Ghi rõ "Demo — giá trị giả lập" |
 | Reports: Revenue/Doanh thu là ước tính | **Trung bình** | Ghi rõ "Lượt khám hoàn tất ước tính" — chưa có bảng Billing |
 | Patient: Chưa có lịch hẹn trong seed data | **Thấp** | Tạo qua booking wizard để test |
-| Patient: Record detail cần có MedicalRecord hợp lệ | **Thấp** | Seed có 6 MedicalRecord gán cho bệnh nhân khác |
-| Doctor queue/visits: Phụ thuộc seed data | **Thấp** | Seed có đủ dữ liệu CHECKED_IN và COMPLETED |
 
 ### Hướng phát triển (production)
 
@@ -153,19 +215,80 @@ python test_all_flows.py
 
 ---
 
-## 6. Môi trường & Database
+## 8. Deployment lên Render.com (Miễn phí)
 
-| Thành phần | Trạng thái |
-|---|---|
-| Database | **SQLite** (`db.sqlite3`) mặc định dev; hỗ trợ PostgreSQL |
-| `.env` backend | Chứa secrets, không commit |
-| `.env` frontend | Chứa `VITE_API_BASE_URL`, đã có `.env.example` |
-| Migrations | Tất cả applied, 0 unapplied |
-| Test suite | **35/35 E2E tests PASS** (`backend/test_all_flows.py`) |
+### Bước 1: Push code lên GitHub
+
+```bash
+git init
+git add .
+git commit -m "Initial commit"
+git branch -M main
+git remote add origin https://github.com/YOUR_USERNAME/clinic-appointment-system.git
+git push -u origin main
+```
+
+### Bước 2: Tạo PostgreSQL Database
+
+1. Truy cập [render.com](https://render.com) → Đăng nhập (dùng GitHub)
+2. **New** → **PostgreSQL**
+3. Name: `clinic-db`, Plan: **Free**
+4. Click **Create Database**
+5. Copy các giá trị: **Host**, **Database**, **Username**, **Password**
+
+### Bước 3: Deploy Backend
+
+1. **New** → **Web Service**
+2. Connect GitHub repo `clinic-appointment-system`
+3. Configure:
+   - **Name:** `clinic-backend`
+   - **Region:** Singapore
+   - **Branch:** `main`
+   - **Root Directory:** để trống
+   - **Runtime:** **Docker**
+   - **Plan:** **Free**
+4. **Add Environment Variable:**
+   - `DB_ENGINE` = `postgresql`
+   - `DB_HOST` = (từ Bước 2)
+   - `DB_PORT` = `5432`
+   - `DB_NAME` = (từ Bước 2)
+   - `DB_USER` = (từ Bước 2)
+   - `DB_PASSWORD` = (từ Bước 2)
+   - `DJANGO_DEBUG` = `false`
+   - `DJANGO_ALLOWED_HOSTS` = `clinic-backend.onrender.com`
+   - `DJANGO_SECRET_KEY` = (Generate tại https://djecrety.ir/)
+   - `JWT_SECRET_KEY` = (Generate tại https://djecrety.ir/)
+   - `SEED_DEMO_DATA` = `true`
+5. **Deploy**
+
+### Bước 4: Deploy Frontend
+
+1. **New** → **Web Service**
+2. Connect GitHub repo
+3. Configure:
+   - **Name:** `clinic-frontend`
+   - **Region:** Singapore
+   - **Branch:** `main`
+   - **Root Directory:** để trống
+   - **Runtime:** **Docker**
+   - **Plan:** **Free**
+4. **Add Environment Variable:**
+   - `REACT_APP_API_BASE_URL` = `https://clinic-backend.onrender.com/api`
+5. **Deploy**
+
+### Hoặc dùng Render Blueprint (tự động cấu hình)
+
+Push code lên GitHub, sau đó:
+1. Truy cập [render.com/blueprints](https://dashboard.render.com/blueprints)
+2. **New Blueprint Instance**
+3. Connect repo → Tải lên file `render.yaml` từ repo
+4. Render sẽ tự tạo PostgreSQL + Backend + Frontend
+
+> **Lưu ý:** Free tier của Render ngủ sau 15 phút không dùng. Lần đầu truy cập có thể chậm ~30s. Đủ để demo cho thầy.
 
 ---
 
-## 7. Cấu trúc project
+## 9. Cấu trúc project
 
 ```
 clinic-appointment-system/
@@ -173,11 +296,14 @@ clinic-appointment-system/
 │   ├── appointments/      # Models, services, views cho lịch hẹn
 │   ├── catalog/           # Models, services, views cho chuyên khoa, bác sĩ
 │   ├── common/           # Auth, permissions, response helpers
-│   ├── config/           # Django settings, URLs
+│   ├── config/            # Django settings, URLs, WSGI
 │   ├── portal/           # Auth, patient, doctor, receptionist, admin APIs
 │   ├── manage.py
-│   ├── test_all_flows.py # E2E test suite
-│   └── db.sqlite3        # SQLite dev DB
+│   ├── requirements.txt   # Production dependencies
+│   ├── requirements-test.txt  # Test dependencies
+│   ├── pytest.ini        # Pytest configuration
+│   ├── conftest.py       # Pytest fixtures
+│   └── Dockerfile         # Backend container
 ├── frontend/
 │   ├── src/
 │   │   ├── pages/
@@ -185,36 +311,41 @@ clinic-appointment-system/
 │   │   │   ├── patient/       # MyAppointments, HealthProfile, Notifications
 │   │   │   ├── doctor/        # Schedule, Queue, Visits, VisitPage
 │   │   │   ├── reception/     # Dashboard, Checkin, Patients
-│   │   │   └── admin/         # Dashboard, Catalog, Reports, Audit
-│   │   ├── layouts/           # PublicLayout, PatientLayout, StaffLayout, AdminLayout
-│   │   ├── services/          # apiClient, authService, endpoints, bookingApi
+│   │   │   └── admin/        # Dashboard, Catalog, Reports, Audit
+│   │   ├── layouts/           # Layout components
+│   │   ├── services/           # apiClient, authService, endpoints
 │   │   └── router.jsx        # React Router definitions
-│   ├── .env                   # API config
-│   └── package.json
-└── docs/
-    └── PROGRESS.md             # Chi tiết bugs, test results, data sources
+│   ├── package.json
+│   └── Dockerfile         # Frontend container (React build + Nginx)
+├── nginx/
+│   └── nginx.conf        # Reverse proxy config
+├── docker-compose.yml     # Local development stack
+├── render.yaml           # Render.com deployment blueprint
+├── .env.example          # Environment variables template
+└── README.md
 ```
 
 ---
 
-## 8. Ghi chú kỹ thuật
+## 10. Ghi chú kỹ thuật
 
 ### Authentication
-- Hệ thống dùng **Django session-based auth** qua `SessionUserAuthentication`.
-- Staff (admin/reception/doctor): login set `SESSION_USER_KEY` vào Django session.
-- Patient: login set cả `SESSION_USER_KEY` và `patient_profile_id`.
-- Frontend lưu user info vào `localStorage` để `AuthContext` render đúng UI.
+- Hệ thống dùng **JWT tokens** cho stateless API access và **Django session-based auth** cho staff.
+- Staff (admin/reception/doctor): login set JWT token + session cookie.
+- Patient: login set JWT token + session cookie.
 
 ### API Proxy
-- Frontend dùng `setupProxy.js` (http-proxy-middleware) để proxy API calls sang backend.
-- `apiClient.js` xử lý base URL: nếu `VITE_API_BASE_URL` trống → dùng `window.location.origin` → proxy handle.
-- Production: đặt `VITE_API_BASE_URL=http://localhost:8000` để gọi trực tiếp.
+- Frontend dùng `setupProxy.js` (http-proxy-middleware) để proxy API calls sang backend (dev).
+- Production Docker: Nginx reverse proxy xử lý routing `/api/` → Backend, `/` → Frontend.
 
-### Session & CORS
-- `credentials: "include"` trong mọi fetch call → gửi session cookie.
-- Django `CORS_ALLOW_ALL_ORIGINS = True` và `CSRF_COOKIE_SAMESITE = None` cho dev.
+### Docker Architecture
+```
+Browser → Nginx (port 80) → /           → React Static (nginx)
+                        → /api/*       → Django Backend (gunicorn)
+                        → /static/*    → Django Static (white noise)
+                        → /media/*     → Django Media
+```
 
-### Encoding
-- Tất cả file chứa tiếng Việt: UTF-8.
-- Backend settings: `DEFAULT_CHARSET = 'utf-8'`.
-- Windows console: output encoding có thể gây lỗi `charmap codec can't encode` — dùng `sys.stdout.reconfigure(encoding='utf-8')` khi cần.
+### Database
+- Development: SQLite (`db.sqlite3`)
+- Production (Docker/Render): PostgreSQL 16

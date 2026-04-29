@@ -306,7 +306,7 @@ class Command(BaseCommand):
                     'emergency_phone': item['emergency_phone'],
                     'account_username': item['phone'],
                     'account_email': item['account_email'],
-                    'account_password': item['account_password'],
+                    'account_password': make_password(item['account_password']),
                     'is_current': item['is_current'],
                 },
             )
@@ -855,8 +855,9 @@ class Command(BaseCommand):
                 existing_by_doctor = User.objects.filter(doctor=doctor_obj).first()
                 if existing_by_doctor:
                     existing_by_doctor.username = data['username']
-                    for field in ('password', 'full_name', 'role', 'email'):
+                    for field in ('full_name', 'role', 'email'):
                         setattr(existing_by_doctor, field, data[field])
+                    existing_by_doctor.password = make_password(data['password'])
                     existing_by_doctor.save(update_fields=['username', 'password', 'full_name', 'role', 'email', 'updated_at'])
                     created_count += 1
                     continue

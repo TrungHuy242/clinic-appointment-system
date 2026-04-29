@@ -1,4 +1,6 @@
 from django.contrib.auth.hashers import make_password
+from django.db import connection
+from django.http import JsonResponse
 from rest_framework import filters, serializers, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
@@ -9,6 +11,18 @@ from portal.models import User
 from portal.services import log_admin_action
 from .models import Doctor, Specialty, VisitType
 from .serializers import DoctorSerializer, SpecialtySerializer, VisitTypeSerializer
+
+
+# ── Health Check ────────────────────────────────────────────────────────────────
+
+def health_check(request):
+    """Lightweight endpoint for Docker healthchecks and load balancers."""
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute('SELECT 1')
+        return JsonResponse({'status': 'ok', 'database': 'connected'}, status=200)
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'database': str(e)}, status=503)
 
 
 def _admin_actor(request):
@@ -75,7 +89,7 @@ class SpecialtyViewSet(viewsets.ModelViewSet):
         return Response(status=204)
 
     @action(detail=True, methods=['delete'], url_path='hard-delete')
-    def hard_delete(self, request, id=None):
+    def hard_delete(self, request, pk=None):
         """
         Hard-delete vĩnh viễn: chỉ cho phép khi không còn doctor nào thuộc khoa này.
         """
@@ -198,7 +212,7 @@ class DoctorViewSet(viewsets.ModelViewSet):
         instance.save(update_fields=['is_active'])
 
     @action(detail=True, methods=['delete'], url_path='hard-delete')
-    def hard_delete(self, request, id=None):
+    def hard_delete(self, request, pk=None):
         """
         Hard-delete vĩnh viễn: chỉ cho phép khi không còn lịch hẹn hay tài khoản nào.
         """
@@ -269,6 +283,30 @@ class DoctorViewSet(viewsets.ModelViewSet):
             'full_name': user.full_name,
         }, status=201)
 
+    @action(detail=True, methods=['post'], url_path='reset-password')
+    def reset_password(self, request, pk=None):
+        """Reset password for the User account linked to this Doctor."""
+        doctor = self.get_object()
+
+        user = User.objects.filter(doctor=doctor, role='doctor').first()
+        if not user:
+            return Response({'detail': 'Bác sĩ này chưa có tài khoản.'}, status=400)
+
+        new_password = request.data.get('new_password') or request.data.get('password') or ''
+        if len(new_password) < 6:
+            return Response({'detail': 'Mật khẩu phải ít nhất 6 ký tự.'}, status=400)
+
+        user.password = make_password(new_password)
+        user.save(update_fields=['password', 'updated_at'])
+
+        actor_name, actor_role, ip = _admin_actor(request)
+        log_admin_action(
+            'RESET_PASSWORD', 'DoctorAccount', user.id, f'@{user.username}',
+            actor_name=actor_name, actor_role=actor_role,
+            detail=f'Đặt lại mật khẩu doctor "@{user.username}" cho BS. {doctor.full_name}', ip_address=ip,
+        )
+        return Response({'success': True})
+
 
 # ── VisitType ───────────────────────────────────────────────────────────────────
 
@@ -318,7 +356,7 @@ class VisitTypeViewSet(viewsets.ModelViewSet):
         instance.save(update_fields=['is_active'])
 
     @action(detail=True, methods=['delete'], url_path='hard-delete')
-    def hard_delete(self, request, id=None):
+    def hard_delete(self, request, pk=None):
         """
         Hard-delete vĩnh viễn: chỉ cho phép khi không có appointment nào dùng loại khám này.
         """

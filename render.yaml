@@ -1,0 +1,63 @@
+# Render.com Blueprint
+# Deploy all services with one `render-blueprints apply`
+# Docs: https://render.com/docs/blueprint-spec
+
+services:
+  # ── PostgreSQL Database (Free tier) ───────────────────────────────────────────
+  - type: postgres
+    name: clinic-db
+    plan: free
+    postgresMajorVersion: "16"
+    ipAllowList: []
+
+  # ── Backend API (Docker container, Free tier) ──────────────────────────────────
+  - type: web
+    name: clinic-backend
+    env: docker
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    healthCheckPath: /api/health/
+    envVars:
+      - key: DB_ENGINE
+        value: postgresql
+      - key: DB_HOST
+        fromDatabase:
+          name: clinic-db
+          property: host
+      - key: DB_PORT
+        value: "5432"
+      - key: DB_NAME
+        fromDatabase:
+          name: clinic-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: clinic-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: clinic-db
+          property: password
+      - key: DJANGO_DEBUG
+        value: "false"
+      - key: DJANGO_ALLOWED_HOSTS
+        value: "clinic-backend.onrender.com"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: SEED_DEMO_DATA
+        value: "true"
+    autoDeploy: true
+
+  # ── Frontend (Docker container, Free tier) ────────────────────────────────────
+  - type: web
+    name: clinic-frontend
+    env: docker
+    plan: free
+    dockerfilePath: ./frontend/Dockerfile
+    healthCheckPath: /
+    envVars:
+      - key: REACT_APP_API_BASE_URL
+        value: https://clinic-backend.onrender.com/api
+    autoDeploy: true
