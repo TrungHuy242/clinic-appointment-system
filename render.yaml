@@ -1,6 +1,5 @@
-# Render.com Blueprint — Backend + Frontend (dùng Neon DB có sẵn)
 services:
-  # ── Backend API (Docker container, Free tier) ──────────────────────────────────
+  # ── Backend ─────────────────────────────────────────────────────────────────
   - type: web
     name: clinic-backend
     env: docker
@@ -32,7 +31,7 @@ services:
         value: "true"
     autoDeploy: true
 
-  # ── Frontend (Docker container, Free tier) ────────────────────────────────────
+  # ── Frontend ───────────────────────────────────────────────────────────────
   - type: web
     name: clinic-frontend
     env: docker
