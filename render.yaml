@@ -1,15 +1,5 @@
-# Render.com Blueprint
-# Deploy all services with one `render-blueprints apply`
-# Docs: https://render.com/docs/blueprint-spec
-
+# Render.com Blueprint — Backend + Frontend (dùng Neon DB có sẵn)
 services:
-  # ── PostgreSQL Database (Free tier) ───────────────────────────────────────────
-  - type: postgres
-    name: clinic-db
-    plan: free
-    postgresMajorVersion: "16"
-    ipAllowList: []
-
   # ── Backend API (Docker container, Free tier) ──────────────────────────────────
   - type: web
     name: clinic-backend
@@ -21,27 +11,19 @@ services:
       - key: DB_ENGINE
         value: postgresql
       - key: DB_HOST
-        fromDatabase:
-          name: clinic-db
-          property: host
+        value: dpg-d7oqgsho3t8c7386b0jg-a.db.render.com
       - key: DB_PORT
         value: "5432"
       - key: DB_NAME
-        fromDatabase:
-          name: clinic-db
-          property: database
+        value: clinic_db_48rj
       - key: DB_USER
-        fromDatabase:
-          name: clinic-db
-          property: user
+        value: clinic_user
       - key: DB_PASSWORD
-        fromDatabase:
-          name: clinic-db
-          property: password
+        sync: false
       - key: DJANGO_DEBUG
         value: "false"
       - key: DJANGO_ALLOWED_HOSTS
-        value: "clinic-backend.onrender.com"
+        value: "*"
       - key: DJANGO_SECRET_KEY
         generateValue: true
       - key: JWT_SECRET_KEY
