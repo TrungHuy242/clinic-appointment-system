@@ -13,7 +13,7 @@ COPY frontend/ ./
 
 # Build React app
 # Uses REACT_APP_API_BASE_URL env var injected at build time
-ENV REACT_APP_API_BASE_URL=/api
+ENV REACT_APP_API_BASE_URL=
 ENV GENERATE_SOURCEMAP=false
 ENV INLINE_RUNTIME_CHUNK=false
 
