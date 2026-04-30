@@ -1,7 +1,7 @@
 // Default fallback luôn có giá trị hợp lệ cho new URL(base, path)
 // Khi Vite/build env có VITE_API_BASE_URL thì dùng env
 // Khi dev qua react-scripts proxy thì dùng "" (relative path)
-export const API_PREFIX = "";
+export const API_PREFIX = "/api";
 
 export const ENDPOINTS = {
   catalog: {
