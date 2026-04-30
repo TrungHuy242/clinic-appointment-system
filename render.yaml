@@ -29,6 +29,8 @@ services:
         generateValue: true
       - key: SEED_DEMO_DATA
         value: "true"
+      - key: PORT
+        value: "8000"
     autoDeploy: true
 
   # ── Frontend ───────────────────────────────────────────────────────────────
