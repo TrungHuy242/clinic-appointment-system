@@ -171,20 +171,27 @@ REST_FRAMEWORK = {
     'EXCEPTION_HANDLER': 'common.auth.custom_exception_handler',
 }
 
-CORS_ALLOWED_ORIGINS = [
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-    'http://localhost:5173',
-    'http://127.0.0.1:5173',
-]
+_cors_raw = os.getenv('CORS_ALLOWED_ORIGINS', '')
+if _cors_raw:
+    CORS_ALLOWED_ORIGINS = [o.strip() for o in _cors_raw.split(',') if o.strip()]
+else:
+    CORS_ALLOWED_ORIGINS = [
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        'http://localhost:5173',
+        'http://127.0.0.1:5173',
+    ]
 CORS_ALLOW_CREDENTIALS = True
-# Only allow all origins in DEBUG mode for development
-CORS_ALLOW_ALL_ORIGINS = DEBUG  # False in production
+CORS_ALLOW_ALL_ORIGINS = DEBUG
 
-CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
+_csrf_raw = os.getenv('CSRF_TRUSTED_ORIGINS', '')
+if _csrf_raw:
+    CSRF_TRUSTED_ORIGINS = [o.strip() for o in _csrf_raw.split(',') if o.strip()]
+else:
+    CSRF_TRUSTED_ORIGINS = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ]
 
 # ── Cookie Security (production-ready) ─────────────────────────────────────────
 # In production, set:
