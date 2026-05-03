@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Calendar, ChevronDown, Download, FileText, Settings2, ShieldCheck, Trash2, X } from "lucide-react";
+import { Calendar, Download, FileText, Settings2, ShieldCheck, Trash2, X } from "lucide-react";
 import Badge from "../../../components/Badge/Badge";
 import LoadingSpinner from "../../../components/LoadingSpinner/LoadingSpinner";
 import Table from "../../../components/Table/Table";
@@ -114,11 +114,7 @@ function startOfWeek(date) {
   return new Date(d.setDate(diff));
 }
 
-function endOfDay(date) {
-  const d = new Date(date);
-  d.setHours(23, 59, 59, 999);
-  return d;
-}
+
 
 const DATE_PRESETS = [
   {

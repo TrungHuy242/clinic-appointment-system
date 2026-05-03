@@ -1,4 +1,4 @@
-import { ENDPOINTS } from "./endpoints";
+
 
 const _envBase = process.env.REACT_APP_API_BASE_URL || "";
 export const API_BASE_URL = _envBase;
