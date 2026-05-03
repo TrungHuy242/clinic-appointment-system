@@ -60,10 +60,8 @@ function fmtTimeFromStr(timeStr) {
   return fmtTime(d);
 }
 
-function fmtDate(d) {
-  if (!d) return "—";
-  return d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
-}
+
+
 
 function fmtDateFull(d) {
   if (!d) return "—";
