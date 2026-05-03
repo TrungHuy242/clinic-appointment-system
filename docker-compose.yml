@@ -1,0 +1,70 @@
+services:
+  # ── Database ──────────────────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: clinic_appointment_system
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d clinic_appointment_system"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+    # ── Backend (Django + Gunicorn) ───────────────────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # Database
+      DB_ENGINE: postgresql
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: clinic_appointment_system
+      DB_USER: postgres
+      DB_PASSWORD: postgres123
+      # Django
+      DJANGO_DEBUG: "true"
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1"
+      # JWT
+      JWT_SECRET_KEY: "jwt-insecure-dev-only"
+      JWT_ACCESS_TOKEN_LIFETIME_MINUTES: "60"
+      JWT_REFRESH_TOKEN_LIFETIME_DAYS: "7"
+      # Demo data
+      SEED_DEMO_DATA: "false"
+    volumes:
+      - backend_static:/app/backend/staticfiles
+      - backend_media:/app/backend/mediafiles
+    ports:
+      - "8000:8000"
+
+  # ── Frontend (React + Nginx) ──────────────────────────────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    volumes:
+      - frontend_static:/usr/share/nginx/html
+
+volumes:
+  postgres_data:
+  backend_static:
+  backend_media:
+  frontend_static:

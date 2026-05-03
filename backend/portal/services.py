@@ -7,7 +7,7 @@ from django.utils import timezone
 from django.utils.dateparse import parse_date
 from rest_framework.exceptions import PermissionDenied, ValidationError
 
-from common.auth import SESSION_USER_KEY
+from common.auth import SESSION_USER_KEY, create_access_token, create_refresh_token
 from django.contrib.auth.hashers import check_password as django_check_password, make_password
 
 from appointments.models import Appointment, AppointmentStatus
@@ -33,6 +33,7 @@ PATIENT_STATUS_MAP = {
     AppointmentStatus.CONFIRMED: ('confirmed', 'Đã xác nhận'),
     AppointmentStatus.CHECKED_IN: ('confirmed', 'Đã check-in'),
     AppointmentStatus.IN_PROGRESS: ('confirmed', 'Đang khám'),
+    AppointmentStatus.WAITING: ('confirmed', 'Đang chờ'),
     AppointmentStatus.COMPLETED: ('completed', 'Đã hoàn tất'),
     AppointmentStatus.CANCELLED: ('cancelled', 'Đã hủy'),
     AppointmentStatus.NO_SHOW: ('cancelled', 'Không đến khám'),
@@ -205,6 +206,18 @@ def unified_login(payload, request=None):
             'success': True,
             'role': 'patient',
             'account': get_account_info(patient),
+            'access_token': create_access_token({
+                'id': patient.id,
+                'username': patient.account_username or patient.phone,
+                'full_name': patient.full_name,
+                'role': 'patient',
+                'patient_profile_id': patient.id,
+                'is_active': True,
+            }),
+            'refresh_token': create_refresh_token({
+                'id': patient.id,
+                'role': 'patient',
+            }),
         }
 
     # nhân viên (portal_user – hashed password) ────────────────────
@@ -254,6 +267,8 @@ def unified_login(payload, request=None):
                 'role': staff.role,
                 'doctorId': doctor_id,
             },
+            'access_token': create_access_token(user_payload),
+            'refresh_token': create_refresh_token(user_payload),
         }
 
     # Sai thông tin ────────────────────────────────────────────────────
@@ -354,10 +369,20 @@ def verify_otp(payload, request=None):
         }
         request.session.modified = True
 
+    user_data = {
+        'id': profile.id,
+        'username': profile.account_username or profile.phone,
+        'full_name': profile.full_name,
+        'role': 'patient',
+        'patient_profile_id': profile.id,
+        'is_active': True,
+    }
     return {
         'success': True,
         'role': 'patient',
         'account': get_account_info(profile),
+        'access_token': create_access_token(user_data),
+        'refresh_token': create_refresh_token(user_data),
     }
 
 

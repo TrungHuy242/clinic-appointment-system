@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { apiClient } from "./apiClient";
+import { apiClient, clearTokens } from "./apiClient";
 import { ENDPOINTS } from "./endpoints";
 
 const STORAGE_USER_KEY = "user";
@@ -101,6 +101,7 @@ export function AuthProvider({ children }) {
     setRole(ROLES.GUEST);
     localStorage.removeItem(STORAGE_USER_KEY);
     localStorage.removeItem(STORAGE_ROLE_KEY);
+    clearTokens();
   };
 
   const value = useMemo(

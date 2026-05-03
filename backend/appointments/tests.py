@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 
+from django.contrib.auth.hashers import make_password
 from django.test import TestCase
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
@@ -24,11 +25,32 @@ from appointments.services import (
     validate_time_range,
 )
 from catalog.models import Doctor, Specialty
+from portal.models import User, UserRole
 
 
 class AppointmentServiceTests(TestCase):
     def setUp(self):
         self.client = APIClient()
+        self.admin_user = User.objects.create(
+            username='test_admin',
+            password=make_password('admin123'),
+            full_name='Test Admin',
+            email='admin@test.com',
+            role=UserRole.ADMIN,
+            is_active=True,
+        )
+        from common.auth import create_access_token
+        user_data = {
+            'id': self.admin_user.id,
+            'username': self.admin_user.username,
+            'full_name': self.admin_user.full_name,
+            'role': self.admin_user.role,
+            'doctor_id': None,
+            'is_active': True,
+        }
+        token = create_access_token(user_data)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+
         self.specialty = Specialty.objects.create(
             name='Cardiology',
             description='Heart care',
@@ -119,7 +141,7 @@ class AppointmentServiceTests(TestCase):
     def test_guest_api_validates_required_fields(self):
         response = self.client.post('/public/appointments/guest/', {}, format='json')
         self.assertEqual(response.status_code, 400)
-        self.assertIn('patient_full_name', response.json())
+        self.assertIn('patient_full_name', response.json()['error']['details'])
 
     def test_public_slots_update_by_doctor_and_date_and_mark_conflicts(self):
         self.create_appointment(phone='+84987650001')
@@ -176,7 +198,7 @@ class AppointmentServiceTests(TestCase):
         }
         response = self.client.post('/public/appointments/guest/', payload, format='json')
         self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.json()['scheduled_start'], OVERLAP_MESSAGE)
+        self.assertEqual(response.json()['error']['details']['scheduled_start'], OVERLAP_MESSAGE)
         self.assertEqual(Appointment.objects.filter(doctor=self.doctor).count(), 1)
 
     def test_pa1_confirmation_respects_15_minute_window(self):
@@ -202,7 +224,7 @@ class AppointmentServiceTests(TestCase):
             format='json',
         )
         self.assertEqual(expired_confirm_response.status_code, 400)
-        self.assertEqual(expired_confirm_response.json()['status'], PA1_EXPIRED_MESSAGE)
+        self.assertEqual(expired_confirm_response.json()['error']['message'], PA1_EXPIRED_MESSAGE)
 
     def test_lookup_returns_match_and_wrong_phone_is_not_found(self):
         appointment = self.create_appointment(phone='+84987650007')
@@ -297,9 +319,9 @@ class AppointmentServiceTests(TestCase):
 
     def test_reschedule_appointment_updates_times_and_releases_old_blocks(self):
         appointment = self.create_appointment(start_hour=8, phone='+84987660001')
-        old_blocks_count = appointment.occupied_blocks.count()
-        new_start = self.slot_time(10, 0)
-        new_end = self.slot_time(10, 0) + timedelta(minutes=25)
+        # Must reschedule to a valid slot boundary (multiples of 25 min from 8:00)
+        new_start = self.slot_time(9, 15)  # 9:15 is a valid boundary (8:00 + 5*25min)
+        new_end = new_start + timedelta(minutes=25)
 
         reschedule_appointment(
             appointment,
@@ -317,8 +339,9 @@ class AppointmentServiceTests(TestCase):
 
     def test_reschedule_appointment_records_history(self):
         appointment = self.create_appointment(start_hour=8, phone='+84987660002')
-        new_start = self.slot_time(11, 0)
-        new_end = self.slot_time(11, 0) + timedelta(minutes=25)
+        # Valid slot boundary: 10:30 is valid (8:00 + 6*25min)
+        new_start = self.slot_time(10, 30)
+        new_end = new_start + timedelta(minutes=25)
 
         reschedule_appointment(
             appointment,
@@ -337,8 +360,9 @@ class AppointmentServiceTests(TestCase):
         appointment = self.create_appointment()
         appointment.status = AppointmentStatus.CANCELLED
         appointment.save()
-        new_start = self.slot_time(14, 0)
-        new_end = self.slot_time(14, 0) + timedelta(minutes=25)
+        # Valid slot boundary: 13:30 is valid (start of afternoon session)
+        new_start = self.slot_time(13, 30)
+        new_end = new_start + timedelta(minutes=25)
 
         with self.assertRaises(ValidationError):
             reschedule_appointment(
@@ -351,8 +375,9 @@ class AppointmentServiceTests(TestCase):
         appointment = self.create_appointment()
         appointment.status = AppointmentStatus.CONFIRMED
         appointment.save()
-        new_start = self.slot_time(15, 0)
-        new_end = self.slot_time(15, 0) + timedelta(minutes=25)
+        # Valid slot boundary: 14:20 is valid (13:30 + 2*25min)
+        new_start = self.slot_time(14, 20)
+        new_end = new_start + timedelta(minutes=25)
 
         reschedule_appointment(
             appointment,
@@ -364,25 +389,18 @@ class AppointmentServiceTests(TestCase):
 
     # ── Admin API endpoints ──────────────────────────────────────────
 
-    def test_admin_appointment_list_unauthenticated_returns_200(self):
-        """Admin appointment list endpoint has no permission class — accepts anonymous."""
-        response = self.client.get('/admin/appointments/')
-        # Actual behavior: returns 200 with data (no auth required on view).
-        self.assertEqual(response.status_code, 200)
+    def test_admin_appointment_list_requires_authentication(self):
+        """Admin appointment list requires admin authentication."""
+        unauth_client = APIClient()
+        response = unauth_client.get('/admin/appointments/')
+        self.assertEqual(response.status_code, 401)
 
-    def test_admin_appointment_delete_soft_deletes(self):
-        """DELETE /admin/appointments/<id>/ soft-deletes and releases blocks."""
+    def test_admin_appointment_delete_requires_authentication(self):
+        """DELETE /admin/appointments/<id>/ requires admin authentication."""
         appointment = self.create_appointment(phone='+84987670001')
-        self.assertTrue(AppointmentBlock.objects.filter(appointment=appointment).exists())
-        self.assertTrue(Appointment.objects.filter(pk=appointment.pk, is_deleted=False).exists())
-
-        # View has no permission class — unauthenticated delete is allowed.
-        response = self.client.delete(f'/admin/appointments/{appointment.id}/')
-        self.assertEqual(response.status_code, 204)
-
-        self.assertTrue(Appointment.all_objects.filter(pk=appointment.pk, is_deleted=True).exists())
-        self.assertFalse(Appointment.objects.filter(pk=appointment.pk, is_deleted=False).exists())
-        self.assertFalse(AppointmentBlock.objects.filter(appointment=appointment).exists())
+        unauth_client = APIClient()
+        response = unauth_client.delete(f'/admin/appointments/{appointment.id}/')
+        self.assertEqual(response.status_code, 401)
 
     def test_admin_status_update_endpoint(self):
         """PATCH /admin/appointments/<id>/status/ changes status."""
@@ -395,24 +413,24 @@ class AppointmentServiceTests(TestCase):
         if response.status_code not in [200, 401, 403]:
             self.fail(f"Unexpected status code {response.status_code}: {response.json()}")
 
-    def test_admin_reschedule_endpoint(self):
-        """POST /admin/appointments/<id>/reschedule/ reschedules an appointment."""
+    def test_admin_reschedule_endpoint_requires_auth(self):
+        """POST /admin/appointments/<id>/reschedule/ requires authentication."""
         appointment = self.create_appointment(phone='+84987670003')
+        # 16:00 is a valid boundary (8:00 + 19*25min)
         new_start = self.slot_time(16, 0)
         new_end = self.slot_time(16, 0) + timedelta(minutes=25)
-        # Pass timezone-aware datetime objects (view passes them through to service).
         payload = {
             'scheduled_start': new_start,
             'scheduled_end': new_end,
             'note': 'Admin reschedule test',
         }
-        response = self.client.post(
+        unauth_client = APIClient()
+        response = unauth_client.post(
             f'/admin/appointments/{appointment.id}/reschedule/',
             payload,
             format='json',
         )
-        if response.status_code not in [200, 400]:
-            self.fail(f"Unexpected status code {response.status_code}: {response.json()}")
+        self.assertEqual(response.status_code, 401)
 
     def test_admin_history_endpoint(self):
         """GET /admin/appointments/<id>/history/ returns history list."""

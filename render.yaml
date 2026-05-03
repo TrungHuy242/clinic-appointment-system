@@ -1,0 +1,50 @@
+services:
+  # ── Backend ─────────────────────────────────────────────────────────────────
+  - type: web
+    name: clinic-backend
+    env: docker
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    healthCheckPath: /api/health/
+    envVars:
+      - key: DB_ENGINE
+        value: postgresql
+      - key: DB_HOST
+        value: dpg-d7p55khj2pic73d6mfpg-a.singapore-postgres.render.com
+      - key: DB_PORT
+        value: "5432"
+      - key: DB_NAME
+        value: clinic_db_bpap
+      - key: DB_USER
+        value: clinic_db_bpap_user
+      - key: DB_PASSWORD
+        value: dnnyTKrff6jwuhAdCRe09oA0m97THED3
+      - key: DJANGO_DEBUG
+        value: "false"
+      - key: DJANGO_ALLOWED_HOSTS
+        value: "*"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: SEED_DEMO_DATA
+        value: "true"
+      - key: CORS_ALLOWED_ORIGINS
+        value: "https://clinic-frontend-gn7y.onrender.com,http://localhost:3000,http://localhost:5173"
+      - key: CSRF_TRUSTED_ORIGINS
+        value: "https://clinic-frontend-gn7y.onrender.com,http://localhost:3000"
+      - key: PORT
+        value: "8000"
+    autoDeploy: true
+
+  # ── Frontend ───────────────────────────────────────────────────────────────
+  - type: web
+    name: clinic-frontend
+    env: docker
+    plan: free
+    dockerfilePath: ./frontend/Dockerfile
+    healthCheckPath: /
+    envVars:
+      - key: REACT_APP_API_BASE_URL
+                value: https://clinic-backend-q4t7.onrender.com
+    autoDeploy: true

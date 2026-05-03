@@ -76,7 +76,7 @@ export default function BookingWizardPage() {
   const [date, setDate]                       = useState(todayStr());
   const [slots, setSlots]                     = useState([]);
   const [selectedSlot, setSelectedSlot]       = useState(null);
-  const [form, setForm]                       = useState({ name: "", phone: "", dob: "", note: "" });
+  const [form, setForm]                       = useState({ name: "", phone: "", dob: "", gender: "", note: "" });
   const [errors, setErrors]                   = useState({});
   const [nameInputError, setNameInputError]   = useState("");
   const [prefilled, setPrefilled]             = useState(false); // tránh fetch nhiều lần
@@ -171,6 +171,7 @@ const checkPhoneExists = async (phone) => {
         patientName:      form.name.trim(),
         patientPhone:     form.phone.trim(),
         patientDob:       form.dob,
+        patientGender:     form.gender,
         note:             form.note.trim(),
       };
       const booking = await createGuestBooking(payload);
@@ -398,6 +399,21 @@ const checkPhoneExists = async (phone) => {
               onChange={(e) => setForm({ ...form, dob: e.target.value })}
               error={errors.dob}
             />
+            <div className="bw-gender-row">
+              <label className="bw-gender-label">Giới tính</label>
+              <div className="bw-gender-options">
+                {["Nam", "Nữ", "Khác"].map((g) => (
+                  <button
+                    key={g}
+                    type="button"
+                    className={`bw-gender-btn${form.gender === g ? " selected" : ""}`}
+                    onClick={() => setForm({ ...form, gender: g })}
+                  >
+                    {g}
+                  </button>
+                ))}
+              </div>
+            </div>
             <Input
               label="Ghi chú triệu chứng (không bắt buộc)"
               placeholder="Mô tả ngắn triệu chứng..."

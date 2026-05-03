@@ -1,10 +1,14 @@
 from django.utils import timezone
 from django.utils.dateparse import parse_date
-from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.exceptions import AuthenticationFailed, PermissionDenied, ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from common.auth import IsAdmin, IsAuthenticated, IsDoctor, IsReceptionist, SESSION_USER_KEY
+from common.auth import (
+    IsAdmin, IsAuthenticated, IsDoctor, IsReceptionist, SESSION_USER_KEY,
+    OTPThrottle, ForgotPasswordThrottle, LoginThrottle,
+    decode_token, create_access_token, create_refresh_token,
+)
 
 from .services import (
     _staff_receptionist,
@@ -81,9 +85,36 @@ def _staff_doctor(request):
 class LoginAPIView(APIView):
     permission_classes = []
     authentication_classes = []
+    throttle_classes = [LoginThrottle]
 
     def post(self, request, *args, **kwargs):
         return Response(unified_login(request.data, request))
+
+
+class RefreshTokenAPIView(APIView):
+    """Exchange a valid refresh token for a new access token."""
+    permission_classes = []
+    authentication_classes = []
+
+    def post(self, request, *args, **kwargs):
+        refresh_token = request.data.get('refresh_token')
+        if not refresh_token:
+            raise ValidationError({'refresh_token': 'refresh_token is required.'})
+
+        try:
+            payload = decode_token(refresh_token, 'refresh')
+        except Exception as e:
+            raise AuthenticationFailed(str(e))
+
+        user_data = {
+            'id': payload.get('sub', ''),
+            'role': payload.get('role', ''),
+        }
+        access_token = create_access_token(user_data)
+        return Response({
+            'success': True,
+            'access_token': access_token,
+        })
 
 
 class PatientRegisterAPIView(APIView):
@@ -97,6 +128,7 @@ class PatientRegisterAPIView(APIView):
 class PatientSendOtpAPIView(APIView):
     permission_classes = []
     authentication_classes = []
+    throttle_classes = [OTPThrottle]
 
     def post(self, request, *args, **kwargs):
         return Response(send_otp(request.data, request))
@@ -113,6 +145,7 @@ class PatientVerifyOtpAPIView(APIView):
 class ForgotPasswordSendOtpAPIView(APIView):
     permission_classes = []
     authentication_classes = []
+    throttle_classes = [ForgotPasswordThrottle]
 
     def post(self, request, *args, **kwargs):
         return Response(forgot_password_send_otp(request.data))

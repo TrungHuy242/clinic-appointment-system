@@ -1,9 +1,7 @@
 // Default fallback luôn có giá trị hợp lệ cho new URL(base, path)
 // Khi Vite/build env có VITE_API_BASE_URL thì dùng env
 // Khi dev qua react-scripts proxy thì dùng "" (relative path)
-const _envBase = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE_URL) || "";
-export const API_BASE_URL = _envBase;
-export const API_PREFIX = "";
+export const API_PREFIX = ""; 
 
 export const ENDPOINTS = {
   catalog: {
@@ -67,9 +65,8 @@ export const ENDPOINTS = {
     auditLogs: `${API_PREFIX}/admin/audit-logs/`,
     reports: `${API_PREFIX}/admin/reports/`,
     adminDoctorDetail: (id) => `${API_PREFIX}/admin/doctor-detail/${id}/`,
-    // AdminUser reset-password: dùng cho doctor accounts (CatalogPage resetUserPassword)
-    // NOTE: POST /admin/users/ (create) đã bị disable — chỉ còn reset-password
-    adminUserResetPassword: (id) => `${API_PREFIX}/admin/users/${id}/reset-password/`,
+    // Doctor reset-password: via catalog doctor endpoint
+    adminDoctorResetPassword: (doctorId) => `${API_PREFIX}/admin/doctors/${doctorId}/reset-password/`,
     adminReceptionistProfiles: `${API_PREFIX}/admin/receptionist-profiles/`,
     adminReceptionistProfile: (id) => `${API_PREFIX}/admin/receptionist-profiles/${id}/`,
     adminReceptionistProfileResetPassword: (id) => `${API_PREFIX}/admin/receptionist-profiles/${id}/reset-password/`,

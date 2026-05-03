@@ -17,7 +17,7 @@ import {
   createReceptionistProfile,
   deleteReceptionistProfile,
   getReceptionistProfile,
-  resetUserPassword,
+  resetReceptionistPassword,
   updateReceptionistProfile,
 } from "../../../services/adminApi";
 import "./ReceptionistDetailPage.css";
@@ -218,7 +218,7 @@ export default function ReceptionistDetailPage() {
     setSaving(true);
     setResetPwError("");
     try {
-      await resetUserPassword(profile.id, { new_password: password });
+      await resetReceptionistPassword(profile.id, { new_password: password });
       setResetPwModal(false);
       setResetPwForm({ password: "" });
     } catch (err) {

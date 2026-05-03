@@ -34,6 +34,15 @@ if not DEBUG:
             "Generate a secure key at: python -c \"from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())\""
         )
 SECRET_KEY = _secret or 'django-insecure-dev-only'
+
+# JWT Configuration
+JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', SECRET_KEY)
+JWT_ALGORITHM = 'HS256'
+JWT_ACCESS_TOKEN_LIFETIME_MINUTES = int(os.getenv('JWT_ACCESS_TOKEN_LIFETIME_MINUTES', '60'))
+JWT_REFRESH_TOKEN_LIFETIME_DAYS = int(os.getenv('JWT_REFRESH_TOKEN_LIFETIME_DAYS', '7'))
+JWT_ACCESS_TOKEN_COOKIE_NAME = 'access_token'
+JWT_REFRESH_TOKEN_COOKIE_NAME = 'refresh_token'
+
 ALLOWED_HOSTS = [h.strip() for h in os.getenv('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1,testserver').split(',')]
 DEFAULT_CHARSET = 'utf-8'
 
@@ -53,6 +62,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -123,11 +133,24 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+MEDIA_URL = 'media/'
+MEDIA_ROOT = BASE_DIR / 'mediafiles'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'common.auth.SessionUserAuthentication',
+        'common.auth.JWTAuthentication',      # JWT first (stateless)
+        'common.auth.SessionUserAuthentication', # Session fallback (backwards compat)
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',
@@ -136,23 +159,52 @@ REST_FRAMEWORK = {
         'rest_framework.renderers.JSONRenderer',
         'rest_framework.renderers.BrowsableAPIRenderer',
     ],
+    'DEFAULT_THROTTLE_CLASSES': [
+        'common.auth.LoginThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'login': '15/minute',        # Login attempts
+        'otp': '10/minute',          # OTP requests
+        'forgot_password': '10/minute', # Forgot password requests
+        'anon': '100/minute',         # Anonymous users
+    },
+    'EXCEPTION_HANDLER': 'common.auth.custom_exception_handler',
 }
 
-CORS_ALLOWED_ORIGINS = [
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-    'http://localhost:5173',
-    'http://127.0.0.1:5173',
-]
-
+_cors_raw = os.getenv('CORS_ALLOWED_ORIGINS', '')
+if _cors_raw:
+    CORS_ALLOWED_ORIGINS = [o.strip() for o in _cors_raw.split(',') if o.strip()]
+else:
+    CORS_ALLOWED_ORIGINS = [
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        'http://localhost:5173',
+        'http://127.0.0.1:5173',
+    ]
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = DEBUG
 
-CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
+_csrf_raw = os.getenv('CSRF_TRUSTED_ORIGINS', '')
+if _csrf_raw:
+    CSRF_TRUSTED_ORIGINS = [o.strip() for o in _csrf_raw.split(',') if o.strip()]
+else:
+    CSRF_TRUSTED_ORIGINS = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ]
 
-SESSION_COOKIE_SAMESITE = None
+# ── Cookie Security (production-ready) ─────────────────────────────────────────
+# In production, set:
+#   SESSION_COOKIE_SECURE = True
+#   SESSION_COOKIE_HTTPONLY = True
+#   SESSION_COOKIE_SAMESITE = 'Lax'
+#   CSRF_COOKIE_SECURE = True
+#   CSRF_COOKIE_HTTPONLY = True
+# Currently relaxed for localhost development:
+SESSION_COOKIE_SAMESITE = 'Lax' if not DEBUG else None
 SESSION_COOKIE_DOMAIN = None
-CSRF_COOKIE_SAMESITE = None
+SESSION_COOKIE_HTTPONLY = True  # JavaScript cannot read session cookie
+SESSION_COOKIE_SECURE = not DEBUG  # HTTPS only in production
+CSRF_COOKIE_SAMESITE = 'Lax' if not DEBUG else None
+CSRF_COOKIE_HTTPONLY = False  # Must be False for Django CSRF to work
+CSRF_COOKIE_SECURE = not DEBUG
