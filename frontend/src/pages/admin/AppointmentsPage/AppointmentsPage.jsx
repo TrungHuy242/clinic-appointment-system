@@ -3,7 +3,8 @@ import { CalendarClock, CalendarRange } from "lucide-react";
 import Button from "../../../components/Button/Button";
 import LoadingSpinner from "../../../components/LoadingSpinner/LoadingSpinner";
 import Modal from "../../../components/Modal/Modal";
-import { listAppointments, updateAppointmentStatus, rescheduleAppointment, getAppointmentHistory } from "../../../services/adminApi";
+import RescheduleModal from "./RescheduleModal";
+import { listAppointments, updateAppointmentStatus, getAppointmentHistory } from "../../../services/adminApi";
 import { getStatusLabel, statusToClass } from "../../../services/formatters";
 import "./AppointmentsPage.css";
 
@@ -62,7 +63,6 @@ export default function AppointmentsPage() {
       if (searchQuery.trim()) params.q = searchQuery.trim();
 
       const data = await listAppointments(params);
-      // Handle paginated or plain array response
       const list = Array.isArray(data.results) ? data.results : Array.isArray(data) ? data : [];
       const sm = data.summary || summary;
       setRows(list);
@@ -130,21 +130,6 @@ export default function AppointmentsPage() {
       setSelectedId(null);
     } catch (err) {
       setError(stripHtml(err.message) || "Cập nhật trạng thái thất bại.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  // ── Reschedule ─────────────────────────────────────────────────────────
-  async function doReschedule(id, scheduled_start, scheduled_end, note) {
-    setSaving(true);
-    try {
-      await rescheduleAppointment(id, { scheduled_start, scheduled_end, note });
-      await loadData();
-      setRescheduleModal({ open: false, appointment: null });
-      setSelectedId(null);
-    } catch (err) {
-      setError(stripHtml(err.message) || "Dời lịch thất bại.");
     } finally {
       setSaving(false);
     }
@@ -264,7 +249,7 @@ export default function AppointmentsPage() {
           { key: "checked_in", label: "Đã check-in",      value: summary.checked_in },
           { key: "completed",  label: "Hoàn thành",       value: summary.completed },
           { key: "cancelled",  label: "Đã hủy",           value: summary.cancelled },
-          { key: "no_show",    label: "No-show",          value: summary.no_show },
+          { key: "no_show",   label: "No-show",          value: summary.no_show },
         ].map((s) => (
           <div key={s.key} className="appt-page__summary-item">
             <div className="appt-page__summary-value">{s.value}</div>
@@ -517,8 +502,7 @@ export default function AppointmentsPage() {
         open={rescheduleModal.open}
         appointment={rescheduleModal.appointment}
         onClose={() => setRescheduleModal({ open: false, appointment: null })}
-        onConfirm={doReschedule}
-        saving={saving}
+        onSuccess={loadData}
       />
 
       {/* ── Modal: Lịch sử thay đổi ── */}
@@ -529,118 +513,6 @@ export default function AppointmentsPage() {
         onClose={closeHistoryModal}
       />
     </div>
-  );
-}
-
-// ── Reschedule Modal ────────────────────────────────────────────────────────
-
-function RescheduleModal({ open, appointment, onClose, onConfirm, saving }) {
-  const [rescheduleDate, setRescheduleDate] = useState("");
-  const [rescheduleTime, setRescheduleTime] = useState("");
-  const [note, setNote] = useState("");
-  const [localError, setLocalError] = useState("");
-
-  useEffect(() => {
-    if (open && appointment) {
-      const start = appointment.scheduled_start;
-      if (start) {
-        const d = new Date(start);
-        const dateStr = d.toISOString().split("T")[0];
-        const timeStr = d.toTimeString().slice(0, 5);
-        setRescheduleDate(dateStr);
-        setRescheduleTime(timeStr);
-      } else {
-        setRescheduleDate(new Date().toISOString().split("T")[0]);
-        setRescheduleTime("09:00");
-      }
-      setNote("");
-      setLocalError("");
-    }
-  }, [open, appointment]);
-
-  function handleConfirm() {
-    if (!rescheduleDate || !rescheduleTime) {
-      setLocalError("Vui lòng chọn ngày và giờ.");
-      return;
-    }
-    const scheduled_start = `${rescheduleDate}T${rescheduleTime}:00`;
-    const visitMinutes = appointment?.visit_type === "VISIT_15" ? 15 : appointment?.visit_type === "VISIT_40" ? 40 : 20;
-    const d = new Date(scheduled_start);
-    d.setMinutes(d.getMinutes() + visitMinutes);
-    const scheduled_end = d.toISOString();
-    onConfirm(appointment.id, scheduled_start, scheduled_end, note);
-  }
-
-  if (!open) return null;
-
-  const visitMinutes = appointment?.visit_type === "VISIT_15" ? 15 : appointment?.visit_type === "VISIT_40" ? 40 : 20;
-  const oldStart = appointment?.scheduled_start ? new Date(appointment.scheduled_start) : null;
-  const oldEnd = appointment?.scheduled_end ? new Date(appointment.scheduled_end) : null;
-  const oldStartStr = oldStart ? oldStart.toLocaleString("vi-VN") : "—";
-  const oldEndStr = oldEnd ? oldEnd.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) : "—";
-
-  return (
-    <Modal
-      open={open}
-      title="Đổi lịch hẹn"
-      description={appointment ? `${appointment.code} — ${appointment.patient_full_name}` : ""}
-      onClose={onClose}
-      footer={
-        <>
-          <Button variant="secondary" size="sm" onClick={onClose} disabled={saving}>Hủy</Button>
-          <Button size="sm" onClick={handleConfirm} disabled={saving}>
-            {saving ? "Đang xử lý..." : "Xác nhận đổi lịch"}
-          </Button>
-        </>
-      }
-    >
-      <div className="appt-reschedule">
-        {localError && <div className="appt-page__error">{localError}</div>}
-
-        <div className="appt-modal__row">
-          <span className="appt-modal__label">Lịch cũ</span>
-          <span className="appt-modal__value">
-            {oldStartStr} – {oldEndStr}
-          </span>
-        </div>
-
-        <div className="appt-reschedule__fields">
-          <div className="appt-reschedule__field">
-            <label className="appt-modal__label">Ngày mới *</label>
-            <input
-              type="date"
-              className="appt-reschedule__input"
-              value={rescheduleDate}
-              onChange={(e) => setRescheduleDate(e.target.value)}
-            />
-          </div>
-          <div className="appt-reschedule__field">
-            <label className="appt-modal__label">Giờ mới *</label>
-            <input
-              type="time"
-              className="appt-reschedule__input"
-              value={rescheduleTime}
-              onChange={(e) => setRescheduleTime(e.target.value)}
-            />
-          </div>
-        </div>
-
-        <div className="appt-reschedule__field">
-          <label className="appt-modal__label">Ghi chú (không bắt buộc)</label>
-          <textarea
-            className="appt-reschedule__textarea"
-            placeholder="Ví dụ: Bệnh nhân xin dời lịch khám"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            rows={2}
-          />
-        </div>
-
-        <p className="appt-page__modal-text" style={{ marginTop: 12 }}>
-          Thời lượng khám: <strong>{visitMinutes} phút</strong> (tự động tính theo loại khám).
-        </p>
-      </div>
-    </Modal>
   );
 }
 

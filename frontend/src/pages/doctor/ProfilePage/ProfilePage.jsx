@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { KeyRound, Stethoscope, UserRound } from "lucide-react";
+import { CalendarX, CalendarClock, KeyRound, Stethoscope, UserRound } from "lucide-react";
 import { doctorApi } from "../../../services/doctorApi";
+import Button from "../../../components/Button/Button";
+import LoadingSpinner from "../../../components/LoadingSpinner/LoadingSpinner";
 import "./ProfilePage.css";
 
 function stripHtml(raw) {
@@ -32,6 +34,15 @@ export default function DoctorProfilePage() {
   const [passwordSaving, setPasswordSaving] = useState(false);
   const [passwordMsg, setPasswordMsg] = useState({ type: "", text: "" });
 
+  // ── Schedule config ─────────────────────────────────────────────────────
+  const [scheduleConfig, setScheduleConfig] = useState(null);
+  const [scheduleLoading, setScheduleLoading] = useState(false);
+  const [scheduleSaving, setScheduleSaving] = useState(false);
+  const [scheduleMsg, setScheduleMsg] = useState({ type: "", text: "" });
+  const [timeOffList, setTimeOffList] = useState([]);
+  const [newTimeOff, setNewTimeOff] = useState({ offDate: "", reason: "" });
+  const [timeOffError, setTimeOffError] = useState("");
+
   // ── Load ──────────────────────────────────────────────────────────────────
   useEffect(() => {
     loadProfile();
@@ -48,6 +59,19 @@ export default function DoctorProfilePage() {
       setLoadError(stripHtml(err.message) || "Không tải được thông tin.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function loadScheduleConfig() {
+    setScheduleLoading(true);
+    try {
+      const data = await doctorApi.getScheduleConfig();
+      setScheduleConfig(data);
+      setTimeOffList(data.timeOffs || []);
+    } catch (err) {
+      // silênt fail
+    } finally {
+      setScheduleLoading(false);
     }
   }
 
@@ -129,6 +153,57 @@ export default function DoctorProfilePage() {
     }
   }
 
+  async function handleScheduleToggle(weekday) {
+    if (!scheduleConfig) return;
+    const updated = scheduleConfig.schedule.map((row) =>
+      row.weekday === weekday ? { ...row, isWorking: !row.isWorking } : row
+    );
+    setScheduleConfig((prev) => ({ ...prev, schedule: updated }));
+  }
+
+  async function handleSaveSchedule() {
+    setScheduleSaving(true);
+    setScheduleMsg({ type: "", text: "" });
+    try {
+      const payload = { schedule: scheduleConfig.schedule.map((row) => ({ weekday: row.weekday, isWorking: row.isWorking })) };
+      await doctorApi.updateScheduleConfig(payload);
+      setScheduleMsg({ type: "success", text: "Lưu lịch làm việc thành công." });
+      setTimeout(() => setScheduleMsg({ type: "", text: "" }), 3000);
+    } catch (err) {
+      setScheduleMsg({ type: "error", text: stripHtml(err.message) || "Lưu thất bại." });
+    } finally {
+      setScheduleSaving(false);
+    }
+  }
+
+  async function handleAddTimeOff() {
+    if (!newTimeOff.offDate) {
+      setTimeOffError("Vui lòng chọn ngày nghỉ.");
+      return;
+    }
+    setTimeOffError("");
+    try {
+      const result = await doctorApi.addTimeOff(newTimeOff);
+      setTimeOffList((prev) => [...prev, result]);
+      setNewTimeOff({ offDate: "", reason: "" });
+      setScheduleMsg({ type: "success", text: "Đã thêm ngày nghỉ." });
+      setTimeout(() => setScheduleMsg({ type: "", text: "" }), 3000);
+    } catch (err) {
+      setTimeOffError(stripHtml(err.message) || "Không thêm được ngày nghỉ.");
+    }
+  }
+
+  async function handleDeleteTimeOff(id) {
+    try {
+      await doctorApi.deleteTimeOff(id);
+      setTimeOffList((prev) => prev.filter((t) => t.id !== id));
+    } catch {
+      // silent fail
+    }
+  }
+
+
+
   // ── Render ────────────────────────────────────────────────────────────────
   if (loading) {
     return (
@@ -170,6 +245,13 @@ export default function DoctorProfilePage() {
           type="button"
         >
           <KeyRound className="mc-icon mc-icon--sm" /> Đổi mật khẩu
+        </button>
+        <button
+          className={`dash-filter-tab ${activeTab === "schedule" ? "active" : ""}`}
+          onClick={() => { setActiveTab("schedule"); setScheduleMsg({ type: "", text: "" }); loadScheduleConfig(); }}
+          type="button"
+        >
+          <CalendarClock className="mc-icon mc-icon--sm" /> Lịch làm việc
         </button>
       </div>
 
@@ -348,6 +430,128 @@ export default function DoctorProfilePage() {
               {passwordSaving ? "Đang xử lý..." : "Đổi mật khẩu"}
             </button>
           </div>
+        </div>
+      )}
+
+      {/* ── Tab: Schedule ── */}
+      {activeTab === "schedule" && (
+        <div className="doc-profile-card">
+          <h2 className="doc-profile-card-title">Lịch làm việc mặc định</h2>
+          <p className="doc-profile-sub">Bật/tắt ngày làm việc trong tuần. Lịch nghỉ phép bên dưới.</p>
+
+          {scheduleMsg.text && (
+            <div className={`doc-profile-msg doc-profile-msg--${scheduleMsg.type}`}>
+              {scheduleMsg.text}
+            </div>
+          )}
+
+          {scheduleLoading ? (
+            <LoadingSpinner />
+          ) : (
+            <>
+              <div className="doc-profile-fields">
+                {scheduleConfig?.schedule?.map((row) => (
+                  <div key={row.weekday} className="doc-profile-field">
+                    <label className="doc-profile-field__label">
+                      {row.label}
+                    </label>
+                    <label className="doc-profile-toggle">
+                      <input
+                        type="checkbox"
+                        checked={row.isWorking}
+                        onChange={() => handleScheduleToggle(row.weekday)}
+                      />
+                      <span className="doc-profile-toggle__slider" />
+                      <span className="doc-profile-toggle__label">
+                        {row.isWorking ? "Làm việc" : "Nghỉ"}
+                      </span>
+                    </label>
+                  </div>
+                ))}
+              </div>
+
+              <div className="doc-profile-actions">
+                <button
+                  type="button"
+                  className="dash-btn-primary"
+                  onClick={handleSaveSchedule}
+                  disabled={scheduleSaving}
+                >
+                  {scheduleSaving ? "Đang lưu..." : "Lưu lịch làm việc"}
+                </button>
+              </div>
+
+              <div style={{ marginTop: 32 }}>
+                <h2 className="doc-profile-card-title">Ngày nghỉ phép</h2>
+                <p className="doc-profile-sub">Thêm ngày nghỉ không nhận lịch hẹn.</p>
+
+                <div className="doc-profile-fields">
+                  <div className="doc-profile-field">
+                    <label className="doc-profile-field__label">Ngày nghỉ</label>
+                    <input
+                      type="date"
+                      className="doc-profile-field__input"
+                      value={newTimeOff.offDate}
+                      onChange={(e) => setNewTimeOff((p) => ({ ...p, offDate: e.target.value }))}
+                    />
+                  </div>
+                  <div className="doc-profile-field">
+                    <label className="doc-profile-field__label">Lý do (không bắt buộc)</label>
+                    <input
+                      type="text"
+                      className="doc-profile-field__input"
+                      placeholder="VD: Nghỉ phép năm"
+                      value={newTimeOff.reason}
+                      onChange={(e) => setNewTimeOff((p) => ({ ...p, reason: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                {timeOffError && (
+                  <div className="doc-profile-msg doc-profile-msg--error" style={{ marginBottom: 12 }}>
+                    {timeOffError}
+                  </div>
+                )}
+                <Button size="sm" onClick={handleAddTimeOff}>
+                  <CalendarX className="mc-icon mc-icon--xs" style={{ marginRight: 4 }} />
+                  Thêm ngày nghỉ
+                </Button>
+
+                {timeOffList.length > 0 ? (
+                  <table className="doc-profile-table" style={{ marginTop: 16 }}>
+                    <thead>
+                      <tr>
+                        <th>Ngày</th>
+                        <th>Lý do</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {timeOffList.map((t) => (
+                        <tr key={t.id}>
+                          <td>{t.offDate}</td>
+                          <td>{t.reason || "—"}</td>
+                          <td>
+                            <button
+                              type="button"
+                              className="dash-btn-danger-sm"
+                              onClick={() => handleDeleteTimeOff(t.id)}
+                            >
+                              <CalendarX className="mc-icon mc-icon--xs" />
+                              Xóa
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <p className="doc-profile-sub" style={{ marginTop: 12 }}>
+                    Chưa có ngày nghỉ nào.
+                  </p>
+                )}
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>

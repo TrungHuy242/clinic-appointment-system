@@ -9,7 +9,7 @@ from django.utils import timezone
 from django.utils.dateparse import parse_date
 from rest_framework.exceptions import PermissionDenied, ValidationError
 
-from common.auth import SESSION_USER_KEY
+from common.auth import SESSION_USER_KEY, create_access_token, create_refresh_token
 from django.contrib.auth.hashers import check_password as django_check_password, make_password
 
 from appointments.models import Appointment, AppointmentStatus
@@ -37,6 +37,7 @@ PATIENT_STATUS_MAP = {
     AppointmentStatus.CONFIRMED: ('confirmed', 'Đã xác nhận'),
     AppointmentStatus.CHECKED_IN: ('confirmed', 'Đã check-in'),
     AppointmentStatus.IN_PROGRESS: ('confirmed', 'Đang khám'),
+    AppointmentStatus.WAITING: ('confirmed', 'Đang chờ'),
     AppointmentStatus.COMPLETED: ('completed', 'Đã hoàn tất'),
     AppointmentStatus.CANCELLED: ('cancelled', 'Đã hủy'),
     AppointmentStatus.NO_SHOW: ('cancelled', 'Không đến khám'),
@@ -209,6 +210,18 @@ def unified_login(payload, request=None):
             'success': True,
             'role': 'patient',
             'account': get_account_info(patient),
+            'access_token': create_access_token({
+                'id': patient.id,
+                'username': patient.account_username or patient.phone,
+                'full_name': patient.full_name,
+                'role': 'patient',
+                'patient_profile_id': patient.id,
+                'is_active': True,
+            }),
+            'refresh_token': create_refresh_token({
+                'id': patient.id,
+                'role': 'patient',
+            }),
         }
 
     # nhân viên (portal_user – hashed password) ────────────────────
@@ -258,6 +271,8 @@ def unified_login(payload, request=None):
                 'role': staff.role,
                 'doctorId': doctor_id,
             },
+            'access_token': create_access_token(user_payload),
+            'refresh_token': create_refresh_token(user_payload),
         }
 
     # Sai thông tin ────────────────────────────────────────────────────
@@ -282,6 +297,117 @@ def verify_registration_otp(phone: str, otp: str):
         raise ValidationError({'otp': 'Mã OTP không đúng.'})
     _OTP_STORE.pop(phone, None)
     return True
+
+OTP_EXPIRY_MINUTES = 5
+
+
+def generate_otp():
+    """Generate a 6-digit OTP."""
+    import random
+    return str(random.randint(100000, 999999))
+
+
+def send_otp(payload, request=None):
+    """Gửi OTP đến số điện thoại của bệnh nhân."""
+    phone = validate_phone(payload.get('phone'))
+
+    profile = PatientProfile.objects.filter(phone=phone).first()
+    if not profile:
+        raise ValidationError({'phone': 'Số điện thoại chưa được đăng ký trong hệ thống.'})
+
+    otp_code = generate_otp()
+    profile.otp_code = otp_code
+    profile.otp_created_at = timezone.now()
+    profile.save(update_fields=['otp_code', 'otp_created_at', 'updated_at'])
+
+    return {
+        'success': True,
+        'message': f'Mã OTP đã được gửi đến số điện thoại {phone}.',
+        'expires_in': OTP_EXPIRY_MINUTES * 60,
+        # DEV: trả mã OTP về frontend để hiển thị (xóa dòng này khi dùng SMS thật)
+        'otp_code_dev': otp_code,
+    }
+
+
+@transaction.atomic
+def verify_otp(payload, request=None):
+    """Xác minh OTP cho đăng nhập hoặc đặt lại mật khẩu."""
+    phone = validate_phone(payload.get('phone'))
+    otp_code = str(payload.get('otp_code') or '').strip()
+    remember = payload.get('remember', False)
+
+    if not otp_code or len(otp_code) != 6:
+        raise ValidationError({'otp_code': 'Mã OTP phải gồm 6 chữ số.'})
+
+    profile = PatientProfile.objects.filter(phone=phone).first()
+    if not profile:
+        raise ValidationError({'phone': 'Số điện thoại chưa được đăng ký.'})
+
+    # Ưu tiên kiểm tra token reset password (forgot password flow)
+    if profile.otp_reset_token and profile.otp_reset_token == otp_code:
+        if not profile.otp_created_at:
+            raise ValidationError({'otp_code': 'Mã OTP đã hết hạn. Vui lòng yêu cầu mã mới.'})
+        expiry = profile.otp_created_at + timedelta(minutes=OTP_EXPIRY_MINUTES)
+        if timezone.now() > expiry:
+            profile.otp_reset_token = ''
+            profile.otp_created_at = None
+            profile.save(update_fields=['otp_reset_token', 'otp_created_at', 'updated_at'])
+            raise ValidationError({'otp_code': 'Mã OTP đã hết hạn. Vui lòng yêu cầu mã mới.'})
+        profile.otp_reset_verified = True
+        profile.save(update_fields=['otp_reset_verified', 'updated_at'])
+        return {
+            'success': True,
+            'role': 'patient',
+            'verified': True,
+            'reset_password': True,
+        }
+
+    if not profile.otp_code or profile.otp_code != otp_code:
+        raise ValidationError({'otp_code': 'Mã OTP không đúng.'})
+
+    if not profile.otp_created_at:
+        raise ValidationError({'otp_code': 'Mã OTP đã hết hạn. Vui lòng yêu cầu mã mới.'})
+
+    expiry = profile.otp_created_at + timedelta(minutes=OTP_EXPIRY_MINUTES)
+    if timezone.now() > expiry:
+        profile.otp_code = ''
+        profile.otp_created_at = None
+        profile.save(update_fields=['otp_code', 'otp_created_at', 'updated_at'])
+        raise ValidationError({'otp_code': 'Mã OTP đã hết hạn. Vui lòng yêu cầu mã mới.'})
+
+    profile.otp_code = ''
+    profile.otp_created_at = None
+    profile.save(update_fields=['otp_code', 'otp_created_at', 'updated_at'])
+
+    set_current_profile(profile, request)
+
+    if request and hasattr(request, 'session'):
+        request.session[SESSION_USER_KEY] = {
+            'id': profile.id,
+            'username': profile.account_username or profile.phone,
+            'full_name': profile.full_name,
+            'role': 'patient',
+            'patient_profile_id': profile.id,
+            'is_active': True,
+        }
+        request.session.modified = True
+
+    user_data = {
+        'id': profile.id,
+        'username': profile.account_username or profile.phone,
+        'full_name': profile.full_name,
+        'role': 'patient',
+        'patient_profile_id': profile.id,
+        'is_active': True,
+    }
+    return {
+        'success': True,
+        'role': 'patient',
+        'account': get_account_info(profile),
+        'access_token': create_access_token(user_data),
+        'refresh_token': create_refresh_token(user_data),
+    }
+
 
 @transaction.atomic
 def register_patient_account(payload):
@@ -485,6 +611,98 @@ def change_password(profile, payload):
     return {'success': True}
 
 
+# ── Forgot Password ─────────────────────────────────────────────────────────────────
+
+def _generate_reset_token():
+    """Generate a short-lived reset token (numeric code, same as OTP)."""
+    import random
+    return str(random.randint(100000, 999999))
+
+
+@transaction.atomic
+def forgot_password_send_otp(payload):
+    """Gửi mã OTP đặt lại mật khẩu đến số điện thoại đã đăng ký."""
+    phone = validate_phone(payload.get('phone'))
+
+    profile = PatientProfile.objects.filter(phone=phone).first()
+    if not profile:
+        return {
+            'success': True,
+            'message': 'Nếu số điện thoại tồn tại trong hệ thống, mã OTP sẽ được gửi đến bạn.',
+            'expires_in': OTP_EXPIRY_MINUTES * 60,
+            'otp_code_dev': _generate_reset_token(),
+        }
+
+    reset_token = _generate_reset_token()
+    profile.otp_reset_token = reset_token
+    profile.otp_reset_verified = False
+    profile.otp_created_at = timezone.now()
+    profile.save(update_fields=['otp_reset_token', 'otp_reset_verified', 'otp_created_at', 'updated_at'])
+
+    return {
+        'success': True,
+        'message': f'Mã OTP đã được gửi đến số điện thoại {phone}.',
+        'expires_in': OTP_EXPIRY_MINUTES * 60,
+        'otp_code_dev': reset_token,
+    }
+
+
+@transaction.atomic
+def forgot_password_reset(payload):
+    """Xác minh OTP và đặt lại mật khẩu mới cho tài khoản."""
+    phone = validate_phone(payload.get('phone'))
+    otp_code = str(payload.get('otp_code') or '').strip()
+    new_password = str(payload.get('newPassword') or '').strip()
+    confirm_password = str(payload.get('confirmPassword') or '').strip()
+
+    if len(new_password) < 6:
+        raise ValidationError({'newPassword': 'Mật khẩu mới phải từ 6 ký tự trở lên.'})
+    if new_password != confirm_password:
+        raise ValidationError({'confirmPassword': 'Mật khẩu xác nhận không khớp.'})
+
+    profile = PatientProfile.objects.filter(phone=phone).first()
+    if not profile:
+        raise ValidationError({'phone': 'Số điện thoại chưa được đăng ký.'})
+
+    if not profile.otp_reset_verified:
+        raise ValidationError({'otp_code': 'Mã OTP chưa được xác minh. Vui lòng xác minh OTP trước.'})
+
+    if not profile.otp_reset_token or profile.otp_reset_token != otp_code:
+        raise ValidationError({'otp_code': 'Mã OTP không đúng.'})
+
+    if not profile.otp_created_at:
+        raise ValidationError({'otp_code': 'Mã OTP đã hết hạn. Vui lòng yêu cầu mã mới.'})
+
+    expiry = profile.otp_created_at + timedelta(minutes=OTP_EXPIRY_MINUTES)
+    if timezone.now() > expiry:
+        profile.otp_reset_token = ''
+        profile.otp_reset_verified = False
+        profile.otp_created_at = None
+        profile.save(update_fields=['otp_reset_token', 'otp_reset_verified', 'otp_created_at', 'updated_at'])
+        raise ValidationError({'otp_code': 'Mã OTP đã hết hạn. Vui lòng yêu cầu mã mới.'})
+
+    profile.otp_reset_token = ''
+    profile.otp_reset_verified = False
+    profile.otp_created_at = None
+    profile.account_password = make_password(new_password)
+    profile.save(update_fields=['otp_reset_token', 'otp_reset_verified', 'otp_created_at', 'account_password', 'updated_at'])
+
+    log_admin_action(
+        action='RESET_PASSWORD',
+        resource_type='Patient',
+        resource_id=str(profile.id),
+        resource_label=profile.full_name or f'Bệnh nhân #{profile.id}',
+        actor_name='Self-Service (Forgot Password)',
+        actor_role='patient',
+        detail=f'Đặt lại mật khẩu qua chức năng Quên mật khẩu.',
+    )
+
+    return {
+        'success': True,
+        'message': 'Mật khẩu đã được đặt lại thành công. Bạn có thể đăng nhập với mật khẩu mới.',
+    }
+
+
 def get_doctor_profile(doctor):
     """Return profile info for the authenticated doctor."""
     return {
@@ -679,6 +897,49 @@ def get_record_detail(profile, record_code):
             for item in history_queryset
         ],
     }
+
+
+VISIT_TYPE_LABELS = {
+    'VISIT_15': 'Khám 15 phút',
+    'VISIT_20': 'Khám 20 phút',
+    'VISIT_40': 'Khám 40 phút',
+}
+
+def _visit_type_label(vt):
+    return VISIT_TYPE_LABELS.get(str(vt), 'Khám bệnh')
+
+
+def get_patient_medical_records(profile):
+    """Lấy danh sách tất cả hồ sơ khám bệnh của bệnh nhân."""
+    records = MedicalRecord.objects.select_related(
+        'appointment',
+        'doctor',
+        'doctor__specialty',
+    ).filter(
+        patient_profile=profile,
+        appointment__status=AppointmentStatus.COMPLETED,
+    ).order_by('-appointment__scheduled_start')
+
+    return [
+        {
+            'id': record.code,
+            'appointmentCode': record.appointment.code,
+            'examDate': timezone.localtime(record.appointment.scheduled_start).date().isoformat(),
+            'examTime': format_time(record.appointment.scheduled_start),
+            'location': record.location,
+            'service': _visit_type_label(record.appointment.visit_type),
+            'doctor': {
+                'name': record.doctor.full_name,
+                'department': f'Khoa {record.doctor.specialty.name}' if record.doctor.specialty else '',
+            },
+            'diagnosis': {
+                'name': record.diagnosis_name or 'Chưa có chẩn đoán',
+                'icdCode': record.diagnosis_icd_code or '',
+            },
+            'hasMedicines': bool(record.medicines and len(record.medicines) > 0),
+        }
+        for record in records
+    ]
 
 
 def get_current_doctor():
@@ -1029,6 +1290,23 @@ def _seed_historical_logs():
             detail=f'Tạo hồ sơ bác sĩ "{doctor.full_name}" - {doctor.specialty.name} (historical)',
         ))
 
+    for user in User.objects.filter(role=UserRole.RECEPTIONIST).all():
+        logs_to_create.append(AdminAuditLog(
+            action='CREATE', resource_type='Receptionist', resource_id=str(user.id),
+            resource_label=user.full_name,
+            actor_name='System', actor_role='admin',
+            detail=f'Tạo tài khoản lễ tân "{user.full_name}" (historical)',
+        ))
+
+    for profile in PatientProfile.objects.all():
+        label = profile.full_name or f'Bệnh nhân #{profile.id}'
+        logs_to_create.append(AdminAuditLog(
+            action='CREATE', resource_type='Patient', resource_id=str(profile.id),
+            resource_label=label,
+            actor_name='System', actor_role='admin',
+            detail=f'Tạo hồ sơ bệnh nhân "{label}" (historical)',
+        ))
+
     if logs_to_create:
         AdminAuditLog.objects.bulk_create(logs_to_create, ignore_conflicts=True)
 
@@ -1297,16 +1575,26 @@ def get_admin_patient_profiles():
     return result
 
 
-def delete_admin_patient_profile(profile_id):
+def delete_admin_patient_profile(profile_id, actor_name='Admin', actor_role='admin'):
     """Soft-delete a patient profile."""
     profile = PatientProfile.objects.filter(pk=profile_id).first()
     if not profile:
         raise ValidationError({'detail': 'Không tìm thấy bệnh nhân.'})
+    label = profile.full_name or f'Bệnh nhân #{profile.id}'
     profile.delete()
+    log_admin_action(
+        action='DELETE',
+        resource_type='Patient',
+        resource_id=str(profile_id),
+        resource_label=label,
+        actor_name=actor_name,
+        actor_role=actor_role,
+        detail=f'Xóa hồ sơ bệnh nhân "{label}"',
+    )
     return True
 
 
-def reset_admin_patient_password(profile_id, new_password):
+def reset_admin_patient_password(profile_id, new_password, actor_name='Admin', actor_role='admin'):
     """Reset patient account password."""
     profile = PatientProfile.objects.filter(pk=profile_id).first()
     if not profile:
@@ -1315,6 +1603,16 @@ def reset_admin_patient_password(profile_id, new_password):
         raise ValidationError({'new_password': 'Mật khẩu phải ít nhất 6 ký tự.'})
     profile.account_password = make_password(new_password)
     profile.save(update_fields=['account_password', 'updated_at'])
+    label = profile.full_name or f'Bệnh nhân #{profile.id}'
+    log_admin_action(
+        action='RESET_PASSWORD',
+        resource_type='Patient',
+        resource_id=str(profile_id),
+        resource_label=label,
+        actor_name=actor_name,
+        actor_role=actor_role,
+        detail=f'Đặt lại mật khẩu bệnh nhân "{label}"',
+    )
     return True
 
 
@@ -1347,7 +1645,7 @@ def get_admin_receptionist_profile(receptionist_id):
 
 
 @transaction.atomic
-def create_admin_receptionist_profile(payload):
+def create_admin_receptionist_profile(payload, actor_name='Admin', actor_role='admin'):
     """Create a new receptionist account."""
     from django.contrib.auth.hashers import make_password
     username = str(payload.get('username') or '').strip()
@@ -1372,6 +1670,15 @@ def create_admin_receptionist_profile(payload):
         role=UserRole.RECEPTIONIST,
         is_active=bool(payload.get('is_active', True)),
     )
+    log_admin_action(
+        action='CREATE',
+        resource_type='Receptionist',
+        resource_id=str(user.id),
+        resource_label=user.full_name,
+        actor_name=actor_name,
+        actor_role=actor_role,
+        detail=f'Tạo tài khoản lễ tân "{user.full_name}" ({user.username})',
+    )
     return {
         'id':        user.id,
         'username':  user.username,
@@ -1385,12 +1692,13 @@ def create_admin_receptionist_profile(payload):
 
 
 @transaction.atomic
-def update_admin_receptionist_profile(receptionist_id, payload):
+def update_admin_receptionist_profile(receptionist_id, payload, actor_name='Admin', actor_role='admin'):
     """Update receptionist profile."""
     user = User.objects.filter(pk=receptionist_id, role=UserRole.RECEPTIONIST).first()
     if not user:
         raise ValidationError({'detail': 'Không tìm thấy lễ tân.'})
 
+    old_name = user.full_name
     if 'full_name' in payload:
         user.full_name = str(payload['full_name']).strip()
     if 'email' in payload:
@@ -1403,6 +1711,15 @@ def update_admin_receptionist_profile(receptionist_id, payload):
         user.is_active = bool(payload['is_active'])
 
     user.save()
+    log_admin_action(
+        action='UPDATE',
+        resource_type='Receptionist',
+        resource_id=str(receptionist_id),
+        resource_label=user.full_name,
+        actor_name=actor_name,
+        actor_role=actor_role,
+        detail=f'Cập nhật thông tin lễ tân "{user.full_name}"',
+    )
     return {
         'id':        user.id,
         'username':  user.username,
@@ -1416,17 +1733,27 @@ def update_admin_receptionist_profile(receptionist_id, payload):
 
 
 @transaction.atomic
-def delete_admin_receptionist_profile(receptionist_id):
+def delete_admin_receptionist_profile(receptionist_id, actor_name='Admin', actor_role='admin'):
     """Delete receptionist account."""
     user = User.objects.filter(pk=receptionist_id, role=UserRole.RECEPTIONIST).first()
     if not user:
         raise ValidationError({'detail': 'Không tìm thấy lễ tân.'})
+    label = user.full_name
     user.delete()
+    log_admin_action(
+        action='DELETE',
+        resource_type='Receptionist',
+        resource_id=str(receptionist_id),
+        resource_label=label,
+        actor_name=actor_name,
+        actor_role=actor_role,
+        detail=f'Xóa tài khoản lễ tân "{label}"',
+    )
     return True
 
 
 @transaction.atomic
-def reset_admin_receptionist_password(receptionist_id, new_password):
+def reset_admin_receptionist_password(receptionist_id, new_password, actor_name='Admin', actor_role='admin'):
     """Reset receptionist account password."""
     from django.contrib.auth.hashers import make_password
     user = User.objects.filter(pk=receptionist_id, role=UserRole.RECEPTIONIST).first()
@@ -1436,6 +1763,15 @@ def reset_admin_receptionist_password(receptionist_id, new_password):
         raise ValidationError({'new_password': 'Mật khẩu phải ít nhất 6 ký tự.'})
     user.password = make_password(new_password)
     user.save(update_fields=['password', 'updated_at'])
+    log_admin_action(
+        action='RESET_PASSWORD',
+        resource_type='Receptionist',
+        resource_id=str(receptionist_id),
+        resource_label=user.full_name,
+        actor_name=actor_name,
+        actor_role=actor_role,
+        detail=f'Đặt lại mật khẩu lễ tân "{user.full_name}"',
+    )
     return True
 
 

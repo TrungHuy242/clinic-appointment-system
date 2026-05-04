@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Download, FileText, Settings2, ShieldCheck, Trash2 } from "lucide-react";
+import { Calendar, Download, FileText, Settings2, ShieldCheck, Trash2, X } from "lucide-react";
 import Badge from "../../../components/Badge/Badge";
 import LoadingSpinner from "../../../components/LoadingSpinner/LoadingSpinner";
 import Table from "../../../components/Table/Table";
@@ -88,10 +88,101 @@ const COLUMNS = [
   { key: "ip", title: "IP", render: (row) => <span className="audit-logs-page__ip">{row.ip}</span> },
 ];
 
+// ── Date helpers ────────────────────────────────────────────────────────────────
+
+function toLocalDateStr(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function subtractDays(date, days) {
+  const d = new Date(date);
+  d.setDate(d.getDate() - days);
+  return d;
+}
+
+function startOfMonth(date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+function startOfWeek(date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  return new Date(d.setDate(diff));
+}
+
+
+
+const DATE_PRESETS = [
+  {
+    key: "today",
+    label: "Hôm nay",
+    getRange: () => {
+      const today = new Date();
+      return { from: toLocalDateStr(today), to: toLocalDateStr(today) };
+    },
+  },
+  {
+    key: "yesterday",
+    label: "Hôm qua",
+    getRange: () => {
+      const y = subtractDays(new Date(), 1);
+      return { from: toLocalDateStr(y), to: toLocalDateStr(y) };
+    },
+  },
+  {
+    key: "last7",
+    label: "7 ngày",
+    getRange: () => {
+      const from = subtractDays(new Date(), 6);
+      return { from: toLocalDateStr(from), to: toLocalDateStr(new Date()) };
+    },
+  },
+  {
+    key: "last30",
+    label: "30 ngày",
+    getRange: () => {
+      const from = subtractDays(new Date(), 29);
+      return { from: toLocalDateStr(from), to: toLocalDateStr(new Date()) };
+    },
+  },
+  {
+    key: "thisWeek",
+    label: "Tuần này",
+    getRange: () => {
+      const from = startOfWeek(new Date());
+      return { from: toLocalDateStr(from), to: toLocalDateStr(new Date()) };
+    },
+  },
+  {
+    key: "thisMonth",
+    label: "Tháng này",
+    getRange: () => {
+      const from = startOfMonth(new Date());
+      return { from: toLocalDateStr(from), to: toLocalDateStr(new Date()) };
+    },
+  },
+  {
+    key: "custom",
+    label: "Tùy chỉnh",
+    getRange: () => ({ from: "", to: "" }),
+  },
+];
+
 export default function AuditPage() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [actionFilter, setActionFilter] = useState("all");
+  const [activePreset, setActivePreset] = useState("thisMonth");
+  const [dateFrom, setDateFrom] = useState(() => {
+    const from = startOfMonth(new Date());
+    return toLocalDateStr(from);
+  });
+  const [dateTo, setDateTo] = useState(toLocalDateStr(new Date()));
+  const [showCustom, setShowCustom] = useState(false);
   const [payload, setPayload] = useState({ items: [], stats: {} });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -134,10 +225,42 @@ export default function AuditPage() {
           log.detail.toLowerCase().includes(search.toLowerCase());
         const matchRole = roleFilter === "all" || log.role === roleFilter;
         const matchAction = actionFilter === "all" || log.action === actionFilter;
-        return matchSearch && matchRole && matchAction;
+
+        let matchDate = true;
+        if (dateFrom || dateTo) {
+          // log.time = "21/04/2026 14:30" → parse to YYYY-MM-DD for correct comparison
+          const logDateStr = (log.time || "").split(" ")[0];
+          if (logDateStr) {
+            const parts = logDateStr.split("/");
+            if (parts.length === 3) {
+              const logDateYMD = `${parts[2]}-${parts[1]}-${parts[0]}`;
+              if (dateFrom && logDateYMD < dateFrom) matchDate = false;
+              if (dateTo && logDateYMD > dateTo) matchDate = false;
+            }
+          }
+        }
+
+        return matchSearch && matchRole && matchAction && matchDate;
       }),
-    [actionFilter, payload.items, roleFilter, search]
+    [actionFilter, payload.items, roleFilter, search, dateFrom, dateTo]
   );
+
+  function applyPreset(presetKey) {
+    setActivePreset(presetKey);
+    const preset = DATE_PRESETS.find((p) => p.key === presetKey);
+    if (!preset) return;
+    const range = preset.getRange();
+    setDateFrom(range.from);
+    setDateTo(range.to);
+    if (presetKey !== "custom") {
+      setShowCustom(false);
+    }
+  }
+
+  function openCustom() {
+    setActivePreset("custom");
+    setShowCustom(true);
+  }
 
   return (
     <div className="dash-page audit-logs-page">
@@ -159,6 +282,72 @@ export default function AuditPage() {
         ))}
       </div>
 
+      <div className="dash-filter-bar">
+        {/* ── Date range preset buttons ── */}
+        <div className="audit-page__date-presets">
+          {DATE_PRESETS.filter((p) => p.key !== "custom").map((preset) => (
+            <button
+              key={preset.key}
+              type="button"
+              className={`audit-page__preset-btn ${activePreset === preset.key ? "active" : ""}`}
+              onClick={() => applyPreset(preset.key)}
+            >
+              {preset.label}
+            </button>
+          ))}
+          <button
+            type="button"
+            className={`audit-page__preset-btn audit-page__preset-btn--custom ${activePreset === "custom" ? "active" : ""}`}
+            onClick={openCustom}
+          >
+            <Calendar className="mc-icon mc-icon--xs" />
+            Tùy chỉnh
+          </button>
+        </div>
+
+        {/* ── Custom date range ── */}
+        {showCustom && (
+          <div className="audit-page__custom-range">
+            <input
+              type="date"
+              className="audit-page__date-input"
+              value={dateFrom}
+              onChange={(e) => {
+                setDateFrom(e.target.value);
+                setActivePreset("custom");
+              }}
+              max={dateTo || undefined}
+            />
+            <span className="audit-page__date-sep">—</span>
+            <input
+              type="date"
+              className="audit-page__date-input"
+              value={dateTo}
+              onChange={(e) => {
+                setDateTo(e.target.value);
+                setActivePreset("custom");
+              }}
+              min={dateFrom || undefined}
+            />
+            <button
+              type="button"
+              className="audit-page__date-clear"
+              onClick={() => {
+                setShowCustom(false);
+                setActivePreset("thisMonth");
+                const from = startOfMonth(new Date());
+                setDateFrom(toLocalDateStr(from));
+                setDateTo(toLocalDateStr(new Date()));
+              }}
+              title="Quay lại mặc định"
+            >
+              <X size={12} />
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* ── Second filter row ── */}
       <div className="dash-filter-bar">
         <input className="dash-search-input" placeholder="Tìm theo người dùng, đối tượng, chi tiết..." value={search} onChange={(event) => setSearch(event.target.value)} />
         <select className="dash-filter-select" value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)}>

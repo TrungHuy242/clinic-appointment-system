@@ -34,6 +34,10 @@ export const adminApi = {
   resetReceptionistPassword: (id, payload) =>
     apiClient.post(ENDPOINTS.portal.adminReceptionistProfileResetPassword(id), payload),
 
+  // Doctor account password reset — via catalog doctor endpoint
+  resetDoctorPassword: (doctorId, payload) =>
+    apiClient.post(ENDPOINTS.catalog.adminDoctorResetPassword(doctorId), payload),
+
   // Patient accounts — list, delete, reset-password (không có edit theo spec)
   listPatientProfiles: (params = {}) =>
     apiClient.get(ENDPOINTS.portal.adminPatientProfiles, { params }),
@@ -49,11 +53,6 @@ export const adminApi = {
 
   // Doctor detail
   getDoctorDetail: (doctorId) => apiClient.get(ENDPOINTS.portal.adminDoctorDetail(doctorId)),
-
-  // Doctor account management — reset password via generic user endpoint (CatalogPage)
-  // NOTE: POST create/update/delete user đã bị disable ở backend
-  resetUserPassword: (id, payload) =>
-    apiClient.post(ENDPOINTS.portal.adminUserResetPassword(id), payload),
 
   // Dashboard
   getDashboard: () => apiClient.get(ENDPOINTS.appointments.dashboard),
@@ -91,13 +90,13 @@ export const createReceptionistProfile = (payload) => adminApi.createReceptionis
 export const updateReceptionistProfile = (id, payload) => adminApi.updateReceptionistProfile(id, payload);
 export const deleteReceptionistProfile = (id) => adminApi.deleteReceptionistProfile(id);
 export const resetReceptionistPassword = (id, payload) => adminApi.resetReceptionistPassword(id, payload);
+export const resetDoctorPassword = (doctorId, payload) => adminApi.resetDoctorPassword(doctorId, payload);
 export const listPatientProfiles = (params) => adminApi.listPatientProfiles(params);
 export const deletePatientProfile = (id) => adminApi.deletePatientProfile(id);
 export const resetPatientPassword = (id, payload) => adminApi.resetPatientPassword(id, payload);
 export const getAuditLogs = () => adminApi.getAuditLogs();
 export const getReports = (period) => adminApi.getReports(period);
 export const getDoctorDetail = (doctorId) => adminApi.getDoctorDetail(doctorId);
-export const resetUserPassword = (id, payload) => adminApi.resetUserPassword(id, payload);
 export const getDashboard = () => adminApi.getDashboard();
 export const listAppointments = (params) => adminApi.listAppointments(params);
 export const updateAppointmentStatus = (id, status, extra) => adminApi.updateAppointmentStatus(id, status, extra);

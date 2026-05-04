@@ -324,9 +324,6 @@ export default function CheckinPage() {
                 </div>
                 <div className="ci-result__title">
                   {cfg.title}
-                  <Badge className="checkin-page__state-badge" variant={cfg.badge}>
-                    {checkinResult.state}
-                  </Badge>
                 </div>
                 <div className="ci-result__sub">{cfg.sub}</div>
                 {checkinResult.appointment && (

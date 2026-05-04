@@ -1,9 +1,7 @@
 // Default fallback luôn có giá trị hợp lệ cho new URL(base, path)
 // Khi Vite/build env có VITE_API_BASE_URL thì dùng env
 // Khi dev qua react-scripts proxy thì dùng "" (relative path)
-const _envBase = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE_URL) || "";
-export const API_BASE_URL = _envBase;
-export const API_PREFIX = "";
+export const API_PREFIX = ""; 
 
 export const ENDPOINTS = {
   catalog: {
@@ -34,6 +32,8 @@ export const ENDPOINTS = {
   portal: {
     login:      `${API_PREFIX}/auth/login/`,
     register: `${API_PREFIX}/patient/auth/register/`,
+    sendOtp: `${API_PREFIX}/patient/auth/send-otp/`,
+    verifyOtp: `${API_PREFIX}/patient/auth/verify-otp/`,
     claimProfile: `${API_PREFIX}/patient/claim-profile/`,
     verifyOtp: `${API_PREFIX}/patient/auth/verify-otp/`,  // ← thêm dòng này
     profile: `${API_PREFIX}/patient/profile/`,
@@ -41,9 +41,12 @@ export const ENDPOINTS = {
     changePassword: `${API_PREFIX}/patient/change-password/`,
     appointments: `${API_PREFIX}/patient/appointments/`,
     record: (code) => `${API_PREFIX}/patient/records/${code}/`,
+    medicalRecords: `${API_PREFIX}/patient/records/`,
     notifications: `${API_PREFIX}/patient/notifications/`,
     notification: (id) => `${API_PREFIX}/patient/notifications/${id}/`,
     notificationsMarkAllRead: `${API_PREFIX}/patient/notifications/mark-all-read/`,
+    forgotPasswordSendOtp: `${API_PREFIX}/patient/auth/forgot-password/send-otp/`,
+    forgotPasswordReset: `${API_PREFIX}/patient/auth/forgot-password/reset/`,
     doctorSchedule: `${API_PREFIX}/doctor/schedule/`,
     doctorQueue: `${API_PREFIX}/doctor/queue/`,
     doctorVisits: `${API_PREFIX}/doctor/visits/`,
@@ -63,9 +66,8 @@ export const ENDPOINTS = {
     auditLogs: `${API_PREFIX}/admin/audit-logs/`,
     reports: `${API_PREFIX}/admin/reports/`,
     adminDoctorDetail: (id) => `${API_PREFIX}/admin/doctor-detail/${id}/`,
-    // AdminUser reset-password: dùng cho doctor accounts (CatalogPage resetUserPassword)
-    // NOTE: POST /admin/users/ (create) đã bị disable — chỉ còn reset-password
-    adminUserResetPassword: (id) => `${API_PREFIX}/admin/users/${id}/reset-password/`,
+    // Doctor reset-password: via catalog doctor endpoint
+    adminDoctorResetPassword: (doctorId) => `${API_PREFIX}/admin/doctors/${doctorId}/reset-password/`,
     adminReceptionistProfiles: `${API_PREFIX}/admin/receptionist-profiles/`,
     adminReceptionistProfile: (id) => `${API_PREFIX}/admin/receptionist-profiles/${id}/`,
     adminReceptionistProfileResetPassword: (id) => `${API_PREFIX}/admin/receptionist-profiles/${id}/reset-password/`,

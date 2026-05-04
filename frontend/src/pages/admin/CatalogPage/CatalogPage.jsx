@@ -33,8 +33,8 @@ import {
   listReceptionistProfiles,
   listSpecialties,
   listVisitTypes,
+  resetDoctorPassword,
   resetReceptionistPassword,
-  resetUserPassword,
   updateDoctor,
   updateSpecialty,
   updateVisitType,
@@ -599,7 +599,7 @@ export default function CatalogPage() {
     try {
       const { item, type } = resetPwModal;
       if (type === "doctor") {
-        await resetUserPassword(item.linked_user_id, { new_password });
+        await resetDoctorPassword(item.id, { new_password });
       } else if (type === "receptionist") {
         await resetReceptionistPassword(item.id, { new_password });
       }
@@ -836,10 +836,10 @@ export default function CatalogPage() {
         )}
       </Modal>
 
-      {/* VisitType Edit Modal */}
+      {/* VisitType Edit/Create Modal */}
       <Modal
         open={visitTypeModal.open}
-        title="Sửa loại khám"
+        title={visitTypeModal.item?.id ? "Sửa loại khám" : "Thêm loại khám mới"}
         onClose={() => setVisitTypeModal({ open: false, item: null })}
         footer={
           <>

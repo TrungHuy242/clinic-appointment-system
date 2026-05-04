@@ -216,6 +216,10 @@ class AdminAppointmentViewSet(viewsets.ModelViewSet):
                 {'detail': 'scheduled_start and scheduled_end must be valid ISO datetime strings.'},
                 status=400,
             )
+        if not timezone.is_aware(scheduled_start):
+            scheduled_start = timezone.make_aware(scheduled_start)
+        if not timezone.is_aware(scheduled_end):
+            scheduled_end = timezone.make_aware(scheduled_end)
         actor_name, actor_role, ip = _admin_actor(request)
         try:
             reschedule_appointment(
