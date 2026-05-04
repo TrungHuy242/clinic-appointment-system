@@ -1,10 +1,10 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
   Baby,
   Brain,
-  CalendarClock,
+
   Check,
   HeartPulse,
   Lock,
@@ -16,8 +16,7 @@ import Button from "../../../components/Button/Button";
 import LoadingSpinner from "../../../components/LoadingSpinner/LoadingSpinner";
 import Modal from "../../../components/Modal/Modal";
 import { getSpecialties, getDoctorsBySpecialty, getSlots } from "../../../services/bookingApi";
-import { listAppointments, rescheduleAppointment } from "../../../services/adminApi";
-import { getStatusLabel, statusToClass } from "../../../services/formatters";
+import { rescheduleAppointment } from "../../../services/adminApi";
 import "./RescheduleModal.css";
 
 const STEPS = ["Chọn khoa", "Chọn bác sĩ", "Chọn giờ", "Xác nhận"];
@@ -61,22 +60,15 @@ function fmtTimeFromStr(timeStr) {
   return fmtTime(d);
 }
 
-function fmtDate(d) {
-  if (!d) return "—";
-  return d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
-}
+
+
 
 function fmtDateFull(d) {
   if (!d) return "—";
   return d.toLocaleDateString("vi-VN", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
-function fmtSlotDate(dateStr, timeStr) {
-  if (!dateStr) return "—";
-  const d = new Date(`${dateStr}T${timeStr || "00:00"}`);
-  if (isNaN(d.getTime())) return "—";
-  return fmtDate(d);
-}
+
 
 function fmtSlotDateFull(dateStr, timeStr) {
   if (!dateStr) return "—";

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Calendar, CalendarX, CalendarClock, KeyRound, Stethoscope, UserRound } from "lucide-react";
+import { CalendarX, CalendarClock, KeyRound, Stethoscope, UserRound } from "lucide-react";
 import { doctorApi } from "../../../services/doctorApi";
 import Button from "../../../components/Button/Button";
 import LoadingSpinner from "../../../components/LoadingSpinner/LoadingSpinner";
@@ -202,7 +202,7 @@ export default function DoctorProfilePage() {
     }
   }
 
-  const WEEKDAY_SHORT = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
+
 
   // ── Render ────────────────────────────────────────────────────────────────
   if (loading) {
